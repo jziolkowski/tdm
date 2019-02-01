@@ -33,6 +33,9 @@
   "DS18B20":{"Temperature":23.7},
   "MPR121A":{"Button0":0,"Button1":0,"Button2":0,"Button3":0,"Button4":0,"Button5":0,"Button6":0,"Button7":0,"Button8":0,"Button9":0,"Button10":0,"Button11":0,"Button12":0},"TempUnit":"C"}}
 
+{"StatusSNS":{"Time":"2019-02-01T17:27:51",
+  "SI7020":{"Temperature":26.9,"Humidity":59.7},"TempUnit":"C"}}
+
 /*not status 8 mqtt message from APDS9960 in gesture mode if motion detect 
 {"Gesture":"On"}
 {"Time":"2019-02-01T15:46:14","APDS9960":{"Left":1}}
