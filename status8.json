@@ -1,0 +1,17 @@
+{"StatusSNS":{"Time":"2019-01-30T20:30:43",
+  "AM2301":{"Temperature":22.5,"Humidity":33.2},
+  "BME280":{"Temperature":25.7,"Humidity":29.4,"Pressure":958.8,"SeaPressure":1001.4},"TempUnit":"C"}}
+
+{"StatusSNS":{"Time":"2019-01-30T20:33:42",
+  "MHZ19B":{"CarbonDioxide":879,"Temperature":22.0},"TempUnit":"C"}}
+
+{"StatusSNS":{"Time":"2019-01-31T14:30:10",
+  "BME680":{"Temperature":22.6,"Humidity":50.9,"Pressure":996.7,"Gas":69.54},
+  "BH1750":{"Illuminance":2689},
+  "VEML6070":{"UvIndex":0.06,"UvIndexText":"Low","UvPower":0.001},
+  "SHT3X-0x44":{"Temperature":21.8,"Humidity":51.2},
+  "MGS":{"NH3":18.71,"CO":9.80,"NO2":0.05,"C3H8":84383.33,"C4H10":27716.33,"CH4":12383.71,"H2":2.49,"C2H5OH":4.68},
+  "CCS811":{"eCO2":534,"TVOC":20},"PressureUnit":"hPa","TempUnit":"C"}}
+  
+{"StatusSNS":{"Time":"2019-01-31T17:13:29",
+  "MAX31855":{"ProbeTemperature":225.5,"ReferenceTemperature":70.1,"Error":0},"TempUnit":"C"}}
