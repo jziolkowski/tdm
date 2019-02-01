@@ -20,8 +20,14 @@
   "TSL2561":{"Illuminance":0.000},
   "MAX31855":{"ProbeTemperature":360.5,"ReferenceTemperature":43.3,"Error":0},"TempUnit":"C"}}
 
+{"StatusSNS":{"Time":"2019-02-01T15:58:56",
+  "VEML6070":{"UvLevel":1,"UvIndex":0.00,"UvIndexText":"Low","UvPower":0.000}}}
+
 {"StatusSNS":{"Time":"2019-02-01T15:51:20",
   "APDS9960":{"Red":537,"Green":351,"Blue":330,"Ambient":272,"CCT":3430,"Proximity":173}}}
+
+{"StatusSNS":{"Time":"2019-02-01T16:01:14",
+  "MPR121A":{"Button0":0,"Button1":0,"Button2":0,"Button3":0,"Button4":0,"Button5":0,"Button6":0,"Button7":0,"Button8":0,"Button9":0,"Button10":0,"Button11":0,"Button12":0}}}
 
 /*not status 8 mqtt message from APDS9960 in gesture mode if motion detect 
 {"Gesture":"On"}
