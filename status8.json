@@ -26,7 +26,7 @@
 {"StatusSNS":{"Time":"2019-02-01T16:01:14",
   "MPR121A":{"Button0":0,"Button1":0,"Button2":0,"Button3":0,"Button4":0,"Button5":0,"Button6":0,"Button7":0,"Button8":0,"Button9":0,"Button10":0,"Button11":0,"Button12":0}}}
 
-// TM1638
+// TM1638 opened PR to change!!
 {"StatusSNS":{"Time":"2019-02-02T16:47:36",
   "Switch1":"ON","Switch2":"ON","Switch3":"ON","Switch4":"ON","Switch5":"ON","Switch6":"ON","Switch7":"ON","Switch8":"ON"}}
 
