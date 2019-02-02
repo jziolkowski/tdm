@@ -34,6 +34,12 @@
   "DS18B20":{"Temperature":23.7},
   "MPR121A":{"Button0":0,"Button1":0,"Button2":0,"Button3":0,"Button4":0,"Button5":0,"Button6":0,"Button7":0,"Button8":0,"Button9":0,"Button10":0,"Button11":0,"Button12":0},"TempUnit":"C"}}
 
+{"StatusSNS":{"Time":"1970-01-01T00:01:06",
+  "DS18x20":{"DS1":{"Type":"DS18B20","Address":"28FFF159421801D2","Temperature":23.7}},"TempUnit":"C"}}
+
+{"StatusSNS":{"Time":"2019-02-02T13:53:27",
+  "DS18B20-1":{"Id":"01131BBA6ABA","Temperature":43.3},"DS18B20-2":{"Id":"01131E7ED572","Temperature":57.7},"DS18B20-3":{"Id":"0213139D1FAA","Temperature":56.8},"DS18B20-4":{"Id":"0213139E74AA","Temperature":24.2},"TempUnit":"C"}}
+
 {"StatusSNS":{"Time":"2019-02-01T17:31:29",
   "SI7020":{"Temperature":26.0,"Humidity":63.8},
   "BMP280":{"Temperature":27.0,"Pressure":876.1},
@@ -42,11 +48,5 @@
 {"StatusSNS":{"Time":"2019-02-01T15:51:20",
   "APDS9960":{"Red":537,"Green":351,"Blue":330,"Ambient":272,"CCT":3430,"Proximity":173}}}
 
-/*not status 8 mqtt message from APDS9960 in gesture mode if motion detect 
-{"Gesture":"On"}
-{"Time":"2019-02-01T15:46:14","APDS9960":{"Left":1}}
-{"Time":"2019-02-01T15:46:18","APDS9960":{"Right":1}}
-{"Time":"2019-02-01T15:46:20","APDS9960":{"Down":1}}
-{"Time":"2019-02-01T15:46:21","APDS9960":{"Up":1}}
-{"Gesture":"Off"}
-*/
+{"StatusSNS":{"Time":"2019-02-02T18:40:41",
+  "LM75AD":{"Temperature":27.62},"TempUnit":"C"}}
