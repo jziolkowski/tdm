@@ -50,3 +50,12 @@
 
 {"StatusSNS":{"Time":"2019-02-02T18:40:41",
   "LM75AD":{"Temperature":27.62},"TempUnit":"C"}}
+
+/*not status 8 mqtt message from APDS9960 in gesture mode if motion detect 
+{"Gesture":"On"}
+{"Time":"2019-02-01T15:46:14","APDS9960":{"Left":1}}
+{"Time":"2019-02-01T15:46:18","APDS9960":{"Right":1}}
+{"Time":"2019-02-01T15:46:20","APDS9960":{"Down":1}}
+{"Time":"2019-02-01T15:46:21","APDS9960":{"Up":1}}
+{"Gesture":"Off"}
+*/
