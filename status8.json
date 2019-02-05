@@ -54,6 +54,11 @@
 {"StatusSNS":{"Time":"2019-02-05T10:36:00",
   "ENERGY":{"TotalStartTime":"2019-01-03T03:43:19","Total":0.538,"Yesterday":0.017,"Today":0.008,"Power":0,"ApparentPower":0,"ReactivePower":0,"Factor":0.00,"Voltage":125,"Current":0.000}}}
 
+{"StatusSNS":{{"Time":"2019-02-02T12:01:59",
+ "COUNTER":{"C1":5673},
+ "ENERGY":{"TotalStartTime":"2019-01-21T07:38:53","Total":3.754,"Yesterday":0.808,"Today":0.405,"Period":0,"Power":33,"Voltage":14,"Current":2.450}}}
+
+
 /*not status 8 mqtt message from APDS9960 in gesture mode if motion detect 
 {"Gesture":"On"}
 {"Time":"2019-02-01T15:46:14","APDS9960":{"Left":1}}
