@@ -7,3 +7,5 @@ Python 3.4+
 
 PyQt5: <pre>pip install PyQt5</pre>
 paho-mqtt: <pre>pip install paho-mqtt</pre>
+
+Uses free icons from [FatCow](https://www.fatcow.com/free-icons)
