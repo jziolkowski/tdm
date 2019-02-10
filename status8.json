@@ -5,6 +5,9 @@
 {"StatusSNS":{"Time":"2019-01-30T20:33:42",
   "MHZ19B":{"CarbonDioxide":879,"Temperature":22.0},"TempUnit":"C"}}
 
+{"StatusSNS":{"Time":"2019-02-10T18:07:42",
+  "MHZ19B":{"Model":"B","CarbonDioxide":1982,"Temperature":26.0},"TempUnit":"C"}}
+
 {"StatusSNS":{"Time":"2019-01-31T14:30:10",
   "BME680":{"Temperature":22.6,"Humidity":50.9,"Pressure":996.7,"Gas":69.54},
   "BH1750":{"Illuminance":2689},
