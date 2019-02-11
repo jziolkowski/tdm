@@ -3,8 +3,7 @@ from PyQt5.QtGui import QIcon, QColor, QPainter, QImage, QPixmap
 from PyQt5.QtWidgets import QStyledItemDelegate, QStyle
 
 from GUI import columns
-from Util import DevMdl
-from Util.libtasmota import modules
+from Util import DevMdl, modules
 from Util.nodes import *
 
 
@@ -422,9 +421,7 @@ class DeviceDelegate(QStyledItemDelegate):
                 p.fillRect(option.rect, option.palette.highlight())
 
             px = self.icons.get(index.data().lower())
-            print(px.width())
             px = px.scaled(option.rect.width(), option.rect.height(), Qt.KeepAspectRatio)
-            print(px.width())
 
             x = option.rect.center().x() - px.rect().width() / 2
             y = option.rect.center().y() - px.rect().height() / 2
