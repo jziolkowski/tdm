@@ -1,7 +1,8 @@
 import sys
 from json import loads
+from time import sleep
 
-from PyQt5.QtCore import QSettings, QSortFilterProxyModel
+from PyQt5.QtCore import QSettings, QSortFilterProxyModel, QTimer
 from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QListWidget, QTreeView, \
     QActionGroup
 
@@ -17,11 +18,11 @@ import re
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.1"
+        self._version = "0.1.1"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
-        self.custom_topics = []
+        self.fulltopic_queue = []
 
         self.settings = QSettings()
 
@@ -76,27 +77,26 @@ class MainWindow(QMainWindow):
         self.mqtt.connectError.connect(self.mqtt_connectError)
         self.mqtt.messageSignal.connect(self.mqtt_message)
 
-        # self.load_devices()
+        self.queue_timer = QTimer()
+        self.queue_timer.setSingleShot(True)
+        self.queue_timer.timeout.connect(self.ask_for_fulltopic)
+
+
+
+    def ask_for_fulltopic(self):
+        for i in range(len(self.fulltopic_queue)):
+            self.mqtt.publish(self.fulltopic_queue.pop(0))
 
     def load_devices(self):
-        self.telemetry_model = TasmotaDevicesTree()
-        self.tview.setModel(self.telemetry_model)
+        # self.telemetry_model = TasmotaDevicesTree()
+        # self.tview.setModel(self.telemetry_model)
 
         self.settings.beginGroup('Devices')
-        devices = self.settings.childGroups()
+        for d in self.settings.childGroups():
+            self.device_model.loadDevice(d, self.settings.value("{}/full_topic".format(d)), self.settings.value("{}/friendly_name".format(d)))
 
-        for d in devices:
-            full_topic = self.settings.value("{}/full_topic".format(d))
-            friendly_name = self.settings.value("{}/friendly_name".format(d), d)
-            self.add_device(d, full_topic, friendly_name)
-
-            if self.settings.value("{}/source".format(d), d) == 'manual':
-                for p in ['stat', 'tele']:
-                    self.custom_topics.append(self.build_topic(full_topic, d, p))
-
-
-        self.tview.expandAll()
-        self.tview.resizeColumnToContents(0)
+        # self.tview.expandAll()
+        # self.tview.resizeColumnToContents(0)
 
         self.settings.endGroup()
 
@@ -193,33 +193,56 @@ class MainWindow(QMainWindow):
 
         if topic.endswith('/LWT'):
             device_topic = self.find_device(topic)
+            if not msg:
+                msg = "offline"
 
             if device_topic:
+                print("Update LWT for {}".format(device_topic))
                 d = self.device_model.get_device_by_topic(device_topic)
                 self.device_model.setData(self.device_model.index(d, DevMdl.LWT), msg)
 
             elif msg == "Online":
+                print("LWT for unknown device...")
                 split_topic = topic.split('/')
                 device_topic = split_topic[1]
                 if device_topic == 'tele':
                     device_topic = split_topic[0]
 
-                self.mqtt.publish("cmnd/{}/fulltopic".format(device_topic), "")
-                self.mqtt.publish("{}/cmnd/fulltopic".format(device_topic), "")
+                print("... {}".format(device_topic))
+
+                self.fulltopic_queue.append("cmnd/{}/fulltopic".format(device_topic))
+                self.fulltopic_queue.append("{}/cmnd/fulltopic".format(device_topic))
+                self.queue_timer.start(1000)
 
         if topic.endswith('/RESULT'):
             topic = topic.rstrip('RESULT')
             full_topic = loads(msg).get('FullTopic')
+            new_topic = loads(msg).get('Topic')
 
             if full_topic:
+                #TODO: update FullTopic for existing device AFTER the FullTopic changes externally (the message will arrive from new FullTopic)
                 device_topic = self.match_topic(full_topic, topic)
-
-                if self.device_model.get_device_by_topic(device_topic) == -1:
+                device = self.device_model.get_device_by_topic(device_topic)
+                if device == -1:
+                    print("Have fulltopic for {}".format(device_topic))
                     self.device_model.addDevice(device_topic, full_topic, lwt='online')
-
                     d = self.device_model.get_device_by_topic(device_topic)
                     self.initial_query(d)
+                    print("Added {} with fulltopic {}, querying for STATE".format(device_topic, full_topic))
 
+            if new_topic:
+                device_topic = self.find_device(topic)
+                if device_topic and device_topic != new_topic:
+                    print("New topic for {}".format(device_topic))
+
+                    device = self.device_model.get_device_by_topic(device_topic)
+                    self.device_model.setData(self.device_model.index(device, DevMdl.TOPIC), new_topic)
+
+                    tele_dev_idx = self.telemetry_model.devices.get(device_topic)
+
+                    if tele_dev_idx:
+                        self.telemetry_model.setDeviceName(tele_dev_idx, new_topic)
+                        self.telemetry_model.devices[new_topic] = self.telemetry_model.devices.pop(device_topic)
 
         else:
             self.device_topic = self.find_device(topic)
@@ -230,7 +253,6 @@ class MainWindow(QMainWindow):
                     payload = loads(msg)['Status']
                     self.device_model.setData(self.device_model.index(self.device, DevMdl.MODULE), payload['Module'])
                     self.device_model.setData(self.device_model.index(self.device, DevMdl.FRIENDLY_NAME), payload['FriendlyName'][0])
-                    # self.settings.setValue("Devices/{}/friendly_name".format(device_topic), payload['FriendlyName'][0])
                     # device = self.device_model.data(self.device_model.index(self.device, DevMdl.TELEMETRY))
                     # self.telemetry_model.getNode(device).setName(payload['FriendlyName'][0])
 
@@ -263,8 +285,8 @@ class MainWindow(QMainWindow):
                     payload = loads(msg)
                     self.parse_state(payload)
 
-            else:
-                print(topic)
+            # else:
+            #     print(topic)
 
     def add_device(self, device_topic, full_topic, friendly_name, lwt = None):
         if friendly_name:
@@ -287,41 +309,12 @@ class MainWindow(QMainWindow):
 
         return rc
 
-    def parse_options(self, obj):
-        a_on_off = ["OFF", "ON "]
-
-        if ("SetOption" in obj):
-            options = []
-            o = 0
-            p = 0
-
-            r = 1
-            if (len(obj["SetOption"]) == 3):
-                r = 2
-
-            for f in range(r):
-                if (f == 1):
-                    o = 2
-                    p = 50
-
-                option = obj["SetOption"][o]
-                i_option = int(option, 16)
-                for i in range(len(a_setoption[f])):
-                    if (a_setoption[f][i]):
-                        state = (i_option >> i) & 1
-                        options.append(str("{0:2d} ({1}) {2}".format(i + p, a_on_off[state], a_setoption[f][i])))
-
-            print("\nOptions")
-            for option in options:
-                print("  {}".format(option))
-
     def parse_state(self, payload):
         self.device_model.setData(self.device_model.index(self.device, DevMdl.RSSI), payload['Wifi']['RSSI'])
         self.device_model.setData(self.device_model.index(self.device, DevMdl.UPTIME), payload['Uptime'])
 
         power = [payload.get('POWER','') for _ in range(1) if payload.get('POWER','')] + [payload.get('POWER{}'.format(i),'') for i in range(1,5) if payload.get('POWER{}'.format(i),'') ]
-
-        self.device_model.setData(self.device_model.index(self.device, DevMdl.POWER), ' | '.join(power))
+        self.device_model.setData(self.device_model.index(self.device, DevMdl.POWER), power)
         self.device_model.setData(self.device_model.index(self.device, DevMdl.LOADAVG), payload.get('LoadAvg'))
 
         tele_dev_idx = self.telemetry_model.devices.get(self.device_topic)

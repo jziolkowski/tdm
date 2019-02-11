@@ -6,9 +6,9 @@ from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableV
 from Util import DevMdl
 
 columns = {
-    DevMdl.LWT: ['', True, 1],
-    DevMdl.TOPIC: ['', True, QHeaderView.Stretch],
-    DevMdl.FULL_TOPIC: ['', True, QHeaderView.Stretch],
+    DevMdl.LWT: ['', False, 18],
+    DevMdl.TOPIC: ['', True, 1],
+    DevMdl.FULL_TOPIC: ['', True, 1],
     DevMdl.FRIENDLY_NAME: ['Name', False, QHeaderView.Stretch],
     DevMdl.MODULE: ['Module', False, QHeaderView.ResizeToContents],
     DevMdl.MAC: ['MAC', False, QHeaderView.ResizeToContents],

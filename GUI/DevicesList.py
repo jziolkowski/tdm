@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QWidget, QMessageBox, QDialog
 from GUI import VLayout, Toolbar, TableView, columns
 from GUI.DeviceEdit import DeviceEditDialog
 from Util import DevMdl
+from Util.models import LWTDelegate, PowerDelegate, DeviceDelegate
 
 
 class DevicesListWidget(QWidget):
@@ -36,6 +37,10 @@ class DevicesListWidget(QWidget):
         self.device_list.setModel(self.sorted_device_model)
         self.device_list.setupColumns(columns)
         self.device_list.setSortingEnabled(True)
+        self.device_list.setWordWrap(True)
+        self.device_list.setItemDelegate(DeviceDelegate())
+        # self.device_list.setItemDelegateForColumn(DevMdl.LWT, PowerDelegate())
+        # self.device_list.setItemDelegateForColumn(DevMdl.POWER, PowerDelegate())
         self.device_list.sortByColumn(DevMdl.TOPIC, Qt.AscendingOrder)
         self.layout().addWidget(self.device_list)
 
