@@ -4,7 +4,7 @@ from json import loads
 
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QListWidget, QTreeView, \
-    QActionGroup, QWidget, QSizePolicy
+    QActionGroup, QWidget, QSizePolicy, QSplitter
 
 from GUI import *
 from GUI.Broker import BrokerDialog
@@ -17,7 +17,7 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.1.2"
+        self._version = "0.1.3"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
@@ -47,8 +47,8 @@ class MainWindow(QMainWindow):
         self.tview.expandAll()
         self.tview.resizeColumnToContents(0)
 
-        self.main_layout = QWidget()
-        self.main_layout.setLayout(HLayout())
+        self.main_splitter = QSplitter()
+        left_pane = QWidget()
 
         vl_mdi = VLayout(margin=0)
 
@@ -68,9 +68,10 @@ class MainWindow(QMainWindow):
         self.mdi.addSubWindow(tabDevicesList)
         tabDevicesList.setWindowState(Qt.WindowMaximized)
 
-        self.main_layout.layout().addLayout(vl_mdi)
-        self.main_layout.layout().addWidget(self.tview)
-        self.setCentralWidget(self.main_layout)
+        left_pane.setLayout(vl_mdi)
+        self.main_splitter.addWidget(left_pane)
+        self.main_splitter.addWidget(self.tview)
+        self.setCentralWidget(self.main_splitter)
 
         self.build_toolbars()
         self.setStatusBar(QStatusBar())
@@ -79,21 +80,16 @@ class MainWindow(QMainWindow):
         self.queue_timer.setSingleShot(True)
         self.queue_timer.timeout.connect(self.mqtt_ask_for_fulltopic)
 
-    def load_devices(self):
-        # self.telemetry_model = TasmotaDevicesTree()
-        # self.tview.setModel(self.telemetry_model)
-
-        self.settings.beginGroup('Devices')
-        for d in self.settings.childGroups():
-            self.device_model.loadDevice(d, self.settings.value("{}/full_topic".format(d)), self.settings.value("{}/friendly_name".format(d)))
-
-        # self.tview.expandAll()
-        # self.tview.resizeColumnToContents(0)
-
-        self.settings.endGroup()
+        wndGeometry = self.settings.value('window_geometry')
+        if wndGeometry:
+            self.restoreGeometry(wndGeometry)
+        spltState = self.settings.value('splitter_state')
+        if spltState:
+            self.main_splitter.restoreState(spltState)
 
     def build_toolbars(self):
         main_toolbar = Toolbar(orientation=Qt.Horizontal, iconsize=32, label_position=Qt.ToolButtonIconOnly)
+        main_toolbar.setObjectName("main_toolbar")
         self.addToolBar(main_toolbar)
 
         main_toolbar.addAction(QIcon("./GUI/icons/connections.png"), "Configure MQTT broker", self.setup_broker)
@@ -275,7 +271,6 @@ class MainWindow(QMainWindow):
                     payload = loads(msg)
                     self.parse_state(payload)
 
-
     def parse_state(self, payload):
         self.device_model.updateValue(self.device, DevMdl.RSSI, payload['Wifi']['RSSI'])
         self.device_model.updateValue(self.device, DevMdl.UPTIME, payload['Uptime'])
@@ -380,6 +375,11 @@ class MainWindow(QMainWindow):
         if match:
             return match.groupdict().get('topic')
 
+    def closeEvent(self, e):
+        self.settings.setValue("window_geometry", self.saveGeometry())
+        self.settings.setValue("splitter_state", self.main_splitter.saveState())
+        self.settings.sync()
+        e.accept()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
