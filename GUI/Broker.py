@@ -39,7 +39,7 @@ class BrokerDialog(QDialog):
         hlBtn.addWidgets([btnSave, btnCancel])
 
         vl = VLayout()
-        vl.addWidgets([gbHost])
+        vl.addWidgets([gbHost, gbLogin])
         vl.addLayout(hlBtn)
 
         self.setLayout(vl)

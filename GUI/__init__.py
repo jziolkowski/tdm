@@ -1,12 +1,11 @@
-from PyQt5.QtCore import Qt, QSize, QSettings
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableView, QSpinBox, QAction, QToolBar, QWidget, QHeaderView, QMessageBox
+from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableView, QSpinBox, QAction, QToolBar, QHeaderView
 
 # from GUI.DeviceEdit import DeviceEditDialog
 from Util import DevMdl
 
 columns = {
-    DevMdl.LWT: ['', False, 18],
+    DevMdl.LWT: ['', False, 16],
     DevMdl.TOPIC: ['', True, 1],
     DevMdl.FULL_TOPIC: ['', True, 1],
     DevMdl.FRIENDLY_NAME: ['Name', False, QHeaderView.Stretch],
@@ -16,8 +15,8 @@ columns = {
     DevMdl.FIRMWARE: ['Firmware', False, QHeaderView.ResizeToContents],
     DevMdl.RSSI: ['RSSI', False, QHeaderView.ResizeToContents],
     DevMdl.UPTIME: ['Uptime', False, QHeaderView.ResizeToContents],
-    DevMdl.LOADAVG: ['Load avg.', False, QHeaderView.ResizeToContents],
     DevMdl.POWER: ['Power', False, QHeaderView.ResizeToContents],
+    DevMdl.LOADAVG: ['L. avg', False, QHeaderView.ResizeToContents],
     DevMdl.TELEMETRY: ['', True, 1],
 }
 

@@ -1,5 +1,5 @@
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, QAbstractTableModel, QSettings, QSize, QRect, QRectF
-from PyQt5.QtGui import QIcon, QColor, QPainter, QImage, QPixmap
+from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, QAbstractTableModel, QSettings, QSize, QRect
+from PyQt5.QtGui import QIcon, QColor, QPixmap
 from PyQt5.QtWidgets import QStyledItemDelegate, QStyle
 
 from GUI import columns
@@ -24,7 +24,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
         self.settings.setValue("{}/full_topic".format(topic), full_topic)
         self.settings.setValue("{}/friendly_name".format(topic), friendly_name)
         self.endInsertRows()
-        return True
+        return self.index(rc, 0)
 
     def loadDevice(self, topic, full_topic, friendly_name="", lwt="undefined"):
         rc = self.rowCount()
@@ -33,9 +33,11 @@ class TasmotaDevicesModel(QAbstractTableModel):
         self.endInsertRows()        
         return True
 
-    def get_device_by_topic(self, topic):
-        device = [i for i,x in enumerate(self._devices) if x[DevMdl.TOPIC] == topic]
-        return device[0] if device else -1
+    def deviceByTopic(self, topic):
+        for i,d in enumerate(self._devices):
+            if d[DevMdl.TOPIC] == topic:
+                return self.index(i, DevMdl.LWT)
+        return QModelIndex()
 
     def columnCount(self, parent=None):
         return len(columns)
@@ -77,7 +79,9 @@ class TasmotaDevicesModel(QAbstractTableModel):
             if role in (Qt.DisplayRole, Qt.EditRole):
                 val = self._devices[row][col]
                 if val and col == DevMdl.UPTIME:
-                    return val.replace('0T', '').replace('T', 'd ')
+                    if val.startswith("0T"):
+                        val = val.replace('0T', '')
+                    return val.replace('T', 'd ')
 
                 elif val and col == DevMdl.MODULE:
                     return modules.get(val, 'Unknown')
@@ -125,6 +129,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
             dev = self._devices[row][DevMdl.TOPIC]
             d = dev if dev else val
 
+            #TODO: move these to own function or refactor to saveConfig on exit
             if col == DevMdl.FRIENDLY_NAME:
                 self.settings.setValue("{}/friendly_name".format(d), val)
 
@@ -144,6 +149,35 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
     def flags(self, idx):
         return Qt.ItemIsSelectable | Qt.ItemIsEnabled
+
+    def updateValue(self, idx, column, val):
+        if idx.isValid():
+            row = idx.row()
+            idx = self.index(row, column)
+            self._devices[row][column] = val
+            self.dataChanged.emit(idx, idx)
+
+    def commandTopic(self, idx):
+        if idx.isValid():
+            row = idx.row()
+            return self._devices[row][DevMdl.FULL_TOPIC].replace("%prefix%", "cmnd").replace("%topic%", self._devices[row][DevMdl.TOPIC])
+        return None
+
+    def statTopic(self, idx):
+        if idx.isValid():
+            row = idx.row()
+            return self._devices[row][DevMdl.FULL_TOPIC].replace("%prefix%", "stat").replace("%topic%", self._devices[row][DevMdl.TOPIC])
+        return None
+
+    def teleTopic(self, idx):
+        if idx.isValid():
+            row = idx.row()
+            return self._devices[row][DevMdl.FULL_TOPIC].replace("%prefix%", "tele").replace("%topic%", self._devices[row][DevMdl.TOPIC])
+        return None
+
+    def isDefaultTemplate(self, idx):
+        if idx.isValid():
+            return self._devices[idx.row()][DevMdl.FULL_TOPIC] in ["%prefix%/%topic%/", "%topic%/%prefix%/"]
 
 
 class TasmotaDevicesTree(QAbstractItemModel):
@@ -352,50 +386,6 @@ class TasmotaDevicesTree(QAbstractItemModel):
         return success
 
 
-class LWTDelegate(QStyledItemDelegate):
-    def __init__(self):
-        super(LWTDelegate, self).__init__()
-        self.icons = {
-            'online': QPixmap("./GUI/icons/online.png"),
-            'offline': QPixmap("./GUI/icons/offline.png"),
-            'undefined': QPixmap("./GUI/icons/undefined.png"),
-        }
-
-    def paint(self, p, option, index):
-        if option.state & QStyle.State_Selected:
-            p.fillRect(option.rect, option.palette.highlight())
-
-        # px = self.icons.get(index.data().lower())
-        # px = px.scaled(option.rect.width(), option.rect.height(), Qt.KeepAspectRatio)
-        #
-        # x = option.rect.center().x() - px.rect().width() / 2
-        # y = option.rect.center().y() - px.rect().height() / 2
-        #
-        # p.drawPixmap(QRect(x, y, px.rect().width(), px.rect().height()), px)
-
-
-class PowerDelegate(QStyledItemDelegate):
-    def __init__(self):
-        super(PowerDelegate, self).__init__()
-        # self.icons = {
-        #     'on': QPixmap("./GUI/icons/on.png"),
-        #     'off': QPixmap("./GUI/icons/off.png"),
-        # }
-
-    # def paint(self, p, option, index):
-        # p.fillRect(option.rect, option.palette.highlight())
-        # if option.state & QStyle.State_Selected:
-        #     p.fillRect(option.rect, option.palette.highlight())
-
-        # px = self.icons.get('on')
-        # px = px.scaled(option.rect.width(), option.rect.height(), Qt.KeepAspectRatio)
-        #
-        # x = option.rect.center().x() - px.rect().width() / 2
-        # y = option.rect.center().y() - px.rect().height() / 2
-        #
-        # p.drawPixmap(QRect(x, y, px.rect().width(), px.rect().height()), px)
-
-
 class DeviceDelegate(QStyledItemDelegate):
     def __init__(self):
         super(DeviceDelegate, self).__init__()
@@ -409,8 +399,12 @@ class DeviceDelegate(QStyledItemDelegate):
 
     def sizeHint(self, option, index):
         col = index.column()
-        if col == DevMdl.POWER:
-            return QSize(8+len(index.data()) * 16, 1)
+        if col == DevMdl.LWT:
+            return QSize(16,1)
+        elif col == DevMdl.POWER:
+            if isinstance(index.data(), dict):
+                return QSize(len(index.data().keys()) * 14, 1)
+            return QSize(1,1)
         return QStyledItemDelegate.sizeHint(self, option, index)
 
     def paint(self, p, option, index):
@@ -421,9 +415,8 @@ class DeviceDelegate(QStyledItemDelegate):
                 p.fillRect(option.rect, option.palette.highlight())
 
             px = self.icons.get(index.data().lower())
-            px = px.scaled(option.rect.width(), option.rect.height(), Qt.KeepAspectRatio)
 
-            x = option.rect.center().x() - px.rect().width() / 2
+            x = option.rect.center().x()+1 - px.rect().width() / 2
             y = option.rect.center().y() - px.rect().height() / 2
 
             p.drawPixmap(QRect(x, y, px.rect().width(), px.rect().height()), px)
@@ -431,18 +424,13 @@ class DeviceDelegate(QStyledItemDelegate):
         elif col == DevMdl.POWER:
             if option.state & QStyle.State_Selected:
                 p.fillRect(option.rect, option.palette.highlight())
-
-            for i, s in enumerate(index.data()):
-                px = self.icons.get(s.lower())
-                if px:
-                    px = px.scaled(option.rect.width(), option.rect.height(), Qt.KeepAspectRatio)
-
-                    x = option.rect.center().x()-4 - len(index.data()) * 16 / 2 + i * 16
-
-                    # x = option.rect.center().x() - px.rect().width() / 2
-                    y = option.rect.center().y() - px.rect().height() / 2
-
-                    p.drawPixmap(QRect(x, y, px.rect().width(), px.rect().height()), px)
+            if isinstance(index.data(), dict):
+                for i, s in enumerate(index.data().keys()):
+                    px = self.icons.get(index.data()[s].lower())
+                    if px:
+                        x = option.rect.center().x()+1 - len(index.data()) * 14 / 2 + i * 14
+                        y = option.rect.center().y() - px.rect().height() / 2
+                        p.drawPixmap(QRect(x, y, px.rect().width(), px.rect().height()), px)
 
         else:
             QStyledItemDelegate.paint(self, p, option, index)

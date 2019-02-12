@@ -1,7 +1,5 @@
-import sys
-from PyQt5.QtCore import QSettings, QSize
-from PyQt5.QtWidgets import QDialog, QLineEdit, QFormLayout, QPushButton, QApplication, QRadioButton, QButtonGroup, \
-    QPushButton, QGroupBox, QMessageBox, QDataWidgetMapper
+from PyQt5.QtCore import QSettings
+from PyQt5.QtWidgets import QDialog, QLineEdit, QFormLayout, QPushButton, QGroupBox, QMessageBox, QDataWidgetMapper
 
 from GUI import VLayout, HLayout
 from Util import DevMdl
@@ -53,12 +51,23 @@ class DeviceEditDialog(QDialog):
 
     def accept(self):
         full_topic = self.full_topic.text()
+
         if not full_topic.endswith('/'):
             self.full_topic.setText(full_topic + "/")
 
-        if self.topic.text() not in self.settings.childGroups():
+        if not len(self.topic.text()) > 0:
+            QMessageBox.critical(self, "Error", "Topic is required.")
+
+        elif not "%topic%" in full_topic:
+            QMessageBox.critical(self, "Error", "%topic% is required in FullTopic.")
+
+        elif not "%prefix%" in full_topic:
+            QMessageBox.critical(self, "Error", "%prefix% is required in FullTopic.")
+
+        elif self.topic.text() not in self.settings.childGroups():
             self.mapper.submit()
             self.done(QDialog.Accepted)
+
         else:
             QMessageBox.critical(self, "Error", "Device '{}' already on the device list.".format(self.topic.text()))
 

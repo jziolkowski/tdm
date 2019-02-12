@@ -1,19 +1,23 @@
-from PyQt5.QtCore import Qt, QSettings, pyqtSignal, QSortFilterProxyModel
+from functools import partial
+
+from PyQt5.QtCore import Qt, QSettings, QSortFilterProxyModel
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QWidget, QMessageBox, QDialog
+from PyQt5.QtWidgets import QWidget, QMessageBox, QDialog, QMenu, QApplication, QAction
 
 from GUI import VLayout, Toolbar, TableView, columns
 from GUI.DeviceEdit import DeviceEditDialog
-from Util import DevMdl
-from Util.models import LWTDelegate, PowerDelegate, DeviceDelegate
+from Util import DevMdl, initial_queries
+from Util.models import DeviceDelegate
 
 
 class DevicesListWidget(QWidget):
-    def __init__(self, model, *args, **kwargs):
+    def __init__(self, model, mqtt, *args, **kwargs):
         super(DevicesListWidget, self).__init__(*args, **kwargs)
         self.setWindowTitle("Devices list")
         self.setWindowState(Qt.WindowMaximized)
         self.setLayout(VLayout(margin=0))
+
+        self.mqtt = mqtt
 
         self.settings = QSettings()
         self.settings.beginGroup('Devices')
@@ -39,15 +43,94 @@ class DevicesListWidget(QWidget):
         self.device_list.setSortingEnabled(True)
         self.device_list.setWordWrap(True)
         self.device_list.setItemDelegate(DeviceDelegate())
-        # self.device_list.setItemDelegateForColumn(DevMdl.LWT, PowerDelegate())
-        # self.device_list.setItemDelegateForColumn(DevMdl.POWER, PowerDelegate())
         self.device_list.sortByColumn(DevMdl.TOPIC, Qt.AscendingOrder)
+        self.device_list.setContextMenuPolicy(Qt.CustomContextMenu)
         self.layout().addWidget(self.device_list)
 
         self.device_list.clicked.connect(self.select_device)
+        self.device_list.customContextMenuRequested.connect(self.show_list_ctx_menu)
+        self.build_ctx_menu()
+
+    def build_ctx_menu(self):
+        self.ctx_menu = QMenu()
+        self.ctx_menu.addAction("Refresh state", self.ctx_menu_refresh)
+        self.ctx_menu.addAction("Refresh telemetry", self.ctx_menu_telemetry)
+        self.ctx_menu.addSeparator()
+        self.ctx_menu.addAction("Power ON", lambda: self.ctx_menu_power(state="ON"))
+        self.ctx_menu.addAction("Power OFF", lambda: self.ctx_menu_power(state="OFF"))
+        self.ctx_menu_relays = self.ctx_menu.addMenu("Relays")
+        self.ctx_menu_relays.setEnabled(False)
+        self.ctx_menu.addSeparator()
+        ctx_menu_copy = self.ctx_menu.addMenu("Copy")
+        self.ctx_menu.addSeparator()
+        self.ctx_menu.addAction("Restart", self.ctx_menu_restart)
+
+        ctx_menu_copy.addAction("IP", lambda: self.ctx_menu_copy_value(DevMdl.IP))
+        ctx_menu_copy.addAction("MAC", lambda: self.ctx_menu_copy_value(DevMdl.MAC))
+        ctx_menu_copy.addSeparator()
+        ctx_menu_copy.addAction("Topic", lambda: self.ctx_menu_copy_value(DevMdl.TOPIC))
+        ctx_menu_copy.addAction("FullTopic", lambda: self.ctx_menu_copy_value(DevMdl.FULL_TOPIC))
+        ctx_menu_copy.addAction("STAT topic", lambda: self.ctx_menu_copy_prefix_topic("STAT"))
+        ctx_menu_copy.addAction("CMND topic", lambda: self.ctx_menu_copy_prefix_topic("CMND"))
+        ctx_menu_copy.addAction("TELE topic", lambda: self.ctx_menu_copy_prefix_topic("TELE"))
+
+    def ctx_menu_copy_value(self, column):
+        row = self.idx.row()
+        value = self.model.data(self.model.index(row, column))
+        QApplication.clipboard().setText(value)
+
+    def ctx_menu_copy_prefix_topic(self, prefix):
+        if prefix == "STAT":
+            topic = self.model.statTopic(self.idx)
+        elif prefix == "CMND":
+            topic = self.model.commandTopic(self.idx)
+        elif prefix == "TELE":
+            topic = self.model.teleTopic(self.idx)
+        QApplication.clipboard().setText(topic)
+
+    def ctx_menu_power(self, relay=None, state=None):
+        print(relay)
+        relays = self.model.data(self.model.index(self.idx.row(), DevMdl.POWER))
+        cmnd_topic = self.model.commandTopic(self.idx)
+        if relay:
+            self.mqtt.publish(cmnd_topic+relay, payload=state)
+
+        elif relays:
+            for r in relays.keys():
+                self.mqtt.publish(cmnd_topic+r, payload=state)
+
+
+    def ctx_menu_restart(self):
+        self.mqtt.publish("{}/restart".format(self.model.commandTopic(self.idx)), payload="1")
+
+    def ctx_menu_refresh(self):
+        for q in initial_queries:
+            self.mqtt.publish("{}/status".format(self.model.commandTopic(self.idx)), payload=q)
+
+    def ctx_menu_telemetry(self):
+        self.mqtt.publish("{}/status".format(self.model.commandTopic(self.idx)), payload=8)
+
+    def show_list_ctx_menu(self, at):
+        self.select_device(self.device_list.indexAt(at))
+        relays = self.model.data(self.model.index(self.idx.row(), DevMdl.POWER))
+        if relays and len(relays.keys()) > 1:
+            self.ctx_menu_relays.setEnabled(True)
+            self.ctx_menu_relays.clear()
+
+            for r in relays.keys():
+                actR = self.ctx_menu_relays.addAction("{} ON".format(r))
+                actR.triggered.connect(lambda st, x=r: self.ctx_menu_power(x, "ON"))
+                actR = self.ctx_menu_relays.addAction("{} OFF".format(r))
+                actR.triggered.connect(lambda st, x=r: self.ctx_menu_power(x, "OFF"))
+                self.ctx_menu_relays.addSeparator()
+        else:
+            self.ctx_menu_relays.setEnabled(False)
+            self.ctx_menu_relays.clear()
+
+        self.ctx_menu.popup(self.device_list.viewport().mapToGlobal(at))
 
     def select_device(self, idx):
-        self.idx = idx
+        self.idx = self.sorted_device_model.mapToSource(idx)
         self.actDevEdit.setEnabled(True)
         self.actDevDelete.setEnabled(True)
         self.device = self.model.data(self.model.index(idx.row(), DevMdl.TOPIC))
@@ -68,9 +151,7 @@ class DevicesListWidget(QWidget):
     def device_delete(self):
         topic = self.model.data(self.model.index(self.idx.row(), DevMdl.TOPIC))
         if QMessageBox.question(self, "Confirm", "Do you want to remove '{}' from devices list?".format(topic)) == QMessageBox.Yes:
-            org_idx = self.sorted_device_model.mapToSource(self.idx)
-            org_idx.model().removeRows(org_idx.row(),1)
-            self.settings.remove(topic)
+            self.model.removeRows(self.idx.row(),1)
             self.settings.sync()
 
     def closeEvent(self, event):
