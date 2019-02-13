@@ -14,8 +14,7 @@ GUI application to discover and monitor devices flashed with [Tasmota firmware](
  - MQTT console with payload preview (dbl-click an entry to display)
 
 # Planned functions
-
- - MQTT auth
+ 
  - active querying of state and telemetry (with configurable list of queried statuses)
  - dynamic and manual grouping of devices: by group topic, module, firmware revision, and more
  - group actions: reset/restart/control power/upgrade
