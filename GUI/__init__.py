@@ -2,14 +2,14 @@ from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableView, QSpinBox, QAction, QToolBar, QHeaderView
 
 # from GUI.DeviceEdit import DeviceEditDialog
-from Util import DevMdl
+from Util import DevMdl, CnsMdl
 
 columns = {
     DevMdl.LWT: ['', False, 16],
     DevMdl.TOPIC: ['', True, 1],
     DevMdl.FULL_TOPIC: ['', True, 1],
     DevMdl.FRIENDLY_NAME: ['Name', False, QHeaderView.Stretch],
-    DevMdl.MODULE: ['Module', False, QHeaderView.ResizeToContents],
+    DevMdl.MODULE: ['Module', False, QHeaderView.Stretch],
     DevMdl.MAC: ['MAC', False, QHeaderView.ResizeToContents],
     DevMdl.IP: ['IP', False, QHeaderView.ResizeToContents],
     DevMdl.FIRMWARE: ['Firmware', False, QHeaderView.ResizeToContents],
@@ -19,6 +19,15 @@ columns = {
     DevMdl.LOADAVG: ['L. avg', False, QHeaderView.ResizeToContents],
     DevMdl.TELEMETRY: ['', True, 1],
 }
+
+columns_console = {
+    CnsMdl.TIMESTAMP: ['Timestamp', False, QHeaderView.ResizeToContents],
+    CnsMdl.TOPIC: ['Topic', False, QHeaderView.ResizeToContents],
+    CnsMdl.DESCRIPTION: ['Description', False, QHeaderView.Stretch],
+    CnsMdl.PAYLOAD: ['Payload', True, 1],
+    CnsMdl.KNOWN: ['Known', True, 1],
+}
+
 
 class VLayout(QVBoxLayout):
     def __init__(self, margin=3, spacing=3, label = '', *args, **kwargs):
@@ -92,7 +101,6 @@ class TableView(QTableView):
 
     def setupColumns(self, columns):
         for col, opts in columns.items():
-            # self.model().setHeaderData(col, Qt.Horizontal, opts[0])
             self.setColumnHidden(col, opts[1])
 
             if type(opts[2]) == int:

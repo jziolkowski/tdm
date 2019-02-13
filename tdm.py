@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdi
 from GUI import *
 from GUI.Broker import BrokerDialog
 from GUI.DevicesList import DevicesListWidget
+from GUI.PayloadView import PayloadViewDialog
 from Util import initial_queries
 from Util.models import *
 from Util.mqtt import MqttClient
@@ -17,24 +18,65 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.1.3"
+        self._version = "0.1.4"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
         self.fulltopic_queue = []
         self.settings = QSettings()
-        self.setMinimumSize(QSize(1280,768))
-
-        self.mqtt = MqttClient()
-        self.mqtt.connecting.connect(self.mqtt_connecting)
-        self.mqtt.connected.connect(self.mqtt_connected)
-        self.mqtt.disconnected.connect(self.mqtt_disconnected)
-        self.mqtt.connectError.connect(self.mqtt_connectError)
-        self.mqtt.messageSignal.connect(self.mqtt_message)
+        self.setMinimumSize(QSize(1280,800))
 
         self.device_model = TasmotaDevicesModel()
         self.telemetry_model = TasmotaDevicesTree()
+        self.console_model = ConsoleModel()
 
+        self.setup_mqtt()
+        self.setup_telemetry_view()
+        self.setup_main_layout()
+        self.add_devices_tab()
+        self.build_toolbars()
+        self.setStatusBar(QStatusBar())
+
+        self.queue_timer = QTimer()
+        self.queue_timer.setSingleShot(True)
+        self.queue_timer.timeout.connect(self.mqtt_ask_for_fulltopic)
+
+        self.load_window_state()
+
+    def setup_main_layout(self):
+        self.main_splitter = QSplitter()
+        self.devices_splitter = QSplitter(Qt.Vertical)
+
+        self.mdi = QMdiArea()
+        self.mdi.setActivationOrder(QMdiArea.ActivationHistoryOrder)
+        self.mdi.setViewMode(QMdiArea.TabbedView)
+        self.mdi.setDocumentMode(True)
+
+        mdi_widget = QWidget()
+        mdi_widget.setLayout(VLayout())
+        mdi_widget.layout().addWidget(self.mdi)
+
+        self.devices_splitter.addWidget(mdi_widget)
+
+        vl_console = VLayout()
+        self.console_view = TableView()
+        self.console_view.setModel(self.console_model)
+        self.console_view.setupColumns(columns_console)
+        self.console_view.verticalHeader().setDefaultSectionSize(20)
+        self.console_view.setMinimumHeight(200)
+        vl_console.addWidget(self.console_view)
+
+        console_widget = QWidget()
+        console_widget.setLayout(vl_console)
+
+        self.devices_splitter.addWidget(console_widget)
+        self.main_splitter.addWidget(self.devices_splitter)
+        self.main_splitter.addWidget(self.tview)
+        self.setCentralWidget(self.main_splitter)
+
+        self.console_view.doubleClicked.connect(self.view_payload)
+
+    def setup_telemetry_view(self):
         self.tview = QTreeView()
         self.tview.setMinimumWidth(300)
         self.tview.setModel(self.telemetry_model)
@@ -43,43 +85,23 @@ class MainWindow(QMainWindow):
         self.tview.setIndentation(15)
         self.tview.setRootIsDecorated(False)
         self.tview.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
-
         self.tview.expandAll()
         self.tview.resizeColumnToContents(0)
 
-        self.main_splitter = QSplitter()
-        left_pane = QWidget()
+    def setup_mqtt(self):
+        self.mqtt = MqttClient()
+        self.mqtt.connecting.connect(self.mqtt_connecting)
+        self.mqtt.connected.connect(self.mqtt_connected)
+        self.mqtt.disconnected.connect(self.mqtt_disconnected)
+        self.mqtt.connectError.connect(self.mqtt_connectError)
+        self.mqtt.messageSignal.connect(self.mqtt_message)
 
-        vl_mdi = VLayout(margin=0)
-
-        self.mdi = QMdiArea()
-        self.mdi.setActivationOrder(QMdiArea.ActivationHistoryOrder)
-        self.mdi.setViewMode(QMdiArea.TabbedView)
-        self.mdi.setDocumentMode(True)
-
-        vl_mdi.addWidget(self.mdi)
-
-        self.lwMessages = QListWidget()
-        self.lwMessages.setAlternatingRowColors(True)
-        self.lwMessages.setMinimumHeight(175)
-        vl_mdi.addWidget(self.lwMessages)
-
-        tabDevicesList = DevicesListWidget(model=self.device_model, mqtt=self.mqtt)
+    def add_devices_tab(self):
+        tabDevicesList = DevicesListWidget(self)
         self.mdi.addSubWindow(tabDevicesList)
         tabDevicesList.setWindowState(Qt.WindowMaximized)
 
-        left_pane.setLayout(vl_mdi)
-        self.main_splitter.addWidget(left_pane)
-        self.main_splitter.addWidget(self.tview)
-        self.setCentralWidget(self.main_splitter)
-
-        self.build_toolbars()
-        self.setStatusBar(QStatusBar())
-
-        self.queue_timer = QTimer()
-        self.queue_timer.setSingleShot(True)
-        self.queue_timer.timeout.connect(self.mqtt_ask_for_fulltopic)
-
+    def load_window_state(self):
         wndGeometry = self.settings.value('window_geometry')
         if wndGeometry:
             self.restoreGeometry(wndGeometry)
@@ -111,7 +133,8 @@ class MainWindow(QMainWindow):
         for q in initial_queries:
             topic = "{}status".format(self.device_model.commandTopic(idx))
             self.mqtt.publish(topic, q)
-            print("Sent STATUS {} to {}".format(q, topic))
+            q = q if q else ''
+            self.console_log(topic, "Asked for STATUS {}".format(q), q)
 
     def setup_broker(self):
         brokers_dlg = BrokerDialog()
@@ -156,7 +179,6 @@ class MainWindow(QMainWindow):
 
         for t in main_topics:
             self.mqtt.subscribe(t)
-            print("Subscribed to {}".format(t))
 
     def mqtt_ask_for_fulltopic(self):
         for i in range(len(self.fulltopic_queue)):
@@ -178,7 +200,7 @@ class MainWindow(QMainWindow):
 
     def mqtt_message(self, topic, msg):
 
-        self.lwMessages.insertItem(0, "[{}] {}".format(topic, msg))
+        # self.lwMessages.insertItem(0, "[{}] {}".format(topic, msg))
 
         if topic.endswith('/LWT'):
             device_topic = self.find_device(topic)
@@ -186,7 +208,7 @@ class MainWindow(QMainWindow):
                 msg = "offline"
 
             if device_topic:
-                print("Update LWT for {}".format(device_topic))
+                self.console_log(topic, "LWT update: {}".format(msg), msg)
                 idx = self.device_model.deviceByTopic(device_topic)
                 self.device_model.updateValue(idx, DevMdl.LWT, msg)
 
@@ -196,7 +218,8 @@ class MainWindow(QMainWindow):
                 if device_topic == 'tele':
                     device_topic = split_topic[0]
 
-                print("LWT for unknown device {}. Asking for FullTopic".format(device_topic))
+                self.console_log(topic, "LWT for unknown device {}. Asking for FullTopic.".format(device_topic), msg, False)
+
                 self.fulltopic_queue.append("cmnd/{}/fulltopic".format(device_topic))
                 self.fulltopic_queue.append("{}/cmnd/fulltopic".format(device_topic))
                 self.queue_timer.start(1500)
@@ -211,7 +234,8 @@ class MainWindow(QMainWindow):
                 device_topic = self.match_topic(full_topic, topic)
                 idx = self.device_model.deviceByTopic(device_topic)
                 if not idx.isValid():
-                    print("Have fulltopic for {}".format(device_topic))
+                    self.console_log(topic, "FullTopic for {}".format(device_topic), msg, False)
+
                     new_idx = self.device_model.addDevice(device_topic, full_topic, lwt='online')
 
                     tele_idx = self.telemetry_model.addDevice(TasmotaDevice, device_topic)
@@ -219,13 +243,13 @@ class MainWindow(QMainWindow):
                     self.telemetry_model.devices[device_topic] = tele_idx
 
                     self.initial_query(new_idx)
-                    print("Added {} with fulltopic {}, querying for STATE".format(device_topic, full_topic))
+                    self.console_log(topic, "Added {} with fulltopic {}, querying for STATE".format(device_topic, full_topic), msg)
                     self.tview.expand(tele_idx)
 
             if new_topic:
                 device_topic = self.find_device(topic)
                 if device_topic and device_topic != new_topic:
-                    print("New topic for {}".format(device_topic))
+                    self.console_log(topic, "New topic for {}".format(device_topic), msg)
 
                     idx = self.device_model.deviceByTopic(device_topic)
                     self.device_model.updateValue(idx, DevMdl.TOPIC, new_topic)
@@ -242,32 +266,39 @@ class MainWindow(QMainWindow):
 
             if self.device.isValid():
                 if topic.endswith('STATUS'):
+                    self.console_log(topic, "Received device status", msg)
                     payload = loads(msg)['Status']
                     self.device_model.updateValue(self.device, DevMdl.MODULE, payload['Module'])
                     self.device_model.updateValue(self.device, DevMdl.FRIENDLY_NAME, payload['FriendlyName'][0])
 
                 elif topic.endswith('STATUS2'):
+                    self.console_log(topic, "Received firmware information", msg)
                     payload = loads(msg)['StatusFWR']
                     self.device_model.updateValue(self.device, DevMdl.FIRMWARE, payload['Version'])
 
                 elif topic.endswith('STATUS5'):
+                    self.console_log(topic, "Received network status", msg)
                     payload = loads(msg)['StatusNET']
                     self.device_model.updateValue(self.device, DevMdl.MAC, payload['Mac'])
                     self.device_model.updateValue(self.device, DevMdl.IP, payload['IPAddress'])
 
                 elif topic.endswith('STATUS8'):
+                    self.console_log(topic, "Received telemetry", msg)
                     payload = loads(msg)['StatusSNS']
                     self.parse_telemetry(payload)
 
                 elif topic.endswith('STATUS11'):
+                    self.console_log(topic, "Received device state", msg)
                     payload = loads(msg)['StatusSTS']
                     self.parse_state(payload)
 
                 elif topic.endswith('SENSOR'):
+                    self.console_log(topic, "Received telemetry", msg)
                     payload = loads(msg)
                     self.parse_telemetry(payload)
 
                 elif topic.endswith('STATE'):
+                    self.console_log(topic, "Received device state", msg)
                     payload = loads(msg)
                     self.parse_state(payload)
 
@@ -374,6 +405,19 @@ class MainWindow(QMainWindow):
         match = re.fullmatch(full_topic, topic)
         if match:
             return match.groupdict().get('topic')
+
+    def console_log(self, topic, description, payload, known=True):
+        self.console_model.addEntry(topic, description, payload, known)
+        self.console_view.resizeColumnToContents(1)
+
+    def view_payload(self, idx):
+        row = idx.row()
+        timestamp = self.console_model.data(self.console_model.index(row, CnsMdl.TIMESTAMP))
+        topic = self.console_model.data(self.console_model.index(row, CnsMdl.TOPIC))
+        payload = self.console_model.data(self.console_model.index(row, CnsMdl.PAYLOAD))
+
+        dlg = PayloadViewDialog(timestamp, topic, payload)
+        dlg.exec_()
 
     def closeEvent(self, e):
         self.settings.setValue("window_geometry", self.saveGeometry())

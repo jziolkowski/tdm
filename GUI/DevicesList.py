@@ -8,36 +8,34 @@ from GUI import VLayout, Toolbar, TableView, columns
 from GUI.DeviceEdit import DeviceEditDialog
 from Util import DevMdl, initial_queries
 from Util.models import DeviceDelegate
+from Util.nodes import TasmotaDevice
 
 
 class DevicesListWidget(QWidget):
-    def __init__(self, model, mqtt, *args, **kwargs):
+    def __init__(self, parent, *args, **kwargs):
         super(DevicesListWidget, self).__init__(*args, **kwargs)
         self.setWindowTitle("Devices list")
         self.setWindowState(Qt.WindowMaximized)
         self.setLayout(VLayout(margin=0))
 
-        self.mqtt = mqtt
+        self.mqtt = parent.mqtt
 
         self.settings = QSettings()
         self.settings.beginGroup('Devices')
 
         self.tb = Toolbar(Qt.Horizontal, 16, Qt.ToolButtonTextBesideIcon)
         self.tb.addAction(QIcon("GUI/icons/add.png"), "Add", self.device_add)
-        self.tb.addSeparator()
 
-        self.actDevEdit = self.tb.addAction(QIcon("GUI/icons/edit.png"), "Edit topics", self.device_edit)
-        self.actDevEdit.setEnabled(False)
-
-        self.actDevDelete = self.tb.addAction(QIcon("GUI/icons/delete.png"), "Delete", self.device_delete)
+        self.actDevDelete = self.tb.addAction(QIcon("GUI/icons/delete.png"), "Remove", self.device_delete)
         self.actDevDelete.setEnabled(False)
 
         self.layout().addWidget(self.tb)
 
         self.device_list = TableView()
-        self.model = model
+        self.model = parent.device_model
+        self.telemetry_model = parent.telemetry_model
         self.sorted_device_model = QSortFilterProxyModel()
-        self.sorted_device_model.setSourceModel(model)
+        self.sorted_device_model.setSourceModel(parent.device_model)
         self.device_list.setModel(self.sorted_device_model)
         self.device_list.setupColumns(columns)
         self.device_list.setSortingEnabled(True)
@@ -60,6 +58,8 @@ class DevicesListWidget(QWidget):
         self.ctx_menu.addAction("Power OFF", lambda: self.ctx_menu_power(state="OFF"))
         self.ctx_menu_relays = self.ctx_menu.addMenu("Relays")
         self.ctx_menu_relays.setEnabled(False)
+        self.ctx_menu.addSeparator()
+        self.ctx_menu.addAction("Delete retained messages for relays", lambda: self.ctx_menu_clean_retained)
         self.ctx_menu.addSeparator()
         ctx_menu_copy = self.ctx_menu.addMenu("Copy")
         self.ctx_menu.addSeparator()
@@ -88,8 +88,14 @@ class DevicesListWidget(QWidget):
             topic = self.model.teleTopic(self.idx)
         QApplication.clipboard().setText(topic)
 
+    def ctx_menu_clean_retained(self):
+        relays = self.model.data(self.model.index(self.idx.row(), DevMdl.POWER))
+        cmnd_topic = self.model.cmndTopic(self.idx)
+
+        for r in relays.keys():
+            self.mqtt.publish(cmnd_topic + r, retain=True)
+
     def ctx_menu_power(self, relay=None, state=None):
-        print(relay)
         relays = self.model.data(self.model.index(self.idx.row(), DevMdl.POWER))
         cmnd_topic = self.model.commandTopic(self.idx)
         if relay:
@@ -98,7 +104,6 @@ class DevicesListWidget(QWidget):
         elif relays:
             for r in relays.keys():
                 self.mqtt.publish(cmnd_topic+r, payload=state)
-
 
     def ctx_menu_restart(self):
         self.mqtt.publish("{}/restart".format(self.model.commandTopic(self.idx)), payload="1")
@@ -131,7 +136,7 @@ class DevicesListWidget(QWidget):
 
     def select_device(self, idx):
         self.idx = self.sorted_device_model.mapToSource(idx)
-        self.actDevEdit.setEnabled(True)
+        # self.actDevEdit.setEnabled(True)
         self.actDevDelete.setEnabled(True)
         self.device = self.model.data(self.model.index(idx.row(), DevMdl.TOPIC))
 
@@ -139,20 +144,23 @@ class DevicesListWidget(QWidget):
         rc = self.model.rowCount()
         self.model.insertRow(rc)
         dlg = DeviceEditDialog(self.model, rc)
-        self.model.setData(self.model.index(rc, DevMdl.FULL_TOPIC), "%prefix%/%topic%/")
+        dlg.full_topic.setText("%prefix%/%topic%/")
+
         if dlg.exec_() == QDialog.Accepted:
             self.model.setData(self.model.index(rc, DevMdl.FRIENDLY_NAME), self.model.data(self.model.index(rc, DevMdl.TOPIC)))
+            topic = dlg.topic.text()
+            tele_dev = self.telemetry_model.addDevice(TasmotaDevice, topic)
+            self.telemetry_model.devices[topic] = tele_dev
         else:
             self.model.removeRow(rc)
 
-    def device_edit(self):
-        dlg = DeviceEditDialog(self.model, self.idx.row()).exec_()
-
     def device_delete(self):
-        topic = self.model.data(self.model.index(self.idx.row(), DevMdl.TOPIC))
+        topic = self.model.topic(self.idx)
         if QMessageBox.question(self, "Confirm", "Do you want to remove '{}' from devices list?".format(topic)) == QMessageBox.Yes:
             self.model.removeRows(self.idx.row(),1)
-            self.settings.sync()
+            tele_idx = self.telemetry_model.devices.get(topic)
+            if tele_idx:
+                self.telemetry_model.removeRows(tele_idx.row(),1)
 
     def closeEvent(self, event):
         event.ignore()

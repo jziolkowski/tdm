@@ -1,9 +1,9 @@
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, QAbstractTableModel, QSettings, QSize, QRect
+from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, QAbstractTableModel, QSettings, QSize, QRect, QDateTime
 from PyQt5.QtGui import QIcon, QColor, QPixmap
 from PyQt5.QtWidgets import QStyledItemDelegate, QStyle
 
-from GUI import columns
-from Util import DevMdl, modules
+from GUI import columns, columns_console
+from Util import DevMdl, CnsMdl, modules
 from Util.nodes import *
 
 
@@ -127,19 +127,12 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
         if role == Qt.EditRole:
             dev = self._devices[row][DevMdl.TOPIC]
-            d = dev if dev else val
 
-            #TODO: move these to own function or refactor to saveConfig on exit
             if col == DevMdl.FRIENDLY_NAME:
-                self.settings.setValue("{}/friendly_name".format(d), val)
+                self.settings.setValue("{}/friendly_name".format(dev), val)
 
             elif col == DevMdl.FULL_TOPIC:
-                self.settings.setValue("{}/full_topic".format(d), val)
-
-            elif col == DevMdl.TOPIC:
-                self.settings.setValue("{}/full_topic".format(val), self._devices[row][DevMdl.FULL_TOPIC])
-                self.settings.setValue("{}/friendly_name".format(val), self._devices[row][DevMdl.FRIENDLY_NAME])
-                self.settings.remove(d)
+                self.settings.setValue("{}/full_topic".format(dev), val)
 
             self._devices[row][col] = val
             self.dataChanged.emit(idx, idx)
@@ -154,8 +147,13 @@ class TasmotaDevicesModel(QAbstractTableModel):
         if idx.isValid():
             row = idx.row()
             idx = self.index(row, column)
-            self._devices[row][column] = val
-            self.dataChanged.emit(idx, idx)
+            self.setData(idx, val)
+
+    def topic(self, idx):
+        if idx.isValid():
+            row = idx.row()
+            return self._devices[row][DevMdl.TOPIC]
+        return None
 
     def commandTopic(self, idx):
         if idx.isValid():
@@ -180,9 +178,46 @@ class TasmotaDevicesModel(QAbstractTableModel):
             return self._devices[idx.row()][DevMdl.FULL_TOPIC] in ["%prefix%/%topic%/", "%topic%/%prefix%/"]
 
 
-class TasmotaDevicesTree(QAbstractItemModel):
-    """INPUTS: Node, QObject"""
+class ConsoleModel(QAbstractTableModel):
+    def __init__(self, *args, **kwargs):
+        super(ConsoleModel, self).__init__(*args, **kwargs)
+        self._entries = []
 
+    def addEntry(self, topic, description, payload, known=True):
+        self.beginInsertRows(QModelIndex(), 0, 0)
+        self._entries.insert(0, [QDateTime.currentDateTime(), topic, description, payload, known])
+        self.endInsertRows()
+
+    def columnCount(self, parent=None):
+        return len(columns_console)
+
+    def rowCount(self, parent=None):
+        return len(self._entries)
+
+    def headerData(self, col, orientation, role=Qt.DisplayRole):
+        if orientation == Qt.Horizontal and role==Qt.DisplayRole:
+            if col <= len(columns_console):
+                return columns_console[col][0]
+            else:
+                return ''
+
+    def data(self, idx, role=Qt.DisplayRole):
+        if idx.isValid():
+            row = idx.row()
+            col = idx.column()
+
+            if role == Qt.DisplayRole:
+                return self._entries[row][col]
+
+            elif role == Qt.BackgroundColorRole:
+                if not self._entries[row][CnsMdl.KNOWN]:
+                    return QColor("yellow")
+
+    def flags(self, idx):
+        return Qt.ItemIsSelectable | Qt.ItemIsEnabled
+
+
+class TasmotaDevicesTree(QAbstractItemModel):
     def __init__(self, root=Node(""), parent=None):
         super(TasmotaDevicesTree, self).__init__(parent)
         self._rootNode = root
@@ -195,9 +230,6 @@ class TasmotaDevicesTree(QAbstractItemModel):
         for d in self.settings.childGroups():
             self.devices[d] = self.addDevice(TasmotaDevice, self.settings.value("{}/friendly_name".format(d), d))
 
-    """INPUTS: QModelIndex"""
-    """OUTPUT: int"""
-
     def rowCount(self, parent=QModelIndex()):
         if not parent.isValid():
             parentNode = self._rootNode
@@ -206,14 +238,8 @@ class TasmotaDevicesTree(QAbstractItemModel):
 
         return parentNode.childCount()
 
-    """INPUTS: QModelIndex"""
-    """OUTPUT: int"""
-
     def columnCount(self, parent):
         return 2
-
-    """INPUTS: QModelIndex, int"""
-    """OUTPUT: QVariant, strings are cast to QString which is a QVariant"""
 
     def data(self, index, role):
 
@@ -246,8 +272,6 @@ class TasmotaDevicesTree(QAbstractItemModel):
                 return self.index(d.row(), 0, QModelIndex())
             return None
 
-    """INPUTS: QModelIndex, QVariant, int (flag)"""
-
     def setData(self, index, value, role=Qt.EditRole):
 
         if index.isValid():
@@ -276,9 +300,6 @@ class TasmotaDevicesTree(QAbstractItemModel):
                 return True
         return False
 
-    """INPUTS: int, Qt::Orientation, int"""
-    """OUTPUT: QVariant, strings are cast to QString which is a QVariant"""
-
     def headerData(self, section, orientation, role):
         if role == Qt.DisplayRole:
             if section == 0:
@@ -286,15 +307,8 @@ class TasmotaDevicesTree(QAbstractItemModel):
             else:
                 return "Value"
 
-    """INPUTS: QModelIndex"""
-    """OUTPUT: int (flag)"""
-
     def flags(self, index):
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable
-
-    """INPUTS: QModelIndex"""
-    """OUTPUT: QModelIndex"""
-    """Should return the parent of the node with the given QModelIndex"""
 
     def parent(self, index):
 
@@ -305,10 +319,6 @@ class TasmotaDevicesTree(QAbstractItemModel):
             return QModelIndex()
 
         return self.createIndex(parentNode.row(), 0, parentNode)
-
-    """INPUTS: int, int, QModelIndex"""
-    """OUTPUT: QModelIndex"""
-    """Should return a QModelIndex that corresponds to the given row, column and parent node"""
 
     def index(self, row, column, parent):
 
@@ -321,9 +331,6 @@ class TasmotaDevicesTree(QAbstractItemModel):
         else:
             return QModelIndex()
 
-    """CUSTOM"""
-    """INPUTS: QModelIndex"""
-
     def getNode(self, index):
         if index.isValid():
             node = index.internalPointer()
@@ -331,8 +338,6 @@ class TasmotaDevicesTree(QAbstractItemModel):
                 return node
 
         return self._rootNode
-
-    """INPUTS: int, int, QModelIndex"""
 
     def insertRows(self, position, rows, parent=QModelIndex()):
 
@@ -348,7 +353,6 @@ class TasmotaDevicesTree(QAbstractItemModel):
         self.endInsertRows()
 
         return success
-
 
     def addDevice(self, device_type, name, parent=QModelIndex()):
         rc = self.rowCount(parent)
@@ -370,8 +374,6 @@ class TasmotaDevicesTree(QAbstractItemModel):
         self.endInsertRows()
 
         return dev_idx
-
-    """INPUTS: int, int, QModelIndex"""
 
     def removeRows(self, position, rows, parent=QModelIndex()):
 
