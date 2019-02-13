@@ -74,6 +74,9 @@ class MqttClient(QtCore.QObject):
         self.m_port = port
         self.portChanged.emit(port)
 
+    def setAuth(self, username, password):
+        self.m_client.username_pw_set(username, password)
+
     @QtCore.pyqtProperty(int, notify=keepAliveChanged)
     def keepAlive(self):
         return self.m_keepAlive
@@ -156,3 +159,4 @@ class MqttClient(QtCore.QObject):
         # print("on_disconnect", args)
         self.state = MqttClient.Disconnected
         self.disconnected.emit()
+

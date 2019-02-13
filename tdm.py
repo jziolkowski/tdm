@@ -3,8 +3,7 @@ import sys
 from json import loads
 
 from PyQt5.QtCore import QTimer, QSortFilterProxyModel
-from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QListWidget, QTreeView, \
-    QActionGroup, QWidget, QSizePolicy, QSplitter, QMenu
+from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QTreeView, QActionGroup, QWidget, QSizePolicy, QSplitter, QMenu
 
 from GUI import *
 from GUI.Broker import BrokerDialog
@@ -18,7 +17,7 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.1.6"
+        self._version = "0.1.7"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
@@ -164,6 +163,9 @@ class MainWindow(QMainWindow):
 
         self.mqtt.hostname = self.broker_hostname
         self.mqtt.port = self.broker_port
+
+        if self.broker_username:
+            self.mqtt.setAuth(self.broker_username, self.broker_password)
 
         if self.mqtt.state == self.mqtt.Disconnected:
             self.mqtt.connectToHost()
@@ -459,7 +461,6 @@ class MainWindow(QMainWindow):
             self.sorted_console_model.setFilterFixedString(topic)
         else:
             self.sorted_console_model.setFilterFixedString("")
-
 
     def closeEvent(self, e):
         self.settings.setValue("window_geometry", self.saveGeometry())
