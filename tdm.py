@@ -17,7 +17,7 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.1.7"
+        self._version = "0.1.8"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
@@ -286,7 +286,11 @@ class MainWindow(QMainWindow):
                     self.console_log(topic, "Received device status", msg)
                     payload = loads(msg)['Status']
                     self.device_model.updateValue(self.device, DevMdl.MODULE, payload['Module'])
-                    self.device_model.updateValue(self.device, DevMdl.FRIENDLY_NAME, payload['FriendlyName'][0])
+                    fname = payload['FriendlyName'][0]
+                    if fname == '0':
+                        pass
+                    else:
+                        self.device_model.updateValue(self.device, DevMdl.FRIENDLY_NAME, fname)
 
                 elif topic.endswith('STATUS2'):
                     self.console_log(topic, "Received firmware information", msg)

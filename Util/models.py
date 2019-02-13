@@ -411,7 +411,7 @@ class DeviceDelegate(QStyledItemDelegate):
             return QSize(16,1)
         elif col == DevMdl.POWER:
             if isinstance(index.data(), dict):
-                return QSize(len(index.data().keys()) * 14, 1)
+                return QSize(8+len(index.data().keys()) * 14, 1)
             return QSize(1,1)
         return QStyledItemDelegate.sizeHint(self, option, index)
 

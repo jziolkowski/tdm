@@ -21,7 +21,7 @@ class DevicesListWidget(QWidget):
         self.mqtt = parent.mqtt
 
         self.settings = QSettings()
-        self.settings.beginGroup('Devices')
+        self.hidden_columns = self.settings.value("hidden_columns", [1,2])
 
         self.tb = Toolbar(Qt.Horizontal, 16, Qt.ToolButtonTextBesideIcon)
         self.tb.addAction(QIcon("GUI/icons/add.png"), "Add", self.device_add)
@@ -37,7 +37,7 @@ class DevicesListWidget(QWidget):
         self.sorted_device_model = QSortFilterProxyModel()
         self.sorted_device_model.setSourceModel(parent.device_model)
         self.device_list.setModel(self.sorted_device_model)
-        self.device_list.setupColumns(columns)
+        self.device_list.setupColumns(columns, self.hidden_columns)
         self.device_list.setSortingEnabled(True)
         self.device_list.setWordWrap(True)
         self.device_list.setItemDelegate(DeviceDelegate())
@@ -47,7 +47,12 @@ class DevicesListWidget(QWidget):
 
         self.device_list.clicked.connect(self.select_device)
         self.device_list.customContextMenuRequested.connect(self.show_list_ctx_menu)
+
+        self.device_list.horizontalHeader().setContextMenuPolicy(Qt.CustomContextMenu)
+        self.device_list.horizontalHeader().customContextMenuRequested.connect(self.show_header_ctx_menu)
+
         self.build_ctx_menu()
+        self.build_header_ctx_menu()
 
     def build_ctx_menu(self):
         self.ctx_menu = QMenu()
@@ -133,6 +138,24 @@ class DevicesListWidget(QWidget):
             self.ctx_menu_relays.clear()
 
         self.ctx_menu.popup(self.device_list.viewport().mapToGlobal(at))
+
+    def build_header_ctx_menu(self):
+        self.hdr_ctx_menu = QMenu()
+        for c in columns.keys():
+            a = self.hdr_ctx_menu.addAction(columns[c][0])
+            a.setData(c)
+            a.setCheckable(True)
+            a.setChecked(not self.device_list.isColumnHidden(c))
+            a.toggled.connect(self.header_ctx_menu_toggle_col)
+
+    def show_header_ctx_menu(self, at):
+        self.hdr_ctx_menu.popup(self.device_list.horizontalHeader().viewport().mapToGlobal(at))
+
+    def header_ctx_menu_toggle_col(self, state):
+        self.device_list.setColumnHidden(self.sender().data(), not state)
+        hidden_columns = [int(c) for c in columns.keys() if self.device_list.isColumnHidden(c)]
+        self.settings.setValue("hidden_columns", hidden_columns)
+        self.settings.sync()
 
     def select_device(self, idx):
         self.idx = self.sorted_device_model.mapToSource(idx)

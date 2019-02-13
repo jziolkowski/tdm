@@ -5,9 +5,9 @@ from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableV
 from Util import DevMdl, CnsMdl
 
 columns = {
-    DevMdl.LWT: ['', False, 16],
-    DevMdl.TOPIC: ['', True, 1],
-    DevMdl.FULL_TOPIC: ['', True, 1],
+    DevMdl.LWT: ['LWT', False, QHeaderView.ResizeToContents],
+    DevMdl.TOPIC: ['Topic', True, 1],
+    DevMdl.FULL_TOPIC: ['Full topic', True, 1],
     DevMdl.FRIENDLY_NAME: ['Name', False, QHeaderView.Stretch],
     DevMdl.MODULE: ['Module', False, QHeaderView.Stretch],
     DevMdl.MAC: ['MAC', False, QHeaderView.ResizeToContents],
@@ -17,7 +17,6 @@ columns = {
     DevMdl.UPTIME: ['Uptime', False, QHeaderView.ResizeToContents],
     DevMdl.POWER: ['Power', False, QHeaderView.ResizeToContents],
     DevMdl.LOADAVG: ['L. avg', False, QHeaderView.ResizeToContents],
-    DevMdl.TELEMETRY: ['', True, 1],
 }
 
 columns_console = {
@@ -100,15 +99,20 @@ class TableView(QTableView):
         for col in columns:
             self.setColumnHidden(col, True)
 
-    def setupColumns(self, columns):
+    def setupColumns(self, columns, hidden=None):
         for col, opts in columns.items():
-            self.setColumnHidden(col, opts[1])
+            if not hidden:
+                self.setColumnHidden(col, opts[1])
 
             if type(opts[2]) == int:
                 self.setColumnWidth(col, opts[2])
 
             else:
                 self.horizontalHeader().setSectionResizeMode(col, opts[2])
+
+        if hidden:
+            for col in hidden:
+                self.setColumnHidden(int(col), True)
 
 
 class SpinBox(QSpinBox):
