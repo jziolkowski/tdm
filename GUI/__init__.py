@@ -23,7 +23,7 @@ columns = {
 columns_console = {
     CnsMdl.TIMESTAMP: ['Timestamp', False, QHeaderView.ResizeToContents],
     CnsMdl.TOPIC: ['Topic', False, QHeaderView.ResizeToContents],
-    CnsMdl.DEVICE: ['Friendly name', False, QHeaderView.ResizeToContents],
+    CnsMdl.FRIENDLY_NAME: ['Friendly name', False, QHeaderView.ResizeToContents],
     CnsMdl.DESCRIPTION: ['Description', False, QHeaderView.Stretch],
     CnsMdl.PAYLOAD: ['Payload', True, 1],
     CnsMdl.KNOWN: ['Known', True, 1],

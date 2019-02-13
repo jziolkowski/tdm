@@ -136,7 +136,6 @@ class DevicesListWidget(QWidget):
 
     def select_device(self, idx):
         self.idx = self.sorted_device_model.mapToSource(idx)
-        # self.actDevEdit.setEnabled(True)
         self.actDevDelete.setEnabled(True)
         self.device = self.model.data(self.model.index(idx.row(), DevMdl.TOPIC))
 
