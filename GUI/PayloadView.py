@@ -1,4 +1,4 @@
-from PyQt5.QtGui import  QFontDatabase
+from PyQt5.QtGui import QFontDatabase
 from PyQt5.QtWidgets import QDialog, QLineEdit, QFormLayout, QLabel, QPlainTextEdit
 from json import loads, dumps
 
@@ -20,7 +20,7 @@ class PayloadViewDialog(QDialog):
 
         pte_payload = QPlainTextEdit()
         pte_payload.setFont(fnt_mono)
-        pte_payload.setMinimumHeight(500)
+        pte_payload.setMinimumHeight(400)
         pte_payload.setReadOnly(True)
         if payload:
             payload = str(payload)

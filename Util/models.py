@@ -155,6 +155,12 @@ class TasmotaDevicesModel(QAbstractTableModel):
             return self._devices[row][DevMdl.TOPIC]
         return None
 
+    def friendly_name(self, idx):
+        if idx.isValid():
+            row = idx.row()
+            return self._devices[row][DevMdl.FRIENDLY_NAME]
+        return None
+
     def commandTopic(self, idx):
         if idx.isValid():
             row = idx.row()
@@ -183,9 +189,9 @@ class ConsoleModel(QAbstractTableModel):
         super(ConsoleModel, self).__init__(*args, **kwargs)
         self._entries = []
 
-    def addEntry(self, topic, description, payload, known=True):
+    def addEntry(self, topic, device, description, payload, known=True):
         self.beginInsertRows(QModelIndex(), 0, 0)
-        self._entries.insert(0, [QDateTime.currentDateTime(), topic, description, payload, known])
+        self._entries.insert(0, [QDateTime.currentDateTime(), topic, device, description, payload, known])
         self.endInsertRows()
 
     def columnCount(self, parent=None):

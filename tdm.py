@@ -18,9 +18,12 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.1.4"
+        self._version = "0.1.5"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
+
+        self.main_splitter = QSplitter()
+        self.devices_splitter = QSplitter(Qt.Vertical)
 
         self.fulltopic_queue = []
         self.settings = QSettings()
@@ -44,9 +47,6 @@ class MainWindow(QMainWindow):
         self.load_window_state()
 
     def setup_main_layout(self):
-        self.main_splitter = QSplitter()
-        self.devices_splitter = QSplitter(Qt.Vertical)
-
         self.mdi = QMdiArea()
         self.mdi.setActivationOrder(QMdiArea.ActivationHistoryOrder)
         self.mdi.setViewMode(QMdiArea.TabbedView)
@@ -62,6 +62,7 @@ class MainWindow(QMainWindow):
         self.console_view = TableView()
         self.console_view.setModel(self.console_model)
         self.console_view.setupColumns(columns_console)
+        self.console_view.setAlternatingRowColors(True)
         self.console_view.verticalHeader().setDefaultSectionSize(20)
         self.console_view.setMinimumHeight(200)
         vl_console.addWidget(self.console_view)
@@ -70,23 +71,25 @@ class MainWindow(QMainWindow):
         console_widget.setLayout(vl_console)
 
         self.devices_splitter.addWidget(console_widget)
-        self.main_splitter.addWidget(self.devices_splitter)
-        self.main_splitter.addWidget(self.tview)
+        self.main_splitter.insertWidget(0, self.devices_splitter)
         self.setCentralWidget(self.main_splitter)
-
         self.console_view.doubleClicked.connect(self.view_payload)
 
     def setup_telemetry_view(self):
+        tele_widget = QWidget()
+        vl_tele = VLayout()
         self.tview = QTreeView()
         self.tview.setMinimumWidth(300)
         self.tview.setModel(self.telemetry_model)
         self.tview.setAlternatingRowColors(True)
         self.tview.setUniformRowHeights(True)
         self.tview.setIndentation(15)
-        self.tview.setRootIsDecorated(False)
         self.tview.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
         self.tview.expandAll()
         self.tview.resizeColumnToContents(0)
+        vl_tele.addWidget(self.tview)
+        tele_widget.setLayout(vl_tele)
+        self.main_splitter.addWidget(tele_widget)
 
     def setup_mqtt(self):
         self.mqtt = MqttClient()
@@ -407,7 +410,10 @@ class MainWindow(QMainWindow):
             return match.groupdict().get('topic')
 
     def console_log(self, topic, description, payload, known=True):
-        self.console_model.addEntry(topic, description, payload, known)
+        device = self.find_device(topic)
+        idx = self.device_model.deviceByTopic(device)
+        fname = self.device_model.friendly_name(idx)
+        self.console_model.addEntry(topic, fname, description, payload, known)
         self.console_view.resizeColumnToContents(1)
 
     def view_payload(self, idx):
