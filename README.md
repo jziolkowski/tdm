@@ -12,6 +12,7 @@ GUI application to discover and monitor devices flashed with [Tasmota firmware](
  - relay control via context menu on device list (all ON/OFF, or individual)
  - clean retained relay topic messages.
  - MQTT console with payload preview (dbl-click an entry to display), sorting and filtering.
+ - selectable detail columns in device list
 
 # Planned functions
  
@@ -23,6 +24,7 @@ GUI application to discover and monitor devices flashed with [Tasmota firmware](
  - easy access to advanced settings and commands from Tastmota
  - quick settings for common use cases
  - rules editor
+ - customizable order of detail columns in device list
  - and much more! (you're welcome to post feature requests)
 
 # Requirements
