@@ -25,6 +25,7 @@ GUI application to discover and monitor devices flashed with [Tasmota firmware](
  - easy access to advanced settings and commands from Tastmota
  - quick settings for common use cases
  - rules editor
+ - built-in OTA server
  - customizable order of detail columns in device list
  - and much more! (you're welcome to post feature requests)
 

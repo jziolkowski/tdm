@@ -17,7 +17,7 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.1.9"
+        self._version = "0.1.10"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
@@ -216,9 +216,6 @@ class MainWindow(QMainWindow):
         self.actDisconnect.setChecked(True)
 
     def mqtt_message(self, topic, msg):
-
-        # self.lwMessages.insertItem(0, "[{}] {}".format(topic, msg))
-
         if topic.endswith('/LWT'):
             device_topic = self.find_device(topic)
             if not msg:
@@ -245,6 +242,7 @@ class MainWindow(QMainWindow):
             topic = topic.rstrip('RESULT')
             full_topic = loads(msg).get('FullTopic')
             new_topic = loads(msg).get('Topic')
+            template_name = loads(msg).get('NAME')
 
             if full_topic:
                 #TODO: update FullTopic for existing device AFTER the FullTopic changes externally (the message will arrive from new FullTopic)
@@ -277,6 +275,9 @@ class MainWindow(QMainWindow):
                         self.telemetry_model.setDeviceName(tele_idx, new_topic)
                         self.telemetry_model.devices[new_topic] = self.telemetry_model.devices.pop(device_topic)
 
+            if template_name:
+                self.device_model.updateValue(self.device, DevMdl.MODULE, template_name)
+
         else:
             self.device_topic = self.find_device(topic)
             self.device = self.device_model.deviceByTopic(self.device_topic)
@@ -285,12 +286,13 @@ class MainWindow(QMainWindow):
                 if topic.endswith('STATUS'):
                     self.console_log(topic, "Received device status", msg)
                     payload = loads(msg)['Status']
-                    self.device_model.updateValue(self.device, DevMdl.MODULE, payload['Module'])
-                    fname = payload['FriendlyName'][0]
-                    if fname == '0':
-                        pass
+                    self.device_model.updateValue(self.device, DevMdl.FRIENDLY_NAME, payload['FriendlyName'][0])
+                    module = payload['Module']
+                    if module == '0':
+                        self.mqtt.publish(self.device_model.commandTopic(self.device)+"template")
                     else:
-                        self.device_model.updateValue(self.device, DevMdl.FRIENDLY_NAME, fname)
+                        self.device_model.updateValue(self.device, DevMdl.MODULE, module)
+
 
                 elif topic.endswith('STATUS1'):
                     self.console_log(topic, "Received program information", msg)
