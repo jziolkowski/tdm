@@ -337,7 +337,10 @@ class MainWindow(QMainWindow):
                     self.parse_state(payload)
 
     def parse_state(self, payload):
-        self.device_model.updateValue(self.device, DevMdl.BSSID, payload['Wifi']['BSSId'])
+        bssid = payload['Wifi'].get('BSSId')
+        if not bssid:
+            bssid = payload['Wifi'].get('APMac')
+        self.device_model.updateValue(self.device, DevMdl.BSSID, bssid)
         self.device_model.updateValue(self.device, DevMdl.SSID, payload['Wifi']['SSId'])
         self.device_model.updateValue(self.device, DevMdl.CHANNEL, payload['Wifi']['Channel'])
         self.device_model.updateValue(self.device, DevMdl.RSSI, payload['Wifi']['RSSI'])
