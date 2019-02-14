@@ -1,7 +1,7 @@
 # Tasmota Device Manager
 GUI application to discover and monitor devices flashed with [Tasmota firmware](https://github.com/arendst/Sonoff-Tasmota)
 
-![image.png](https://github.com/jziolkowski/tdm/blob/master/image.png)
+![image.png](../assets/image.png)
 
 # Features
 
