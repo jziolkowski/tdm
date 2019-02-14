@@ -17,12 +17,16 @@ class TasmotaDevicesModel(QAbstractTableModel):
         for d in self.settings.childGroups():
             self.loadDevice(d, self.settings.value("{}/full_topic".format(d)), self.settings.value("{}/friendly_name".format(d)))
 
+        self.settings.endGroup()
+
     def addDevice(self, topic, full_topic, friendly_name="", lwt="undefined"):
         rc = self.rowCount()
         self.beginInsertRows(QModelIndex(), rc, rc)
         self._devices.append([lwt, topic, full_topic, friendly_name if friendly_name else topic] + ([''] * (len(columns) - 4)))
+        self.settings.beginGroup("Devices")
         self.settings.setValue("{}/full_topic".format(topic), full_topic)
         self.settings.setValue("{}/friendly_name".format(topic), friendly_name)
+        self.settings.endGroup()
         self.endInsertRows()
         return self.index(rc, 0)
 
@@ -57,8 +61,10 @@ class TasmotaDevicesModel(QAbstractTableModel):
             self.beginRemoveRows(parent, pos, pos + rows -1)
             for r in range(rows):
                 d = self._devices[pos][DevMdl.TOPIC]
+                self.settings.beginGroup("Devices")
                 if d in self.settings.childGroups():
                     self.settings.remove(d)
+                self.settings.endGroup()
                 self._devices.pop(pos + r)
             self.endRemoveRows()
             return True
@@ -94,14 +100,22 @@ class TasmotaDevicesModel(QAbstractTableModel):
                         return val
                     return "n/a" if self._devices[row][DevMdl.LWT] == 'online' else ''
 
+                elif col == DevMdl.BSSID:
+                    alias = self.settings.value("BSSID/{}".format(val))
+                    if alias:
+                        return alias
+
                 return self._devices[row][col]
 
             elif role == Qt.TextAlignmentRole:
-                if col in (DevMdl.RSSI, DevMdl.POWER, DevMdl.LOADAVG):
+                if col in (DevMdl.RSSI, DevMdl.MAC, DevMdl.IP, DevMdl.SSID, DevMdl.BSSID, DevMdl.CHANNEL, DevMdl.POWER, DevMdl.LOADAVG, DevMdl.CORE, DevMdl.TELEPERIOD):
                     return Qt.AlignCenter
 
                 elif col == DevMdl.UPTIME:
                     return Qt.AlignRight | Qt.AlignVCenter
+
+                elif col == DevMdl.RESTART_REASON:
+                    return Qt.AlignLeft | Qt.AlignVCenter | Qt.TextWordWrap
 
             elif role == Qt.BackgroundColorRole and col == DevMdl.RSSI:
                 rssi = self._devices[row][DevMdl.RSSI]
@@ -128,11 +142,14 @@ class TasmotaDevicesModel(QAbstractTableModel):
         if role == Qt.EditRole:
             dev = self._devices[row][DevMdl.TOPIC]
 
+            self.settings.beginGroup("Devices")
             if col == DevMdl.FRIENDLY_NAME:
                 self.settings.setValue("{}/friendly_name".format(dev), val)
 
             elif col == DevMdl.FULL_TOPIC:
                 self.settings.setValue("{}/full_topic".format(dev), val)
+
+            self.settings.endGroup()
 
             self._devices[row][col] = val
             self.dataChanged.emit(idx, idx)
@@ -182,6 +199,17 @@ class TasmotaDevicesModel(QAbstractTableModel):
     def isDefaultTemplate(self, idx):
         if idx.isValid():
             return self._devices[idx.row()][DevMdl.FULL_TOPIC] in ["%prefix%/%topic%/", "%topic%/%prefix%/"]
+
+    def bssid(self, idx):
+        if idx.isValid():
+            row = idx.row()
+            return self._devices[row][DevMdl.BSSID]
+        return None
+
+    def refreshBSSID(self):
+        first = self.index(0, DevMdl.BSSID)
+        last = self.index(self.rowCount(), DevMdl.BSSID)
+        self.dataChanged.emit(first, last)
 
 
 class ConsoleModel(QAbstractTableModel):
@@ -235,6 +263,7 @@ class TasmotaDevicesTree(QAbstractItemModel):
 
         for d in self.settings.childGroups():
             self.devices[d] = self.addDevice(TasmotaDevice, self.settings.value("{}/friendly_name".format(d), d))
+
 
     def rowCount(self, parent=QModelIndex()):
         if not parent.isValid():

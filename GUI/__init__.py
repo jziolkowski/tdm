@@ -6,17 +6,23 @@ from Util import DevMdl, CnsMdl
 
 columns = {
     DevMdl.LWT: ['LWT', False, QHeaderView.ResizeToContents],
-    DevMdl.TOPIC: ['Topic', True, 1],
-    DevMdl.FULL_TOPIC: ['Full topic', True, 1],
+    DevMdl.TOPIC: ['Topic', True, QHeaderView.ResizeToContents],
+    DevMdl.FULL_TOPIC: ['Full topic', True, QHeaderView.ResizeToContents],
     DevMdl.FRIENDLY_NAME: ['Name', False, QHeaderView.Stretch],
     DevMdl.MODULE: ['Module', False, QHeaderView.Stretch],
+    DevMdl.FIRMWARE: ['Firmware', False, QHeaderView.ResizeToContents],
+    DevMdl.CORE: ['Core', True, QHeaderView.ResizeToContents],
     DevMdl.MAC: ['MAC', False, QHeaderView.ResizeToContents],
     DevMdl.IP: ['IP', False, QHeaderView.ResizeToContents],
-    DevMdl.FIRMWARE: ['Firmware', False, QHeaderView.ResizeToContents],
+    DevMdl.SSID: ['SSID', True, QHeaderView.ResizeToContents],
+    DevMdl.BSSID: ['BSSID', True, QHeaderView.ResizeToContents],
+    DevMdl.CHANNEL: ['Channel', True, QHeaderView.ResizeToContents],
     DevMdl.RSSI: ['RSSI', False, QHeaderView.ResizeToContents],
     DevMdl.UPTIME: ['Uptime', False, QHeaderView.ResizeToContents],
+    DevMdl.RESTART_REASON: ['Restart reason', True, QHeaderView.ResizeToContents],
     DevMdl.POWER: ['Power', False, QHeaderView.ResizeToContents],
     DevMdl.LOADAVG: ['L. avg', False, QHeaderView.ResizeToContents],
+    DevMdl.TELEPERIOD: ['TelePrd.', True, QHeaderView.ResizeToContents],
 }
 
 columns_console = {

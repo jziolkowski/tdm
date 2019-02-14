@@ -2,7 +2,7 @@ from functools import partial
 
 from PyQt5.QtCore import Qt, QSettings, QSortFilterProxyModel
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QWidget, QMessageBox, QDialog, QMenu, QApplication, QAction
+from PyQt5.QtWidgets import QWidget, QMessageBox, QDialog, QMenu, QApplication, QAction, QInputDialog
 
 from GUI import VLayout, Toolbar, TableView, columns
 from GUI.DeviceEdit import DeviceEditDialog
@@ -68,6 +68,8 @@ class DevicesListWidget(QWidget):
         self.ctx_menu.addSeparator()
         ctx_menu_copy = self.ctx_menu.addMenu("Copy")
         self.ctx_menu.addSeparator()
+        self.ctx_menu.addAction("BSSID alias", self.ctx_menu_bssid)
+        self.ctx_menu.addSeparator()
         self.ctx_menu.addAction("Restart", self.ctx_menu_restart)
 
         ctx_menu_copy.addAction("IP", lambda: self.ctx_menu_copy_value(DevMdl.IP))
@@ -119,6 +121,14 @@ class DevicesListWidget(QWidget):
 
     def ctx_menu_telemetry(self):
         self.mqtt.publish("{}/status".format(self.model.commandTopic(self.idx)), payload=8)
+
+    def ctx_menu_bssid(self):
+        bssid = self.model.bssid(self.idx)
+        current = self.settings.value("BSSID/{}".format(bssid), "")
+        alias, ok = QInputDialog.getText(self, "BSSID alias", "Alias for {}. Clear to remove.".format(bssid), text=current)
+        if ok:
+            self.settings.setValue("BSSID/{}".format(bssid), alias)
+            self.model.refreshBSSID()
 
     def show_list_ctx_menu(self, at):
         self.select_device(self.device_list.indexAt(at))

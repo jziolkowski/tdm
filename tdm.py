@@ -17,7 +17,7 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.1.8"
+        self._version = "0.1.9"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
@@ -292,10 +292,21 @@ class MainWindow(QMainWindow):
                     else:
                         self.device_model.updateValue(self.device, DevMdl.FRIENDLY_NAME, fname)
 
+                elif topic.endswith('STATUS1'):
+                    self.console_log(topic, "Received program information", msg)
+                    payload = loads(msg)['StatusPRM']
+                    self.device_model.updateValue(self.device, DevMdl.RESTART_REASON, payload['RestartReason'])
+
                 elif topic.endswith('STATUS2'):
                     self.console_log(topic, "Received firmware information", msg)
                     payload = loads(msg)['StatusFWR']
                     self.device_model.updateValue(self.device, DevMdl.FIRMWARE, payload['Version'])
+                    self.device_model.updateValue(self.device, DevMdl.CORE, payload['Core'])
+
+                elif topic.endswith('STATUS3'):
+                    self.console_log(topic, "Received syslog information", msg)
+                    payload = loads(msg)['StatusLOG']
+                    self.device_model.updateValue(self.device, DevMdl.TELEPERIOD, payload['TelePeriod'])
 
                 elif topic.endswith('STATUS5'):
                     self.console_log(topic, "Received network status", msg)
@@ -324,6 +335,9 @@ class MainWindow(QMainWindow):
                     self.parse_state(payload)
 
     def parse_state(self, payload):
+        self.device_model.updateValue(self.device, DevMdl.BSSID, payload['Wifi']['BSSId'])
+        self.device_model.updateValue(self.device, DevMdl.SSID, payload['Wifi']['SSId'])
+        self.device_model.updateValue(self.device, DevMdl.CHANNEL, payload['Wifi']['Channel'])
         self.device_model.updateValue(self.device, DevMdl.RSSI, payload['Wifi']['RSSI'])
         self.device_model.updateValue(self.device, DevMdl.UPTIME, payload['Uptime'])
 
