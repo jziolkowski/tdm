@@ -342,7 +342,7 @@ class MainWindow(QMainWindow):
             bssid = payload['Wifi'].get('APMac')
         self.device_model.updateValue(self.device, DevMdl.BSSID, bssid)
         self.device_model.updateValue(self.device, DevMdl.SSID, payload['Wifi']['SSId'])
-        self.device_model.updateValue(self.device, DevMdl.CHANNEL, payload['Wifi']['Channel'])
+        self.device_model.updateValue(self.device, DevMdl.CHANNEL, payload['Wifi'].get('Channel'))
         self.device_model.updateValue(self.device, DevMdl.RSSI, payload['Wifi']['RSSI'])
         self.device_model.updateValue(self.device, DevMdl.UPTIME, payload['Uptime'])
 
