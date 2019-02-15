@@ -65,7 +65,7 @@ class DevicesListWidget(QWidget):
         relays_btn = self.ctx_menu.addMenu(self.ctx_menu_relays)
         self.ctx_menu_relays.setEnabled(False)
         self.ctx_menu.addSeparator()
-        self.ctx_menu.addAction(QIcon("GUI/icons/clear.png"), "Clear retained", lambda: self.ctx_menu_clean_retained)
+        self.ctx_menu.addAction(QIcon("GUI/icons/clear.png"), "Clear retained", self.ctx_menu_clean_retained)
         self.ctx_menu.addSeparator()
         self.ctx_menu_copy = QMenu("Copy")
         self.ctx_menu_copy.setIcon(QIcon("GUI/icons/copy.png"))
