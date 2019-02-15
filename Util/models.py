@@ -1,9 +1,11 @@
+import re
+
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, QAbstractTableModel, QSettings, QSize, QRect, QDateTime
 from PyQt5.QtGui import QIcon, QColor, QPixmap
 from PyQt5.QtWidgets import QStyledItemDelegate, QStyle
 
 from GUI import columns, columns_console
-from Util import DevMdl, CnsMdl, modules
+from Util import DevMdl, CnsMdl, modules, found_obj
 from Util.nodes import *
 
 
@@ -19,13 +21,13 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
         self.settings.endGroup()
 
-    def addDevice(self, topic, full_topic, friendly_name="", lwt="undefined"):
+    def addDevice(self, topic, full_topic, lwt="undefined"):
         rc = self.rowCount()
         self.beginInsertRows(QModelIndex(), rc, rc)
-        self._devices.append([lwt, topic, full_topic, friendly_name if friendly_name else topic] + ([''] * (len(columns) - 4)))
+        self._devices.append([lwt, topic, full_topic, topic] + ([''] * (len(columns) - 4)))
         self.settings.beginGroup("Devices")
         self.settings.setValue("{}/full_topic".format(topic), full_topic)
-        self.settings.setValue("{}/friendly_name".format(topic), friendly_name)
+        self.settings.setValue("{}/friendly_name".format(topic), full_topic)
         self.settings.endGroup()
         self.endInsertRows()
         return self.index(rc, 0)
@@ -37,11 +39,26 @@ class TasmotaDevicesModel(QAbstractTableModel):
         self.endInsertRows()        
         return True
 
-    def deviceByTopic(self, topic):
-        for i,d in enumerate(self._devices):
-            if d[DevMdl.TOPIC] == topic:
-                return self.index(i, DevMdl.LWT)
-        return QModelIndex()
+    def findDevice(self, topic):
+        split_topic = topic.split('/')
+        possible_topic = split_topic[1]
+
+        if possible_topic in ('tele', 'stat'):
+            possible_topic = split_topic[0]
+
+        for i, d in enumerate(self._devices):
+            full_topic = d[DevMdl.FULL_TOPIC] + "(?P<reply>.*)"
+            full_topic = full_topic.replace("%topic%", "(?P<topic>.*?)")
+            full_topic = full_topic.replace("%prefix%", "(?P<prefix>.*?)")
+            match = re.fullmatch(full_topic, topic)
+
+            if match:
+                found = match.groupdict()
+                if found['topic'] == d[DevMdl.TOPIC]:
+                    found.update({'index': self.index(i, DevMdl.LWT)})
+                    return found_obj(found)
+
+        return found_obj({'index': QModelIndex(), 'topic': possible_topic, 'reply': split_topic[-1]})
 
     def columnCount(self, parent=None):
         return len(columns)
@@ -141,20 +158,18 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
         if role == Qt.EditRole:
             dev = self._devices[row][DevMdl.TOPIC]
-
-            self.settings.beginGroup("Devices")
-            if col == DevMdl.FRIENDLY_NAME:
-                self.settings.setValue("{}/friendly_name".format(dev), val)
-
-            elif col == DevMdl.FULL_TOPIC:
-                self.settings.setValue("{}/full_topic".format(dev), val)
-
-            self.settings.endGroup()
-
-            self._devices[row][col] = val
-            self.dataChanged.emit(idx, idx)
-            self.settings.sync()
-            return True
+            old_val = self._devices[row][col]
+            if val != old_val:
+                self.settings.beginGroup("Devices")
+                if col == DevMdl.FRIENDLY_NAME:
+                    self.settings.setValue("{}/friendly_name".format(dev), val)
+                elif col == DevMdl.FULL_TOPIC:
+                    self.settings.setValue("{}/full_topic".format(dev), val)
+                self.settings.endGroup()
+                self._devices[row][col] = val
+                self.dataChanged.emit(idx, idx)
+                self.settings.sync()
+                return True
         return False
 
     def flags(self, idx):
@@ -204,6 +219,12 @@ class TasmotaDevicesModel(QAbstractTableModel):
         if idx.isValid():
             row = idx.row()
             return self._devices[row][DevMdl.BSSID]
+        return None
+
+    def power(self, idx):
+        if idx.isValid():
+            row = idx.row()
+            return self._devices[row][DevMdl.POWER]
         return None
 
     def refreshBSSID(self):
@@ -264,7 +285,6 @@ class TasmotaDevicesTree(QAbstractItemModel):
         for d in self.settings.childGroups():
             self.devices[d] = self.addDevice(TasmotaDevice, self.settings.value("{}/friendly_name".format(d), d))
 
-
     def rowCount(self, parent=QModelIndex()):
         if not parent.isValid():
             parentNode = self._rootNode
@@ -321,9 +341,10 @@ class TasmotaDevicesTree(QAbstractItemModel):
         if index.isValid():
             if role == Qt.EditRole:
                 node = index.internalPointer()
-                node.setFriendlyName(value)
-                self.dataChanged.emit(index, index, [Qt.DisplayRole])
-                return True
+                if value != node.friendlyName():
+                    node.setFriendlyName(value)
+                    self.dataChanged.emit(index, index, [Qt.DisplayRole])
+                    return True
         return False
 
     def setDeviceName(self, index, value, role=Qt.EditRole):

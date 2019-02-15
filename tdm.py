@@ -17,7 +17,7 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.1.10"
+        self._version = "0.1.11"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
@@ -216,152 +216,156 @@ class MainWindow(QMainWindow):
         self.actDisconnect.setChecked(True)
 
     def mqtt_message(self, topic, msg):
-        if topic.endswith('/LWT'):
-            device_topic = self.find_device(topic)
+        found = self.device_model.findDevice(topic)
+        if found.reply == 'LWT':
             if not msg:
                 msg = "offline"
 
-            if device_topic:
+            if found.index.isValid():
                 self.console_log(topic, "LWT update: {}".format(msg), msg)
-                idx = self.device_model.deviceByTopic(device_topic)
-                self.device_model.updateValue(idx, DevMdl.LWT, msg)
+                self.device_model.updateValue(found.index, DevMdl.LWT, msg)
 
             elif msg == "Online":
-                split_topic = topic.split('/')
-                device_topic = split_topic[1]
-                if device_topic == 'tele':
-                    device_topic = split_topic[0]
-
-                self.console_log(topic, "LWT for unknown device {}. Asking for FullTopic.".format(device_topic), msg, False)
-
-                self.fulltopic_queue.append("cmnd/{}/fulltopic".format(device_topic))
-                self.fulltopic_queue.append("{}/cmnd/fulltopic".format(device_topic))
+                self.console_log(topic, "LWT for unknown device '{}'. Asking for FullTopic.".format(found.topic), msg, False)
+                self.fulltopic_queue.append("cmnd/{}/fulltopic".format(found.topic))
+                self.fulltopic_queue.append("{}/cmnd/fulltopic".format(found.topic))
                 self.queue_timer.start(1500)
 
-        if topic.endswith('/RESULT'):
-            topic = topic.rstrip('RESULT')
+        elif found.reply == 'RESULT':
             full_topic = loads(msg).get('FullTopic')
             new_topic = loads(msg).get('Topic')
             template_name = loads(msg).get('NAME')
 
             if full_topic:
-                #TODO: update FullTopic for existing device AFTER the FullTopic changes externally (the message will arrive from new FullTopic)
-                device_topic = self.match_topic(full_topic, topic)
-                idx = self.device_model.deviceByTopic(device_topic)
-                if not idx.isValid():
-                    self.console_log(topic, "FullTopic for {}".format(device_topic), msg, False)
+                # TODO: update FullTopic for existing device AFTER the FullTopic changes externally (the message will arrive from new FullTopic)
+                if not found.index.isValid():
+                    self.console_log(topic, "FullTopic for {}".format(found.topic), msg, False)
 
-                    new_idx = self.device_model.addDevice(device_topic, full_topic, lwt='online')
-
-                    tele_idx = self.telemetry_model.addDevice(TasmotaDevice, device_topic)
+                    new_idx = self.device_model.addDevice(found.topic, full_topic, lwt='online')
+                    tele_idx = self.telemetry_model.addDevice(TasmotaDevice, found.topic)
+                    self.telemetry_model.devices[found.topic] = tele_idx
                     #TODO: add QSortFilterProxyModel to telemetry treeview and sort devices after adding
-                    self.telemetry_model.devices[device_topic] = tele_idx
 
                     self.initial_query(new_idx)
-                    self.console_log(topic, "Added {} with fulltopic {}, querying for STATE".format(device_topic, full_topic), msg)
+                    self.console_log(topic, "Added {} with fulltopic {}, querying for STATE".format(found.topic, full_topic), msg)
                     self.tview.expand(tele_idx)
+                    self.tview.resizeColumnToContents(0)
 
             if new_topic:
-                device_topic = self.find_device(topic)
-                if device_topic and device_topic != new_topic:
-                    self.console_log(topic, "New topic for {}".format(device_topic), msg)
+                if found.index.isValid() and found.topic != new_topic:
+                    self.console_log(topic, "New topic for {}".format(found.topic), msg)
 
-                    idx = self.device_model.deviceByTopic(device_topic)
-                    self.device_model.updateValue(idx, DevMdl.TOPIC, new_topic)
+                    self.device_model.updateValue(found.index, DevMdl.TOPIC, new_topic)
 
-                    tele_idx = self.telemetry_model.devices.get(device_topic)
+                    tele_idx = self.telemetry_model.devices.get(found.topic)
 
                     if tele_idx:
                         self.telemetry_model.setDeviceName(tele_idx, new_topic)
-                        self.telemetry_model.devices[new_topic] = self.telemetry_model.devices.pop(device_topic)
+                        self.telemetry_model.devices[new_topic] = self.telemetry_model.devices.pop(found.topic)
 
             if template_name:
-                self.device_model.updateValue(self.device, DevMdl.MODULE, template_name)
+                self.device_model.updateValue(found.index, DevMdl.MODULE, template_name)
 
+        elif found.index.isValid():
+            if found.reply == 'STATUS':
+                self.console_log(topic, "Received device status", msg)
+                payload = loads(msg)['Status']
+                self.device_model.updateValue(found.index, DevMdl.FRIENDLY_NAME, payload['FriendlyName'][0])
+                self.telemetry_model.setDeviceFriendlyName(self.telemetry_model.devices[found.topic], payload['FriendlyName'][0])
+                self.tview.resizeColumnToContents(0)
+                module = payload['Module']
+                if module == '0':
+                    self.mqtt.publish(self.device_model.commandTopic(found.index)+"template")
+                else:
+                    self.device_model.updateValue(found.index, DevMdl.MODULE, module)
+
+            elif found.reply == 'STATUS1':
+                self.console_log(topic, "Received program information", msg)
+                payload = loads(msg)['StatusPRM']
+                self.device_model.updateValue(found.index, DevMdl.RESTART_REASON, payload['RestartReason'])
+
+            elif found.reply == 'STATUS2':
+                self.console_log(topic, "Received firmware information", msg)
+                payload = loads(msg)['StatusFWR']
+                self.device_model.updateValue(found.index, DevMdl.FIRMWARE, payload['Version'])
+                self.device_model.updateValue(found.index, DevMdl.CORE, payload['Core'])
+
+            elif found.reply == 'STATUS3':
+                self.console_log(topic, "Received syslog information", msg)
+                payload = loads(msg)['StatusLOG']
+                self.device_model.updateValue(found.index, DevMdl.TELEPERIOD, payload['TelePeriod'])
+
+            elif found.reply == 'STATUS5':
+                self.console_log(topic, "Received network status", msg)
+                payload = loads(msg)['StatusNET']
+                self.device_model.updateValue(found.index, DevMdl.MAC, payload['Mac'])
+                self.device_model.updateValue(found.index, DevMdl.IP, payload['IPAddress'])
+
+            elif found.reply == 'STATUS8':
+                self.console_log(topic, "Received telemetry", msg)
+                payload = loads(msg)['StatusSNS']
+                self.parse_telemetry(found.index, payload)
+
+            elif found.reply == 'STATUS11':
+                self.console_log(topic, "Received device state", msg)
+                payload = loads(msg)['StatusSTS']
+                self.parse_state(found.index, payload)
+
+            elif found.reply == 'SENSOR':
+                self.console_log(topic, "Received telemetry", msg)
+                payload = loads(msg)
+                self.parse_telemetry(found.index, payload)
+
+            elif found.reply == 'STATE':
+                self.console_log(topic, "Received device state", msg)
+                payload = loads(msg)
+                self.parse_state(found.index, payload)
+
+            elif found.reply.startswith('POWER'):
+                self.console_log(topic, "Received {} state".format(found.reply), msg)
+                payload = {found.reply: msg}
+                self.parse_power(found.index, payload)
+
+    def parse_power(self, index, payload):
+        old = self.device_model.power(index)
+        power = {k: payload[k] for k in payload.keys() if k.startswith("POWER")}
+        needs_update = False
+        if old:
+            for k in old.keys():
+                needs_update |= old[k] != power.get(k, old[k])
+                if needs_update:
+                    break
         else:
-            self.device_topic = self.find_device(topic)
-            self.device = self.device_model.deviceByTopic(self.device_topic)
+            needs_update = True
 
-            if self.device.isValid():
-                if topic.endswith('STATUS'):
-                    self.console_log(topic, "Received device status", msg)
-                    payload = loads(msg)['Status']
-                    self.device_model.updateValue(self.device, DevMdl.FRIENDLY_NAME, payload['FriendlyName'][0])
-                    module = payload['Module']
-                    if module == '0':
-                        self.mqtt.publish(self.device_model.commandTopic(self.device)+"template")
-                    else:
-                        self.device_model.updateValue(self.device, DevMdl.MODULE, module)
+        if needs_update:
+            self.device_model.updateValue(index, DevMdl.POWER, power)
 
-
-                elif topic.endswith('STATUS1'):
-                    self.console_log(topic, "Received program information", msg)
-                    payload = loads(msg)['StatusPRM']
-                    self.device_model.updateValue(self.device, DevMdl.RESTART_REASON, payload['RestartReason'])
-
-                elif topic.endswith('STATUS2'):
-                    self.console_log(topic, "Received firmware information", msg)
-                    payload = loads(msg)['StatusFWR']
-                    self.device_model.updateValue(self.device, DevMdl.FIRMWARE, payload['Version'])
-                    self.device_model.updateValue(self.device, DevMdl.CORE, payload['Core'])
-
-                elif topic.endswith('STATUS3'):
-                    self.console_log(topic, "Received syslog information", msg)
-                    payload = loads(msg)['StatusLOG']
-                    self.device_model.updateValue(self.device, DevMdl.TELEPERIOD, payload['TelePeriod'])
-
-                elif topic.endswith('STATUS5'):
-                    self.console_log(topic, "Received network status", msg)
-                    payload = loads(msg)['StatusNET']
-                    self.device_model.updateValue(self.device, DevMdl.MAC, payload['Mac'])
-                    self.device_model.updateValue(self.device, DevMdl.IP, payload['IPAddress'])
-
-                elif topic.endswith('STATUS8'):
-                    self.console_log(topic, "Received telemetry", msg)
-                    payload = loads(msg)['StatusSNS']
-                    self.parse_telemetry(payload)
-
-                elif topic.endswith('STATUS11'):
-                    self.console_log(topic, "Received device state", msg)
-                    payload = loads(msg)['StatusSTS']
-                    self.parse_state(payload)
-
-                elif topic.endswith('SENSOR'):
-                    self.console_log(topic, "Received telemetry", msg)
-                    payload = loads(msg)
-                    self.parse_telemetry(payload)
-
-                elif topic.endswith('STATE'):
-                    self.console_log(topic, "Received device state", msg)
-                    payload = loads(msg)
-                    self.parse_state(payload)
-
-    def parse_state(self, payload):
+    def parse_state(self, index, payload):
         bssid = payload['Wifi'].get('BSSId')
         if not bssid:
             bssid = payload['Wifi'].get('APMac')
-        self.device_model.updateValue(self.device, DevMdl.BSSID, bssid)
-        self.device_model.updateValue(self.device, DevMdl.SSID, payload['Wifi']['SSId'])
-        self.device_model.updateValue(self.device, DevMdl.CHANNEL, payload['Wifi'].get('Channel'))
-        self.device_model.updateValue(self.device, DevMdl.RSSI, payload['Wifi']['RSSI'])
-        self.device_model.updateValue(self.device, DevMdl.UPTIME, payload['Uptime'])
+        self.device_model.updateValue(index, DevMdl.BSSID, bssid)
+        self.device_model.updateValue(index, DevMdl.SSID, payload['Wifi']['SSId'])
+        self.device_model.updateValue(index, DevMdl.CHANNEL, payload['Wifi'].get('Channel'))
+        self.device_model.updateValue(index, DevMdl.RSSI, payload['Wifi']['RSSI'])
+        self.device_model.updateValue(index, DevMdl.UPTIME, payload['Uptime'])
+        self.device_model.updateValue(index, DevMdl.LOADAVG, payload.get('LoadAvg'))
 
-        power = {k:payload[k] for k in payload.keys() if k.startswith("POWER")}
-        self.device_model.updateValue(self.device, DevMdl.POWER, power)
-        self.device_model.updateValue(self.device, DevMdl.LOADAVG, payload.get('LoadAvg'))
+        self.parse_power(index, payload)
 
-        tele_dev_idx = self.telemetry_model.devices.get(self.device_topic)
+        tele_idx = self.telemetry_model.devices.get(self.device_model.topic(index))
 
-        if tele_dev_idx:
-            tele_device = self.telemetry_model.getNode(tele_dev_idx)
-            self.telemetry_model.setDeviceFriendlyName(tele_dev_idx, self.device_model.data(self.device_model.index(self.device.row(), DevMdl.FRIENDLY_NAME)))
+        if tele_idx:
+            tele_device = self.telemetry_model.getNode(tele_idx)
+            self.telemetry_model.setDeviceFriendlyName(tele_idx, self.device_model.friendly_name(index))
 
             pr = tele_device.provides()
             for k in pr.keys():
                 self.telemetry_model.setData(pr[k], payload.get(k))
 
-    def parse_telemetry(self, payload):
-        device = self.telemetry_model.devices.get(self.device_topic)
+    def parse_telemetry(self, index, payload):
+        device = self.telemetry_model.devices.get(self.device_model.topic(index))
         if device:
             node = self.telemetry_model.getNode(device)
             time = node.provides()['Time']
@@ -424,32 +428,9 @@ class MainWindow(QMainWindow):
                     self.tview.expand(d)
         self.tview.resizeColumnToContents(0)
 
-    #TODO: move to devices model
-    def find_device(self, topic):
-        found = None
-        self.settings.beginGroup('Devices')
-        for d in self.settings.childGroups():
-            ft = self.settings.value('{}/full_topic'.format(d))
-            device = self.match_topic(ft, topic)
-            if device == d:
-                found = device
-                break
-        self.settings.endGroup()
-        return found
-
-    # TODO: move to devices model
-    def match_topic(self, full_topic, topic):
-        full_topic += "(?P<reply>.*)"
-        full_topic = full_topic.replace("%topic%", "(?P<topic>.*?)")
-        full_topic = full_topic.replace("%prefix%", "(?P<prefix>.*?)")
-        match = re.fullmatch(full_topic, topic)
-        if match:
-            return match.groupdict().get('topic')
-
     def console_log(self, topic, description, payload, known=True):
-        device = self.find_device(topic)
-        idx = self.device_model.deviceByTopic(device)
-        fname = self.device_model.friendly_name(idx)
+        device = self.device_model.findDevice(topic)
+        fname = self.device_model.friendly_name(device.index)
         self.console_model.addEntry(topic, fname, description, payload, known)
         self.console_view.resizeColumnToContents(1)
 
@@ -490,6 +471,7 @@ class MainWindow(QMainWindow):
         self.settings.setValue("splitter_state", self.main_splitter.saveState())
         self.settings.sync()
         e.accept()
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

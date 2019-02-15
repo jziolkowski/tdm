@@ -318,6 +318,9 @@ class TasmotaDevice(Device):
     def setFriendlyName(self, fname):
         self._friendly_name = fname
 
+    def friendlyName(self):
+        return self._friendly_name
+
     def name(self):
         if self._friendly_name:
             return self._friendly_name

@@ -102,6 +102,7 @@ class DevicesListWidget(QWidget):
 
     def ctx_menu_clean_retained(self):
         relays = self.model.data(self.model.index(self.idx.row(), DevMdl.POWER))
+        print(relays)
         if relays and len(relays.keys()>1):
             cmnd_topic = self.model.cmndTopic(self.idx)
 

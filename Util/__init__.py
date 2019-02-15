@@ -161,3 +161,10 @@ gpio = {
     "107": "Tuya Tx (107)",
     "108": "Tuya Rx (108)"
     }
+
+class found_obj(object):
+    def __init__(self, d):
+        self.__dict__ = d
+
+    def __repr__(self):
+        return "PREFIX={},TOPIC={},REPLY={}".format(self.__dict__.get('prefix'), self.__dict__.get('topic'), self.__dict__.get('reply'))
