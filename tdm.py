@@ -47,7 +47,6 @@ class MainWindow(QMainWindow):
         self.setStatusBar(QStatusBar())
 
         self.queue_timer = QTimer()
-        # self.queue_timer.setSingleShot(True)
         self.queue_timer.timeout.connect(self.mqtt_publish_queue)
         self.queue_timer.start(500)
 
@@ -149,12 +148,13 @@ class MainWindow(QMainWindow):
         main_toolbar.addSeparator()
         main_toolbar.addAction(QIcon("./GUI/icons/export.png"), "Export list", self.export)
 
-    def initial_query(self, idx):
+    def initial_query(self, idx, queued=False):
         for q in initial_queries:
             topic = "{}status".format(self.device_model.commandTopic(idx))
-            # self.mqtt.publish(topic, q, 1)
-            # q = q if q else ''
-            self.mqtt_queue.append([topic, q])
+            if queued:
+                self.mqtt_queue.append([topic, q])
+            else:
+                self.mqtt.publish(topic, q, 1)
             self.console_log(topic, "Asked for STATUS {}".format(q), q)
 
     def setup_broker(self):
@@ -233,15 +233,11 @@ class MainWindow(QMainWindow):
         for t in main_topics:
             self.mqtt.subscribe(t)
 
-    def mqtt_ask_for_fulltopic(self):
-        for i in range(len(self.fulltopic_queue)):
-            self.mqtt.publish(self.fulltopic_queue.pop(0))
-
     def mqtt_publish_queue(self):
         for q in self.mqtt_queue:
             t, p = q
             self.mqtt.publish(t, p)
-            print(self.mqtt_queue.pop(self.mqtt_queue.index(q)))
+            self.mqtt_queue.pop(self.mqtt_queue.index(q))
 
     def mqtt_disconnected(self):
         self.actToggleConnect.setIcon(QIcon("./GUI/icons/disconnect.png"))
@@ -267,7 +263,7 @@ class MainWindow(QMainWindow):
             if found.index.isValid():
                 self.console_log(topic, "LWT update: {}".format(msg), msg)
                 self.device_model.updateValue(found.index, DevMdl.LWT, msg)
-                self.initial_query(found.index)
+                self.initial_query(found.index, queued=True)
 
             elif msg == "Online":
                 self.console_log(topic, "LWT for unknown device '{}'. Asking for FullTopic.".format(found.topic), msg, False)
