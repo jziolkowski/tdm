@@ -6,7 +6,10 @@ GUI application to discover and monitor devices flashed with [Tasmota firmware](
 # Features
 
  - autodetection of devices following the default topic template for Tasmota (%prefix%/%topic%/) and for HomeAssistant Auto Discovery protocol (%topic%/%prefix%/)
+ - module and GPIO configuration
+ - rules editor
  - devices with different syntax can be added manually.
+ - toggleable active querying of telemetry
  - passive monitoring of state and telemetry (currently supported sensors are listed in "status8.json")
  - clean, readable interface
  - relay control via context menu on device list (all ON/OFF, or individual)
@@ -16,15 +19,13 @@ GUI application to discover and monitor devices flashed with [Tasmota firmware](
  - BSSID aliasing for larger deployments
 
 # Planned functions
- 
- - active querying of state and telemetry (with configurable list of queried statuses)
+  
  - dynamic and manual grouping of devices: by group topic, module, firmware revision, and more
  - group actions: reset/restart/control power/upgrade
- - console commands with topic and syntax completion
- - module and GPIO configuration
+ - console commands with topic and syntax completion 
  - easy access to advanced settings and commands from Tastmota
  - quick settings for common use cases
- - rules editor
+ - code completion in rule editor
  - built-in OTA server
  - customizable order of detail columns in device list
  - and much more! (you're welcome to post feature requests)

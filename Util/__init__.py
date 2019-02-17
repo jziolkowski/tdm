@@ -1,3 +1,4 @@
+import re
 from enum import IntEnum
 
 DevMdl = IntEnum('DevMdl', ["LWT", "TOPIC", "FULL_TOPIC", "FRIENDLY_NAME", "MODULE", "FIRMWARE", "CORE", "MAC", "IP", "SSID", "BSSID", "CHANNEL", "RSSI", "UPTIME", "RESTART_REASON", "POWER", "LOADAVG", "TELEPERIOD"], start=0)
@@ -168,3 +169,10 @@ class found_obj(object):
 
     def __repr__(self):
         return "PREFIX={},TOPIC={},REPLY={}".format(self.__dict__.get('prefix'), self.__dict__.get('topic'), self.__dict__.get('reply'))
+
+
+def match_topic(full_topic, topic):
+    full_topic = full_topic + "(?P<reply>.*)"
+    full_topic = full_topic.replace("%topic%", "(?P<topic>.*?)")
+    full_topic = full_topic.replace("%prefix%", "(?P<prefix>.*?)")
+    return re.fullmatch(full_topic, topic)

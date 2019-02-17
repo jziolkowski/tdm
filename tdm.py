@@ -1,9 +1,10 @@
-import re
 import sys
+import csv
 from json import loads
 
-from PyQt5.QtCore import QTimer, QSortFilterProxyModel
-from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QTreeView, QActionGroup, QWidget, QSizePolicy, QSplitter, QMenu
+from PyQt5.QtCore import QTimer, QSortFilterProxyModel, QDir, QTimer
+from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QTreeView, QActionGroup, QWidget, \
+    QSizePolicy, QSplitter, QMenu, QFileDialog
 
 from GUI import *
 from GUI.Broker import BrokerDialog
@@ -17,12 +18,14 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.1.11"
+        self._version = "0.1.12"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
         self.main_splitter = QSplitter()
         self.devices_splitter = QSplitter(Qt.Vertical)
+
+        self.mqtt_queue = []
 
         self.fulltopic_queue = []
         self.settings = QSettings()
@@ -44,8 +47,12 @@ class MainWindow(QMainWindow):
         self.setStatusBar(QStatusBar())
 
         self.queue_timer = QTimer()
-        self.queue_timer.setSingleShot(True)
-        self.queue_timer.timeout.connect(self.mqtt_ask_for_fulltopic)
+        # self.queue_timer.setSingleShot(True)
+        self.queue_timer.timeout.connect(self.mqtt_publish_queue)
+        self.queue_timer.start(500)
+
+        self.auto_timer = QTimer()
+        self.auto_timer.timeout.connect(self.autoupdate)
 
         self.build_cons_ctx_menu()
 
@@ -124,36 +131,64 @@ class MainWindow(QMainWindow):
             self.main_splitter.restoreState(spltState)
 
     def build_toolbars(self):
-        main_toolbar = Toolbar(orientation=Qt.Horizontal, iconsize=32, label_position=Qt.ToolButtonIconOnly)
+        main_toolbar = Toolbar(orientation=Qt.Horizontal, iconsize=16, label_position=Qt.ToolButtonTextBesideIcon)
         main_toolbar.setObjectName("main_toolbar")
         self.addToolBar(main_toolbar)
 
-        main_toolbar.addAction(QIcon("./GUI/icons/connections.png"), "Configure MQTT broker", self.setup_broker)
-        agBroker = QActionGroup(self)
-        agBroker.setExclusive(True)
+        main_toolbar.addAction(QIcon("./GUI/icons/connections.png"), "Broker", self.setup_broker)
+        self.actToggleConnect = QAction(QIcon("./GUI/icons/disconnect.png"), "MQTT")
+        self.actToggleConnect.setCheckable(True)
+        self.actToggleConnect.toggled.connect(self.toggle_connect)
+        main_toolbar.addAction(self.actToggleConnect)
 
-        self.actConnect = CheckableAction(QIcon("./GUI/icons/connect.png"), "Connect to the broker", agBroker)
-        self.actDisconnect = CheckableAction(QIcon("./GUI/icons/disconnect.png"), "Disconnect from broker", agBroker)
+        self.actToggleAutoUpdate = QAction(QIcon("./GUI/icons/automatic.png"), "Auto telemetry")
+        self.actToggleAutoUpdate.setCheckable(True)
+        self.actToggleAutoUpdate.toggled.connect(self.toggle_autoupdate)
+        main_toolbar.addAction(self.actToggleAutoUpdate)
 
-        self.actDisconnect.setChecked(True)
-
-        self.actConnect.triggered.connect(self.mqtt_connect)
-        self.actDisconnect.triggered.connect(self.mqtt_disconnect)
-
-        main_toolbar.addActions(agBroker.actions())
         main_toolbar.addSeparator()
+        main_toolbar.addAction(QIcon("./GUI/icons/export.png"), "Export list", self.export)
 
     def initial_query(self, idx):
         for q in initial_queries:
             topic = "{}status".format(self.device_model.commandTopic(idx))
-            self.mqtt.publish(topic, q)
-            q = q if q else ''
+            # self.mqtt.publish(topic, q, 1)
+            # q = q if q else ''
+            self.mqtt_queue.append([topic, q])
             self.console_log(topic, "Asked for STATUS {}".format(q), q)
 
     def setup_broker(self):
         brokers_dlg = BrokerDialog()
         if brokers_dlg.exec_() == QDialog.Accepted and self.mqtt.state == self.mqtt.Connected:
             self.mqtt.disconnect()
+
+    def toggle_autoupdate(self, state):
+        if state:
+            self.auto_timer.setInterval(5000)
+            self.auto_timer.start()
+
+    def toggle_connect(self, state):
+        if state and self.mqtt.state == self.mqtt.Disconnected:
+            self.broker_hostname = self.settings.value('hostname', 'localhost')
+            self.broker_port = self.settings.value('port', 1883, int)
+            self.broker_username = self.settings.value('username')
+            self.broker_password = self.settings.value('password')
+
+            self.mqtt.hostname = self.broker_hostname
+            self.mqtt.port = self.broker_port
+
+            if self.broker_username:
+                self.mqtt.setAuth(self.broker_username, self.broker_password)
+            self.mqtt.connectToHost()
+        elif not state and self.mqtt.state == self.mqtt.Connected:
+            self.mqtt_disconnect()
+
+    def autoupdate(self):
+        if self.mqtt.state == self.mqtt.Connected:
+            for d in range(self.device_model.rowCount()):
+                idx = self.device_model.index(d, 0)
+                cmnd = self.device_model.commandTopic(idx)
+                self.mqtt.publish(cmnd+"STATUS", payload=8)
 
     def mqtt_connect(self):
         self.broker_hostname = self.settings.value('hostname', 'localhost')
@@ -177,6 +212,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Connecting to broker")
 
     def mqtt_connected(self):
+        self.actToggleConnect.setIcon(QIcon("./GUI/icons/connect.png"))
         self.statusBar().showMessage("Connected to {}:{} as {}".format(self.broker_hostname, self.broker_port, self.broker_username if self.broker_username else '[anonymous]'))
 
         self.mqtt_subscribe()
@@ -201,7 +237,14 @@ class MainWindow(QMainWindow):
         for i in range(len(self.fulltopic_queue)):
             self.mqtt.publish(self.fulltopic_queue.pop(0))
 
+    def mqtt_publish_queue(self):
+        for q in self.mqtt_queue:
+            t, p = q
+            self.mqtt.publish(t, p)
+            print(self.mqtt_queue.pop(self.mqtt_queue.index(q)))
+
     def mqtt_disconnected(self):
+        self.actToggleConnect.setIcon(QIcon("./GUI/icons/disconnect.png"))
         self.statusBar().showMessage("Disconnected")
 
     def mqtt_connectError(self, rc):
@@ -224,12 +267,15 @@ class MainWindow(QMainWindow):
             if found.index.isValid():
                 self.console_log(topic, "LWT update: {}".format(msg), msg)
                 self.device_model.updateValue(found.index, DevMdl.LWT, msg)
+                self.initial_query(found.index)
 
             elif msg == "Online":
                 self.console_log(topic, "LWT for unknown device '{}'. Asking for FullTopic.".format(found.topic), msg, False)
-                self.fulltopic_queue.append("cmnd/{}/fulltopic".format(found.topic))
-                self.fulltopic_queue.append("{}/cmnd/fulltopic".format(found.topic))
-                self.queue_timer.start(1500)
+                self.mqtt_queue.append(["cmnd/{}/fulltopic".format(found.topic),""])
+                self.mqtt_queue.append(["{}/cmnd/fulltopic".format(found.topic),""])
+                # self.fulltopic_queue.append("cmnd/{}/fulltopic".format(found.topic))
+                # self.fulltopic_queue.append("{}/cmnd/fulltopic".format(found.topic))
+                # self.queue_timer.start(1500)
 
         elif found.reply == 'RESULT':
             full_topic = loads(msg).get('FullTopic')
@@ -326,11 +372,16 @@ class MainWindow(QMainWindow):
                 payload = {found.reply: msg}
                 self.parse_power(found.index, payload)
 
-    def parse_power(self, index, payload):
+    def parse_power(self, index, payload, from_state=False):
         old = self.device_model.power(index)
         power = {k: payload[k] for k in payload.keys() if k.startswith("POWER")}
+        # TODO: fix so that number of relays get updated properly after module/no. of relays change
         needs_update = False
         if old:
+            # if from_state and len(old) != len(power):
+            #     needs_update = True
+            #
+            # else:
             for k in old.keys():
                 needs_update |= old[k] != power.get(k, old[k])
                 if needs_update:
@@ -352,7 +403,7 @@ class MainWindow(QMainWindow):
         self.device_model.updateValue(index, DevMdl.UPTIME, payload['Uptime'])
         self.device_model.updateValue(index, DevMdl.LOADAVG, payload.get('LoadAvg'))
 
-        self.parse_power(index, payload)
+        self.parse_power(index, payload, True)
 
         tele_idx = self.telemetry_model.devices.get(self.device_model.topic(index))
 
@@ -465,6 +516,32 @@ class MainWindow(QMainWindow):
             self.sorted_console_model.setFilterFixedString(topic)
         else:
             self.sorted_console_model.setFilterFixedString("")
+
+    def export(self):
+        fname, _ = QFileDialog.getSaveFileName(self, "Export device list as...", directory=QDir.homePath(), filter="CSV files (*.csv)")
+        if fname:
+            if not fname.endswith(".csv"):
+                fname += ".csv"
+
+            with open(fname, "w", encoding='utf8') as f:
+                column_titles = ['mac', 'topic', 'friendly_name', 'full_topic', 'cmnd_topic', 'stat_topic', 'tele_topic', 'module', 'firmware', 'core']
+                c = csv.writer(f)
+                c.writerow(column_titles)
+
+                for r in range(self.device_model.rowCount()):
+                    d = self.device_model.index(r,0)
+                    c.writerow([
+                        self.device_model.mac(d),
+                        self.device_model.topic(d),
+                        self.device_model.friendly_name(d),
+                        self.device_model.fullTopic(d),
+                        self.device_model.commandTopic(d),
+                        self.device_model.statTopic(d),
+                        self.device_model.teleTopic(d),
+                        modules.get(self.device_model.module(d)),
+                        self.device_model.firmware(d),
+                        self.device_model.core(d)
+                    ])
 
     def closeEvent(self, e):
         self.settings.setValue("window_geometry", self.saveGeometry())

@@ -5,7 +5,7 @@ from PyQt5.QtGui import QIcon, QColor, QPixmap
 from PyQt5.QtWidgets import QStyledItemDelegate, QStyle
 
 from GUI import columns, columns_console
-from Util import DevMdl, CnsMdl, modules, found_obj
+from Util import DevMdl, CnsMdl, modules, found_obj, match_topic
 from Util.nodes import *
 
 
@@ -47,10 +47,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
             possible_topic = split_topic[0]
 
         for i, d in enumerate(self._devices):
-            full_topic = d[DevMdl.FULL_TOPIC] + "(?P<reply>.*)"
-            full_topic = full_topic.replace("%topic%", "(?P<topic>.*?)")
-            full_topic = full_topic.replace("%prefix%", "(?P<prefix>.*?)")
-            match = re.fullmatch(full_topic, topic)
+            match = match_topic(d[DevMdl.FULL_TOPIC], topic)
 
             if match:
                 found = match.groupdict()
@@ -182,9 +179,33 @@ class TasmotaDevicesModel(QAbstractTableModel):
             self.setData(idx, val)
 
     def topic(self, idx):
-        if idx.isValid():
+        if idx and idx.isValid():
             row = idx.row()
             return self._devices[row][DevMdl.TOPIC]
+        return None
+
+    def fullTopic(self, idx):
+        if idx and idx.isValid():
+            row = idx.row()
+            return self._devices[row][DevMdl.FULL_TOPIC]
+        return None
+
+    def module(self, idx):
+        if idx.isValid():
+            row = idx.row()
+            return self._devices[row][DevMdl.MODULE]
+        return None
+
+    def firmware(self, idx):
+        if idx.isValid():
+            row = idx.row()
+            return self._devices[row][DevMdl.FIRMWARE]
+        return None
+
+    def core(self, idx):
+        if idx.isValid():
+            row = idx.row()
+            return self._devices[row][DevMdl.CORE]
         return None
 
     def friendly_name(self, idx):
@@ -225,6 +246,18 @@ class TasmotaDevicesModel(QAbstractTableModel):
         if idx.isValid():
             row = idx.row()
             return self._devices[row][DevMdl.POWER]
+        return None
+
+    def ip(self, idx):
+        if idx.isValid():
+            row = idx.row()
+            return self._devices[row][DevMdl.IP]
+        return None
+
+    def mac(self, idx):
+        if idx.isValid():
+            row = idx.row()
+            return self._devices[row][DevMdl.MAC]
         return None
 
     def refreshBSSID(self):

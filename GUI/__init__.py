@@ -1,5 +1,7 @@
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableView, QSpinBox, QAction, QToolBar, QHeaderView
+from PyQt5.QtGui import QFontDatabase, QFont
+from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableView, QSpinBox, QAction, QToolBar, \
+    QHeaderView, QCheckBox, QPushButton, QPlainTextEdit, QLineEdit, QSizePolicy
 
 # from GUI.DeviceEdit import DeviceEditDialog
 from Util import DevMdl, CnsMdl
@@ -38,7 +40,11 @@ columns_console = {
 class VLayout(QVBoxLayout):
     def __init__(self, margin=3, spacing=3, label = '', *args, **kwargs):
         super(VLayout, self).__init__(*args, **kwargs)
-        self.setContentsMargins(margin, margin, margin, margin)
+        if isinstance(margin, int):
+            self.setContentsMargins(margin, margin, margin, margin)
+        elif isinstance(margin, list):
+            self.setContentsMargins(margin[0], margin[1], margin[2], margin[3])
+
         self.setSpacing(spacing)
 
         if label:
@@ -52,7 +58,10 @@ class VLayout(QVBoxLayout):
 class HLayout(QHBoxLayout):
     def __init__(self, margin=3, spacing=3, label='', *args, **kwargs):
         super(HLayout, self).__init__(*args, **kwargs)
-        self.setContentsMargins(margin, margin, margin, margin)
+        if isinstance(margin, int):
+            self.setContentsMargins(margin, margin, margin, margin)
+        elif isinstance(margin, list):
+            self.setContentsMargins(margin[0], margin[1], margin[2], margin[3])
         self.setSpacing(spacing)
 
         if label:
@@ -64,11 +73,30 @@ class HLayout(QHBoxLayout):
 
 
 class GroupBoxV(QGroupBox):
-    def __init__(self, title, *args, **kwargs):
+    def __init__(self, title, margin=3, spacing=3, *args, **kwargs):
         super(GroupBoxV, self).__init__(*args, **kwargs)
 
         self.setTitle(title)
-        self.setLayout(VLayout())
+
+        layout = VLayout()
+        layout.setSpacing(spacing)
+
+        if isinstance(margin, int):
+            layout.setContentsMargins(margin, margin, margin, margin)
+        elif isinstance(margin, list):
+            layout.setContentsMargins(margin[0], margin[1], margin[2], margin[3])
+
+        self.setLayout(layout)
+
+    def addWidget(self, w):
+        self.layout().addWidget(w)
+
+    def addWidgets(self, widgets):
+        for w in widgets:
+            self.layout().addWidget(w)
+
+    def addLayout(self, w):
+        self.layout().addLayout(w)
 
 
 class GroupBoxH(QGroupBox):
@@ -128,7 +156,7 @@ class SpinBox(QSpinBox):
         self.setMinimum(kwargs.get('minimum', 1))
         self.setMaximum(kwargs.get('maximum', 65535))
         self.setAlignment(Qt.AlignCenter)
-        self.setMaximumWidth(45)
+        # self.setMaximumWidth(45)
 
 
 class CheckableAction(QAction):
@@ -145,4 +173,59 @@ class Toolbar(QToolBar):
         self.setOrientation(orientation)
         self.setToolButtonStyle(label_position)
 
+
+class RuleEditor(QPlainTextEdit):
+    def __init__(self, *args, **kwargs):
+        super(RuleEditor, self).__init__(*args, **kwargs)
+
+        fnt_mono = QFont("Monospace")
+        fnt_mono.setStyleHint(QFont.TypeWriter)
+        self.setFont(fnt_mono)
+
+        self.completer = None
+
+    # def setCompleter(self, c):
+    #     if self.completer:
+
+
+class RuleGroupBox(GroupBoxH):
+    def __init__(self, parent, title, *args, **kwargs):
+        super(RuleGroupBox, self).__init__(title, parent=parent, *args, **kwargs)
+
+        self.cbEnabled = QCheckBox("Enabled")
+        self.cbOnce = QCheckBox("Once")
+        self.cbStopOnError = QCheckBox("Stop on error")
+        counter = QLabel("511 left")
+        counter.setAlignment(Qt.AlignCenter)
+
+        ll = VLayout(margin=[0,0,3,0])
+        ll.addWidgets([self.cbEnabled, self.cbOnce, self.cbStopOnError])
+        ll.addStretch(1)
+
+        self.pbLoad = QPushButton("Reload")
+        pbClear = QPushButton("Clear")
+        self.pbSave = QPushButton("Save")
+
+        rl = VLayout(margin=[3,0,0,0])
+        rl.addWidgets([self.pbLoad, pbClear, self.pbSave, counter])
+        rl.insertStretch(3,1)
+
+        self.layout().addLayout(ll)
+
+        self.text = RuleEditor()
+        self.layout().addWidget(self.text)
+
+        self.layout().addLayout(rl)
+
+        pbClear.clicked.connect(lambda: self.text.clear())
+        self.text.textChanged.connect(lambda: counter.setText("{} left".format(511-len(self.text.toPlainText()))))
+
+
+class DetailLE(QLineEdit):
+    def __init__(self, detail, *args, **kwargs):
+        super(DetailLE, self).__init__(detail, *args, **kwargs)
+
+        # self.setText(detail)
+        self.setReadOnly(True)
+        self.setAlignment(Qt.AlignCenter)
 
