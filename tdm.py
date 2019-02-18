@@ -26,6 +26,7 @@ class MainWindow(QMainWindow):
         self.devices_splitter = QSplitter(Qt.Vertical)
 
         self.mqtt_queue = []
+        self.devices = {}
 
         self.fulltopic_queue = []
         self.settings = QSettings()
@@ -314,7 +315,7 @@ class MainWindow(QMainWindow):
                 payload = loads(msg)['Status']
                 self.device_model.updateValue(found.index, DevMdl.FRIENDLY_NAME, payload['FriendlyName'][0])
                 self.telemetry_model.setDeviceFriendlyName(self.telemetry_model.devices[found.topic], payload['FriendlyName'][0])
-                self.tview.resizeColumnToContents(0)
+                # self.tview.resizeColumnToContents(0)
                 module = payload['Module']
                 if module == '0':
                     self.mqtt.publish(self.device_model.commandTopic(found.index)+"template")
@@ -473,13 +474,26 @@ class MainWindow(QMainWindow):
                     for pk in pr.keys():
                         self.telemetry_model.setData(pr[pk], payload[sensor].get(pk))
                     self.tview.expand(d)
-        self.tview.resizeColumnToContents(0)
+        # self.tview.resizeColumnToContents(0)
 
     def console_log(self, topic, description, payload, known=True):
-        device = self.device_model.findDevice(topic)
-        fname = self.device_model.friendly_name(device.index)
+        longest_tp = 0
+        longest_fn = 0
+        short_topic = "/".join(topic.split("/")[0:-1])
+        fname = self.devices.get(short_topic)
+        if not fname:
+            device = self.device_model.findDevice(topic)
+            fname = self.device_model.friendly_name(device.index)
+            self.devices.update({short_topic: fname})
         self.console_model.addEntry(topic, fname, description, payload, known)
-        self.console_view.resizeColumnToContents(1)
+
+        if len(topic) > longest_tp:
+            longest_tp = len(topic)
+            self.console_view.resizeColumnToContents(1)
+
+        if len(fname) > longest_fn:
+            longest_fn = len(fname)
+            self.console_view.resizeColumnToContents(1)
 
     def view_payload(self, idx):
         idx = self.sorted_console_model.mapToSource(idx)
