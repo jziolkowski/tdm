@@ -212,7 +212,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
         if idx.isValid():
             row = idx.row()
             return self._devices[row][DevMdl.FRIENDLY_NAME]
-        return None
+        return ""
 
     def commandTopic(self, idx):
         if idx.isValid():
