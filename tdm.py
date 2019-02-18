@@ -480,7 +480,7 @@ class MainWindow(QMainWindow):
         longest_tp = 0
         longest_fn = 0
         short_topic = "/".join(topic.split("/")[0:-1])
-        fname = self.devices.get(short_topic)
+        fname = self.devices.get(short_topic, "")
         if not fname:
             device = self.device_model.findDevice(topic)
             fname = self.device_model.friendly_name(device.index)
