@@ -253,7 +253,7 @@ class MainWindow(QMainWindow):
             5: "Not authorized",
         }
         self.statusBar().showMessage("Connection error: {}".format(reason[rc]))
-        self.actDisconnect.setChecked(True)
+        self.actToggleConnectt.setChecked(False)
 
     def mqtt_message(self, topic, msg):
         found = self.device_model.findDevice(topic)
