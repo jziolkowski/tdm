@@ -6,7 +6,7 @@ GUI application to discover and monitor devices flashed with [Tasmota firmware](
 # Features
 
  - autodetection of devices following the default topic template for Tasmota (%prefix%/%topic%/) and for HomeAssistant Auto Discovery protocol (%topic%/%prefix%/)
- - module and GPIO configuration
+ - module and GPIO configuration (see below for more screenshots)
  - rules editor
  - devices with different syntax can be added manually.
  - toggleable active querying of telemetry
@@ -38,3 +38,11 @@ PyQt5: <pre>pip install PyQt5</pre>
 paho-mqtt: <pre>pip install paho-mqtt</pre>
 
 Uses free icons from [FatCow](https://www.fatcow.com/free-icons)
+
+# Screenshots
+
+![module.png](../assets/module.png)
+
+![rules.png](../assets/rules.png)
+
+![columns.png](../assets/columns.png)
