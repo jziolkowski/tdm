@@ -1,6 +1,6 @@
 from json import loads
 
-from PyQt5.QtCore import Qt, QSettings, QTimer
+from PyQt5.QtCore import Qt, QSettings, QTimer, QDir
 from PyQt5.QtWidgets import QWidget, QTabWidget, QLineEdit, QTabBar, QLabel, QComboBox, QPushButton, QFrame, \
     QTableWidget, QHeaderView, QSizePolicy, QGroupBox, QFormLayout, QSpacerItem
 
@@ -13,7 +13,7 @@ class DevicesConfigWidget(QWidget):
     def __init__(self, parent, topic, *args, **kwargs):
         super(DevicesConfigWidget, self).__init__(*args, **kwargs)
 
-        self.settings = QSettings()
+        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
         self.topic = topic
         self.full_topic = self.settings.value('Devices/{}/full_topic'.format(topic))
         self.friendly_name = self.settings.value('Devices/{}/friendly_name'.format(topic))
