@@ -1,6 +1,6 @@
 import re
 
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, QAbstractTableModel, QSettings, QSize, QRect, QDateTime
+from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, QAbstractTableModel, QSettings, QSize, QRect, QDateTime, QDir
 from PyQt5.QtGui import QIcon, QColor, QPixmap
 from PyQt5.QtWidgets import QStyledItemDelegate, QStyle
 
@@ -12,7 +12,7 @@ from Util.nodes import *
 class TasmotaDevicesModel(QAbstractTableModel):
     def __init__(self, *args, **kwargs):
         super(TasmotaDevicesModel, self).__init__(*args, **kwargs)
-        self.settings = QSettings()
+        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
         self.settings.beginGroup("Devices")
         self._devices = []
 
@@ -145,6 +145,9 @@ class TasmotaDevicesModel(QAbstractTableModel):
             elif role == Qt.ToolTipRole:
                 if col == DevMdl.FIRMWARE:
                     return self._devices[row][DevMdl.FIRMWARE]
+
+                elif col == DevMdl.BSSID:
+                    return self._devices[row][DevMdl.BSSID]
 
                 elif col == DevMdl.FRIENDLY_NAME:
                     return "Topic: {}\nFull topic: {}".format(self._devices[row][DevMdl.TOPIC], self._devices[row][DevMdl.FULL_TOPIC])
@@ -312,7 +315,7 @@ class TasmotaDevicesTree(QAbstractItemModel):
 
         self.devices = {}
 
-        self.settings = QSettings()
+        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
         self.settings.beginGroup("Devices")
 
         for d in self.settings.childGroups():

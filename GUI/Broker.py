@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QSettings
+from PyQt5.QtCore import QSettings, QDir
 from PyQt5.QtWidgets import QDialog, QLineEdit, QFormLayout, QPushButton, QGroupBox
 
 from GUI import SpinBox, HLayout, VLayout
@@ -10,7 +10,7 @@ class BrokerDialog(QDialog):
 
         self.setWindowTitle("MQTT Broker")
 
-        self.settings = QSettings()
+        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
 
         gbHost = QGroupBox("Hostname and port")
         hfl = QFormLayout()

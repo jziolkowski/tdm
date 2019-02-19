@@ -1,8 +1,6 @@
-from functools import partial
-
-from PyQt5.QtCore import Qt, QSettings, QSortFilterProxyModel, QUrl
+from PyQt5.QtCore import Qt, QSettings, QSortFilterProxyModel, QUrl, QDir
 from PyQt5.QtGui import QIcon, QDesktopServices
-from PyQt5.QtWidgets import QWidget, QMessageBox, QDialog, QMenu, QApplication, QAction, QInputDialog, QActionGroup, QToolButton
+from PyQt5.QtWidgets import QWidget, QMessageBox, QDialog, QMenu, QApplication, QToolButton
 
 from GUI import VLayout, Toolbar, TableView, columns
 from GUI.DeviceConfig import DevicesConfigWidget
@@ -23,7 +21,7 @@ class DevicesListWidget(QWidget):
         self.mdi = parent.mdi
         self.idx = None
 
-        self.settings = QSettings()
+        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
         self.hidden_columns = self.settings.value("hidden_columns", [1, 2])
 
         self.tb = Toolbar(Qt.Horizontal, 16, Qt.ToolButtonTextBesideIcon)
@@ -86,7 +84,7 @@ class DevicesListWidget(QWidget):
 
         self.ctx_menu_copy.addAction("IP", lambda: self.ctx_menu_copy_value(DevMdl.IP))
         self.ctx_menu_copy.addAction("MAC", lambda: self.ctx_menu_copy_value(DevMdl.MAC))
-        self.ctx_menu_copy.addAction("BSSID", lambda: self.ctx_menu_copy_value(DevMdl.BSSID))
+        self.ctx_menu_copy.addAction("BSSID", self.ctx_menu_copy_bssid)
         self.ctx_menu_copy.addSeparator()
         self.ctx_menu_copy.addAction("Topic", lambda: self.ctx_menu_copy_value(DevMdl.TOPIC))
         self.ctx_menu_copy.addAction("FullTopic", lambda: self.ctx_menu_copy_value(DevMdl.FULL_TOPIC))
@@ -104,6 +102,10 @@ class DevicesListWidget(QWidget):
             value = self.model.data(self.model.index(row, column))
             QApplication.clipboard().setText(value)
 
+    def ctx_menu_copy_bssid(self):
+        if self.idx:
+            QApplication.clipboard().setText(self.model.bssid(self.idx))
+
     def ctx_menu_copy_prefix_topic(self, prefix):
         if self.idx:
             if prefix == "STAT":
@@ -117,7 +119,7 @@ class DevicesListWidget(QWidget):
     def ctx_menu_clean_retained(self):
         if self.idx:
             relays = self.model.data(self.model.index(self.idx.row(), DevMdl.POWER))
-            if relays and len(relays.keys()>1):
+            if relays and len(relays.keys()) > 0:
                 cmnd_topic = self.model.cmndTopic(self.idx)
 
                 for r in relays.keys():
@@ -147,15 +149,6 @@ class DevicesListWidget(QWidget):
     def ctx_menu_telemetry(self):
         if self.idx:
             self.mqtt.publish("{}/status".format(self.model.commandTopic(self.idx)), payload=8)
-
-    def ctx_menu_bssid(self):
-        if self.idx:
-            bssid = self.model.bssid(self.idx)
-            current = self.settings.value("BSSID/{}".format(bssid), "")
-            alias, ok = QInputDialog.getText(self, "BSSID alias", "Alias for {}. Clear to remove.".format(bssid), text=current)
-            if ok:
-                self.settings.setValue("BSSID/{}".format(bssid), alias)
-                self.model.refreshBSSID()
 
     def ctx_menu_webui(self):
         if self.idx:

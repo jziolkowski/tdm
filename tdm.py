@@ -2,11 +2,12 @@ import sys
 import csv
 from json import loads
 
-from PyQt5.QtCore import QTimer, QSortFilterProxyModel, QDir, QTimer
-from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QTreeView, QActionGroup, QWidget, \
-    QSizePolicy, QSplitter, QMenu, QFileDialog
+from PyQt5.QtCore import QSortFilterProxyModel, QDir, QTimer
+from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QTreeView, QWidget, \
+    QSplitter, QMenu, QFileDialog
 
 from GUI import *
+from GUI.BSSID import BSSIdDialog
 from GUI.Broker import BrokerDialog
 from GUI.DevicesList import DevicesListWidget
 from GUI.PayloadView import PayloadViewDialog
@@ -18,7 +19,7 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.1.12"
+        self._version = "0.1.13"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
@@ -29,8 +30,14 @@ class MainWindow(QMainWindow):
         self.devices = {}
 
         self.fulltopic_queue = []
-        self.settings = QSettings()
+        old_settings = QSettings()
+
+        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
         self.setMinimumSize(QSize(1280,800))
+
+        for k in old_settings.allKeys():
+            self.settings.setValue(k, old_settings.value(k))
+            old_settings.remove(k)
 
         self.device_model = TasmotaDevicesModel()
         self.telemetry_model = TasmotaDevicesTree()
@@ -147,6 +154,7 @@ class MainWindow(QMainWindow):
         main_toolbar.addAction(self.actToggleAutoUpdate)
 
         main_toolbar.addSeparator()
+        main_toolbar.addAction(QIcon("./GUI/icons/bssid.png"), "BSSId", self.bssid)
         main_toolbar.addAction(QIcon("./GUI/icons/export.png"), "Export list", self.export)
 
     def initial_query(self, idx, queued=False):
@@ -552,6 +560,10 @@ class MainWindow(QMainWindow):
                         self.device_model.firmware(d),
                         self.device_model.core(d)
                     ])
+
+    def bssid(self):
+        BSSIdDialog().exec_()
+        # if dlg.exec_() == QDialog.Accepted:
 
     def closeEvent(self, e):
         self.settings.setValue("window_geometry", self.saveGeometry())
