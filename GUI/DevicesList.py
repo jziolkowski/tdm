@@ -120,7 +120,7 @@ class DevicesListWidget(QWidget):
         if self.idx:
             relays = self.model.data(self.model.index(self.idx.row(), DevMdl.POWER))
             if relays and len(relays.keys()) > 0:
-                cmnd_topic = self.model.cmndTopic(self.idx)
+                cmnd_topic = self.model.commandTopic(self.idx)
 
                 for r in relays.keys():
                     self.mqtt.publish(cmnd_topic + r, retain=True)
