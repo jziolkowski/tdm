@@ -11,15 +11,21 @@ columns = {
     DevMdl.TOPIC: ['Topic', True, QHeaderView.ResizeToContents],
     DevMdl.FULL_TOPIC: ['Full topic', True, QHeaderView.ResizeToContents],
     DevMdl.FRIENDLY_NAME: ['Name', False, QHeaderView.Stretch],
+
     DevMdl.MODULE: ['Module', False, QHeaderView.Stretch],
     DevMdl.FIRMWARE: ['Firmware', False, QHeaderView.ResizeToContents],
     DevMdl.CORE: ['Core', True, QHeaderView.ResizeToContents],
+
     DevMdl.MAC: ['MAC', False, QHeaderView.ResizeToContents],
     DevMdl.IP: ['IP', False, QHeaderView.ResizeToContents],
+
     DevMdl.SSID: ['SSID', True, QHeaderView.ResizeToContents],
     DevMdl.BSSID: ['BSSID', True, QHeaderView.ResizeToContents],
     DevMdl.CHANNEL: ['Channel', True, QHeaderView.ResizeToContents],
     DevMdl.RSSI: ['RSSI', False, QHeaderView.ResizeToContents],
+    DevMdl.LINKCOUNT: ['LinkCnt', False, QHeaderView.ResizeToContents],
+    DevMdl.DOWNTIME: ['Downtime', False, QHeaderView.ResizeToContents],
+
     DevMdl.UPTIME: ['Uptime', False, QHeaderView.ResizeToContents],
     DevMdl.RESTART_REASON: ['Restart reason', True, QHeaderView.ResizeToContents],
     DevMdl.POWER: ['Power', False, QHeaderView.ResizeToContents],
@@ -71,7 +77,6 @@ class HLayout(QHBoxLayout):
         for w in widgets:
             self.addWidget(w)
 
-
 class GroupBoxV(QGroupBox):
     def __init__(self, title, margin=3, spacing=3, *args, **kwargs):
         super(GroupBoxV, self).__init__(*args, **kwargs)
@@ -100,11 +105,19 @@ class GroupBoxV(QGroupBox):
 
 
 class GroupBoxH(QGroupBox):
-    def __init__(self, title, *args, **kwargs):
-        super(GroupBoxH, self).__init__(*args, **kwargs)
-        self.setTitle(title)
-
+    def __init__(self, title, margin=None, spacing=None, *args, **kwargs):
+        super(GroupBoxH, self).__init__(title)
         self.setLayout(HLayout())
+
+    def addWidget(self, w):
+        self.layout().addWidget(w)
+
+    def addWidgets(self, widgets):
+        for w in widgets:
+            self.layout().addWidget(w)
+
+    def addLayout(self, w):
+        self.layout().addLayout(w)
 
 
 class TableView(QTableView):

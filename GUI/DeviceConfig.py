@@ -1,11 +1,13 @@
 from json import loads
 
 from PyQt5.QtCore import Qt, QSettings, QTimer, QDir
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QWidget, QTabWidget, QLineEdit, QTabBar, QLabel, QComboBox, QPushButton, QFrame, \
-    QTableWidget, QHeaderView, QSizePolicy, QGroupBox, QFormLayout, QSpacerItem
+    QTableWidget, QHeaderView, QSizePolicy, QGroupBox, QFormLayout, QSpacerItem, QTreeView
 
 from GUI import VLayout, HLayout, RuleGroupBox, GroupBoxH, SpinBox, DetailLE, GroupBoxV
 from Util import match_topic
+from Util.libtasmota import modules
 from Util.mqtt import MqttClient
 
 
@@ -34,7 +36,16 @@ class DevicesConfigWidget(QWidget):
         self.current_gpios = {}
 
         self.setLayout(VLayout(margin=[0, 6, 0, 0], spacing=3))
-        self.build_detail_row()
+
+        self.lbModule = QLabel("")
+        fnt = self.lbModule.font()
+        fnt.setPointSize(14)
+        fnt.setBold(True)
+        self.lbModule.setFont(fnt)
+        self.lbModule.setAlignment(Qt.AlignCenter)
+        self.lbModule.setMaximumHeight(20)
+        self.layout().addWidget(self.lbModule)
+
         self.build_tabs()
 
         self.create_timers()
@@ -52,35 +63,23 @@ class DevicesConfigWidget(QWidget):
     def build_tabs(self):
         self.tabs = QTabWidget()
 
-        self.rule_grps = []
+        tabInformation = self.tabInformation()
+        self.tabs.addTab(tabInformation, "Information")
+
         tabModule = self.tabModule()
         self.tabs.addTab(tabModule, "Module | Firmware")
+
+        self.rule_grps = []
         tabRules = self.tabRules()
         self.tabs.addTab(tabRules, "Rules")
         self.pbRTSet.clicked.connect(self.saveRuleTimers)
         self.pbVMSet.clicked.connect(self.saveVarMem)
         for r in range(3):
             self.rule_grps[r].pbSave.clicked.connect(lambda x, r=r: self.saveRule(r))
+
         self.tabs.currentChanged.connect(self.tabChanged)
         self.tabs.setEnabled(False)
         self.layout().addWidget(self.tabs)
-
-    def build_detail_row(self):
-        frDetails = QFrame()
-        frDetails.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
-        hl_details = HLayout()
-        leTopic = DetailLE(self.topic)
-        hl_details.addWidgets([QLabel("Topic"), leTopic])
-        leFTopic = DetailLE(self.full_topic)
-        hl_details.addWidgets([QLabel("FullTopic"), leFTopic])
-        # self.leMAC = DetailLE("")
-        # hl_details.addWidgets([QLabel("MAC"), self.leMAC])
-        # self.leIP = DetailLE("")
-        # hl_details.addWidgets([QLabel("IP"), self.leIP])
-        self.leGTopic = DetailLE("")
-        hl_details.addWidgets([QLabel("GroupTopic"), self.leGTopic])
-        frDetails.setLayout(hl_details)
-        self.layout().addWidget(frDetails)
 
     def auto(self):
         if self.mqtt.state == self.mqtt.Connected:
@@ -91,14 +90,13 @@ class DevicesConfigWidget(QWidget):
                 self.loadVarMem()
 
     def tabChanged(self, tab):
-        if tab == 1:
+        # if tab == 1:
+
+
+        if tab == 2:
             self.loadRule()
             self.loadRuleTimers()
             self.loadVarMem()
-
-    def torture(self):
-        # self.mqtt.publish(self.cmnd_topic + "status", payload="0")
-        print('x')
 
     def setupMqtt(self):
         self.mqtt.hostname = self.settings.value('hostname', 'localhost')
@@ -156,16 +154,75 @@ class DevicesConfigWidget(QWidget):
                 else:
                     print(msg)
 
+            elif reply in ("STATE", "STATUS11"):
+                msg = loads(msg)
+                if reply == "STATUS11":
+                    msg = msg['StatusSTS']
+
+                self.wifi_model.item(0, 1).setText("{} ({})".format(msg['Wifi'].get('SSId', "n/a"), msg['Wifi'].get('RSSI', "n/a")))
+
+            elif reply == "STATUS":
+                msg = loads(msg)['Status']
+                self.lbModule.setText(modules.get(msg.get("Module")))
+
+                for i, fn in enumerate(msg['FriendlyName']):
+                    self.program_model.item(6+i, 1).setText(msg['FriendlyName'][i])
+
+                self.mqtt_model.item(4, 1).setText("{}".format(msg.get('Topic', "n/a")))
+
             elif reply == "STATUS1":
                 msg = loads(msg)['StatusPRM']
-                self.leGTopic.setText(msg.get("GroupTopic"))
+                self.program_model.item(3, 1).setText("{} @{}".format(msg.get('SaveCount', "n/a"), msg.get('SaveAddress', "n/a")))
+                self.program_model.item(4, 1).setText("{}".format(msg.get('BootCount', "n/a")))
+                self.program_model.item(5, 1).setText("{}".format(msg.get('RestartReason', "n/a")))
+                self.mqtt_model.item(5, 1).setText("{}".format(msg.get('GroupTopic', "n/a")))
+
+            elif reply == "STATUS2":
+                msg = loads(msg)['StatusFWR']
+                self.program_model.item(0, 1).setText("{}".format(msg.get('Version', "n/a")))
+                self.program_model.item(1, 1).setText("{}".format(msg.get('BuildDateTime', "n/a")))
+                self.program_model.item(2, 1).setText("{} / {}".format(msg.get('Core', "n/a"), msg.get('SDK', "n/a")))
+
+            elif reply == "STATUS3":
+                msg = loads(msg)['StatusLOG']
+
+            elif reply == "STATUS4":
+                msg = loads(msg)['StatusMEM']
+                self.esp_model.item(0, 1).setText("n/a")
+                self.esp_model.item(1, 1).setText("{}".format(msg.get('FlashChipId', "n/a")))
+                self.esp_model.item(2, 1).setText("{}".format(msg.get('FlashSize', "n/a")))
+                self.esp_model.item(3, 1).setText("{}".format(msg.get('ProgramFlashSize', "n/a")))
+                self.esp_model.item(4, 1).setText("n/a")
+                self.esp_model.item(5, 1).setText("{}".format(msg.get('Free', "n/a")))
+                self.esp_model.item(6, 1).setText("{}".format(msg.get('Heap', "n/a")))
+
+            elif reply == "STATUS5":
+                msg = loads(msg)['StatusNET']
+                self.wifi_model.item(1, 1).setText("{}".format(msg.get('Hostname', "n/a")))
+                self.wifi_model.item(2, 1).setText("{}".format(msg.get('IPAddress', "n/a")))
+                self.wifi_model.item(3, 1).setText("{}".format(msg.get('Gateway', "n/a")))
+                self.wifi_model.item(4, 1).setText("{}".format(msg.get('Subnetmask', "n/a")))
+                self.wifi_model.item(5, 1).setText("{}".format(msg.get('DNSServer', "n/a")))
+                self.wifi_model.item(6, 1).setText("{}".format(msg.get('Mac', "n/a")))
+
+            elif reply == "STATUS6":
+                msg = loads(msg)['StatusMQT']
+                self.mqtt_model.item(0, 1).setText("{}".format(msg.get('MqttHost', "n/a")))
+                self.mqtt_model.item(1, 1).setText("{}".format(msg.get('MqttPort', "n/a")))
+                self.mqtt_model.item(2, 1).setText("{}".format(msg.get('MqttUser', "n/a")))
+                self.mqtt_model.item(3, 1).setText("{}".format(msg.get('MqttClient', "n/a")))
+                self.mqtt_model.item(6, 1).setText("{}".format(self.full_topic))
+                self.mqtt_model.item(7, 1).setText("cmnd/{}_fb".format(msg.get('MqttClient', "n/a")))
+
+            elif reply == "STATUS7":
+                msg = loads(msg)['StatusTIM']
 
     def initial_query(self):
+        self.mqtt.publish(self.cmnd_topic + "status", 0)
         self.mqtt.publish(self.cmnd_topic + "module")
         self.mqtt.publish(self.cmnd_topic + "modules")
         self.mqtt.publish(self.cmnd_topic + "gpio")
         self.mqtt.publish(self.cmnd_topic + "gpios")
-        self.mqtt.publish(self.cmnd_topic + "status", 1)
 
     def parseModules(self, msg):
         k = list(msg)[0]
@@ -183,11 +240,13 @@ class DevicesConfigWidget(QWidget):
             self.updateCBModules()
 
     def updateCBModules(self):
+        self.cbModule.clear()
         self.cbModule.addItems(self.modules)
         self.cbModule.setCurrentText(self.module)
 
     def updateCBGpios(self):
         for i, cb in enumerate(self.gpios):
+            cb.clear()
             cb.addItems(self.supported_gpios)
             cb.setCurrentText(self.current_gpios[list(self.current_gpios)[i]])
 
@@ -286,6 +345,117 @@ class DevicesConfigWidget(QWidget):
             for c in range(5):
                 self.mqtt.publish(self.cmnd_topic + "{}{}".format(cmd, c+1), payload=self.twVM.cellWidget(r, c).text())
 
+    def tabInformation(self):
+        info = QWidget()
+        vl = VLayout()
+
+        self.program_model = QStandardItemModel()
+        for d in ["Program version", "Build date & time", "Core/SDK version", "Flash write count", "Boot count", "Restart reason", "Friendly Name 1", "Friendly Name 2", "Friendly Name 3", "Friendly Name 4"]:
+            k = QStandardItem(d)
+            k.setEditable(False)
+            v = QStandardItem()
+            v.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
+            v.setEditable(False)
+            self.program_model.appendRow([k,v])
+
+        gbPrgm = GroupBoxH("Program")
+        gbPrgm.setFlat(True)
+        tvPrgm = QTreeView()
+        tvPrgm.setHeaderHidden(True)
+        tvPrgm.setRootIsDecorated(False)
+        tvPrgm.setModel(self.program_model)
+        tvPrgm.resizeColumnToContents(0)
+        gbPrgm.addWidget(tvPrgm)
+
+        self.esp_model = QStandardItemModel()
+        for d in ["ESP Chip Id", "Flash Chip Id", "Flash Size", "Program Flash Size", "Program Size", "Free Program Space", "Free Memory"]:
+            k = QStandardItem(d)
+            k.setEditable(False)
+            v = QStandardItem()
+            v.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
+            v.setEditable(False)
+            self.esp_model.appendRow([k, v])
+
+        gbESP = GroupBoxH("ESP")
+        gbESP.setFlat(True)
+        tvESP = QTreeView()
+        tvESP.setHeaderHidden(True)
+        tvESP.setRootIsDecorated(False)
+        tvESP.setModel(self.esp_model)
+        tvESP.resizeColumnToContents(0)
+        gbESP.addWidget(tvESP)
+
+        # self.emul_model = QStandardItemModel()
+        # for d in ["Emulation", "mDNS Discovery"]:
+        #     k = QStandardItem(d)
+        #     k.setEditable(False)
+        #     v = QStandardItem()
+        #     v.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        #     v.setEditable(False)
+        #     self.emul_model.appendRow([k, v])
+        #
+        # gbEmul = GroupBoxH("Emulation")
+        # gbEmul.setFlat(True)
+        # tvEmul = QTreeView()
+        # tvEmul.setHeaderHidden(True)
+        # tvEmul.setRootIsDecorated(False)
+        # tvEmul.setModel(self.emul_model)
+        # tvEmul.resizeColumnToContents(0)
+        # gbEmul.addWidget(tvEmul)
+
+        self.wifi_model = QStandardItemModel()
+        for d in ["AP1 SSId (RSSI)", "Hostname", "IP Address", "Gateway", "Subnet Mask", "DNS Server", "MAC Address"]:
+            k = QStandardItem(d)
+            k.setEditable(False)
+            v = QStandardItem()
+            v.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
+            v.setEditable(False)
+            self.wifi_model.appendRow([k, v])
+
+        gbWifi = GroupBoxH("Wifi")
+        gbWifi.setFlat(True)
+        tvWifi = QTreeView()
+        tvWifi.setHeaderHidden(True)
+        tvWifi.setRootIsDecorated(False)
+        tvWifi.setModel(self.wifi_model)
+        tvWifi.resizeColumnToContents(0)
+        gbWifi.addWidget(tvWifi)
+
+        self.mqtt_model = QStandardItemModel()
+        for d in ["MQTT Host", "MQTT Port", "MQTT User", "MQTT Client", "MQTT Topic", "MQTT Group Topic", "MQTT Full Topic", "MQTT Fallback Topic"]:
+            k = QStandardItem(d)
+            k.setEditable(False)
+            v = QStandardItem()
+            v.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
+            v.setEditable(False)
+            self.mqtt_model.appendRow([k, v])
+
+        gbMQTT = GroupBoxH("MQTT")
+        gbMQTT.setFlat(True)
+        tvMQTT = QTreeView()
+        tvMQTT.setHeaderHidden(True)
+        tvMQTT.setRootIsDecorated(False)
+        tvMQTT.setModel(self.mqtt_model)
+        tvMQTT.resizeColumnToContents(0)
+        gbMQTT.addWidget(tvMQTT)
+
+        hl = HLayout(0)
+        vl_lc = VLayout(0, 3)
+        vl_rc = VLayout(0, 3)
+
+        vl_lc.addWidgets([gbPrgm, gbESP])
+        vl_rc.addWidgets([gbWifi, gbMQTT])
+
+        vl_rc.setStretch(0, 2)
+        vl_rc.setStretch(1, 2)
+        vl_rc.setStretch(2, 1)
+
+        hl.addLayout(vl_lc)
+        hl.addLayout(vl_rc)
+        vl.addLayout(hl)
+        info.setLayout(vl)
+        return info
+
     def tabModule(self):
         module = QWidget()
         module.setLayout(HLayout())
@@ -328,6 +498,7 @@ class DevicesConfigWidget(QWidget):
 
         for r in range(3):
             rg = RuleGroupBox(rules, "Rule buffer {}".format(r+1))
+            rg.setFlat(True)
             rg.pbLoad.clicked.connect(lambda x, r=r+1: self.loadRule(r))
             self.rule_grps.append(rg)
             rules.layout().addWidget(rg)
