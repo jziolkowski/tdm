@@ -3,7 +3,7 @@ from json import loads
 from PyQt5.QtCore import Qt, QSettings, QTimer, QDir
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QWidget, QTabWidget, QLineEdit, QTabBar, QLabel, QComboBox, QPushButton, QFrame, \
-    QTableWidget, QHeaderView, QSizePolicy, QGroupBox, QFormLayout, QSpacerItem, QTreeView
+    QTableWidget, QHeaderView, QSizePolicy, QGroupBox, QFormLayout, QSpacerItem, QTreeView, QCheckBox
 
 from GUI import VLayout, HLayout, RuleGroupBox, GroupBoxH, SpinBox, DetailLE, GroupBoxV
 from Util import match_topic, modules
@@ -36,13 +36,13 @@ class DevicesConfigWidget(QWidget):
 
         self.setLayout(VLayout(margin=[0, 6, 0, 0], spacing=3))
 
-        self.lbModule = QLabel("")
+        self.lbModule = QLabel("Connecting...")
         fnt = self.lbModule.font()
         fnt.setPointSize(14)
         fnt.setBold(True)
         self.lbModule.setFont(fnt)
         self.lbModule.setAlignment(Qt.AlignCenter)
-        self.lbModule.setMaximumHeight(20)
+        self.lbModule.setMaximumHeight(25)
         self.layout().addWidget(self.lbModule)
 
         self.build_tabs()
@@ -66,15 +66,15 @@ class DevicesConfigWidget(QWidget):
         self.tabs.addTab(tabInformation, "Information")
 
         tabModule = self.tabModule()
-        self.tabs.addTab(tabModule, "Module | Firmware")
+        self.tabs.addTab(tabModule, "Module and Firmware")
 
         self.rule_grps = []
         tabRules = self.tabRules()
-        self.tabs.addTab(tabRules, "Rules")
+        self.tabs.addTab(tabRules, "Rules and Timers")
         self.pbRTSet.clicked.connect(self.saveRuleTimers)
         self.pbVMSet.clicked.connect(self.saveVarMem)
-        for r in range(3):
-            self.rule_grps[r].pbSave.clicked.connect(lambda x, r=r: self.saveRule(r))
+
+        self.rg.pbSave.clicked.connect(self.saveRule)
 
         self.tabs.currentChanged.connect(self.tabChanged)
         self.tabs.setEnabled(False)
@@ -91,9 +91,8 @@ class DevicesConfigWidget(QWidget):
     def tabChanged(self, tab):
         # if tab == 1:
 
-
         if tab == 2:
-            self.loadRule()
+            self.loadRule(self.rg.cbRule.currentIndex())
             self.loadRuleTimers()
             self.loadVarMem()
 
@@ -104,9 +103,9 @@ class DevicesConfigWidget(QWidget):
         if self.settings.value('username'):
             self.mqtt.setAuth(self.settings.value('username'), self.settings.value('password'))
 
-        self.mqtt.connectToHost()
         self.mqtt.connected.connect(self.mqtt_subscribe)
         self.mqtt.messageSignal.connect(self.mqtt_message)
+        self.mqtt.connectToHost()
 
     def mqtt_subscribe(self):
         self.mqtt.subscribe(self.tele_topic)
@@ -289,31 +288,26 @@ class DevicesConfigWidget(QWidget):
         self.mqtt.publish(self.cmnd_topic + "backlog", payload=payload)
         self.parent().close()
 
-    def loadRule(self, rule=None):
-        if rule:
-            self.mqtt.publish(self.cmnd_topic+"Rule{}".format(rule))
-        else:
-            for r in range(1,4):
-                self.mqtt.publish(self.cmnd_topic + "Rule{}".format(r))
+    def loadRule(self, idx):
+        self.mqtt.publish(self.cmnd_topic+"Rule{}".format(idx+1))
 
     def parseRule(self, msg):
         rule, once, stop, _, rules = list(msg)
-        rg = self.rule_grps[int(rule[-1])-1]
-        rg.cbEnabled.setChecked(msg[rule] == "ON")
-        rg.text.setPlainText(msg['Rules'].replace(" on ", "\non ").replace(" do ", " do\n\t").replace(" endon", "\nendon "))
+        self.rg.cbEnabled.setChecked(msg[rule] == "ON")
+        self.rg.cbOnce.setChecked(msg[once] == "ON")
+        self.rg.cbStopOnError.setChecked(msg[stop] == "ON")
+        self.rg.text.setPlainText(msg['Rules'].replace(" on ", "\non ").replace(" do ", " do\n\t").replace(" endon", "\nendon "))
 
-    def saveRule(self, rule):
-        rg = self.rule_grps[rule]
-        text = rg.text.toPlainText().replace("\n", " ").replace("\t", " ").replace("  ", " ")
-        self.mqtt.publish(self.cmnd_topic+"Rule{}".format(rule+1), payload=text)
+    def saveRule(self):
+        text = self.rg.text.toPlainText().replace("\n", " ").replace("\t", " ").replace("  ", " ")
         backlog = {
-            'rule_nr': "Rule{}".format(rule + 1),
-            'enabled': "1" if rg.cbEnabled.isChecked() else "0",
-            'once': "5" if rg.cbOnce.isChecked() else "4",
-            'stop': "9" if rg.cbStopOnError.isChecked() else "8"
+            'rule_nr': "Rule{}".format(self.rg.cbRule.currentIndex()+ 1),
+            'text': text,
+            'enabled': "1" if self.rg.cbEnabled.isChecked() else "0",
+            'once': "5" if self.rg.cbOnce.isChecked() else "4",
+            'stop': "9" if self.rg.cbStopOnError.isChecked() else "8"
         }
-
-        self.mqtt.publish(self.cmnd_topic + "backlog", payload="{rule_nr} {once}; {rule_nr} {stop}; {rule_nr} {enabled}; ".format(**backlog))
+        self.mqtt.publish(self.cmnd_topic + "backlog", payload='{rule_nr} "{text}"; {rule_nr} {once}; {rule_nr} {stop}; {rule_nr} {enabled}; '.format(**backlog))
 
     def loadRuleTimers(self):
         self.mqtt.publish(self.cmnd_topic + "ruletimer")
@@ -342,7 +336,7 @@ class DevicesConfigWidget(QWidget):
     def saveVarMem(self):
         for r, cmd in enumerate(['Var', 'Mem']):
             for c in range(5):
-                self.mqtt.publish(self.cmnd_topic + "{}{}".format(cmd, c+1), payload=self.twVM.cellWidget(r, c).text())
+                self.mqtt.publish(self.cmnd_topic + "{}{}".format(cmd, c+1), payload="{}".format(self.twVM.cellWidget(r, c).text()))
 
     def tabInformation(self):
         info = QWidget()
@@ -494,15 +488,12 @@ class DevicesConfigWidget(QWidget):
     def tabRules(self):
         rules = QWidget()
         rules.setLayout(VLayout())
-
-        for r in range(3):
-            rg = RuleGroupBox(rules, "Rule buffer {}".format(r+1))
-            rg.setFlat(True)
-            rg.pbLoad.clicked.connect(lambda x, r=r+1: self.loadRule(r))
-            self.rule_grps.append(rg)
-            rules.layout().addWidget(rg)
-            rules.layout().setStretch(r, 1)
-
+        hl = HLayout(0)
+        vl_l = VLayout(0)
+        self.rg = RuleGroupBox(rules, "Rule editor")
+        self.rg.setFlat(True)
+        self.rg.cbRule.currentIndexChanged.connect(self.loadRule)
+        vl_l.addWidget(self.rg)
 
         gRT = GroupBoxH("Rule timers")
         vl_RT_func = VLayout(margin=[0,0,3,0])
@@ -534,7 +525,7 @@ class DevicesConfigWidget(QWidget):
         vl_VM_func.addWidgets([self.pbVMPoll, self.pbVMSet])
         vl_VM_func.addStretch(1)
         gVM.layout().addLayout(vl_VM_func)
-        
+
         self.twVM = QTableWidget(2, 5)
         self.twVM.setHorizontalHeaderLabels(["{}".format(i) for i in range(1, 9)])
         self.twVM.setVerticalHeaderLabels(["VAR", "MEM"])
@@ -550,10 +541,45 @@ class DevicesConfigWidget(QWidget):
         self.twVM.setMaximumHeight(self.twVM.horizontalHeader().height() + self.twVM.rowHeight(0)*2)
         gVM.layout().addWidget(self.twVM)
 
-        hl_rt_vm = HLayout()
+        hl_rt_vm = HLayout(0)
         hl_rt_vm.addWidgets([gRT, gVM])
+
+        hl.addLayout(vl_l)
+
+        vl_r = VLayout(0)
+        self.gbTimers = GroupBoxV("Timers")
+        self.gbTimers.setCheckable(True)
+        self.gbTimers.setChecked(False)
+
+        self.cbTimer = QComboBox()
+        self.cbTimer.addItems(["Timer{}".format(nr+1) for nr in range(16)])
+
+        hl_tmr_arm_rpt = HLayout(0)
+        self.cbTimerArm = QCheckBox("Arm")
+        self.cbTimerRpt = QCheckBox("Repeat")
+        hl_tmr_arm_rpt.addWidgets([self.cbTimerArm, self.cbTimerRpt])
+
+        hl_tmr_out_act = HLayout(0)
+        self.cbxTimerOut = QComboBox()
+        self.cbxTimerAction = QComboBox()
+        self.cbxTimerAction.addItems(["Off", "On", "Toggle", "Rule"])
+        hl_tmr_out_act.addWidgets([self.cbxTimerOut, self.cbxTimerAction])
+
+        self.gbTimers.layout().addWidget(self.cbTimer)
+        self.gbTimers.layout().addLayout(hl_tmr_arm_rpt)
+        self.gbTimers.layout().addLayout(hl_tmr_out_act)
+        self.gbTimers.layout().addStretch(1)
+
+        vl_r.addWidget(self.gbTimers)
+
+        hl.addLayout(vl_r)
+        hl.setStretch(0,2)
+        hl.setStretch(1,1)
+
+        rules.layout().addLayout(hl)
         rules.layout().addLayout(hl_rt_vm)
-        rules.layout().setStretch(3,0)
+        rules.layout().setStretch(0,3)
+        rules.layout().setStretch(1,0)
 
         return rules
 

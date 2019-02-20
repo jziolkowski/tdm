@@ -1,7 +1,7 @@
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QFontDatabase, QFont
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableView, QSpinBox, QAction, QToolBar, \
-    QHeaderView, QCheckBox, QPushButton, QPlainTextEdit, QLineEdit, QSizePolicy
+    QHeaderView, QCheckBox, QPushButton, QPlainTextEdit, QLineEdit, QSizePolicy, QComboBox
 
 # from GUI.DeviceEdit import DeviceEditDialog
 from Util import DevMdl, CnsMdl
@@ -76,6 +76,7 @@ class HLayout(QHBoxLayout):
     def addWidgets(self, widgets):
         for w in widgets:
             self.addWidget(w)
+
 
 class GroupBoxV(QGroupBox):
     def __init__(self, title, margin=3, spacing=3, *args, **kwargs):
@@ -201,34 +202,28 @@ class RuleEditor(QPlainTextEdit):
     #     if self.completer:
 
 
-class RuleGroupBox(GroupBoxH):
+class RuleGroupBox(GroupBoxV):
     def __init__(self, parent, title, *args, **kwargs):
         super(RuleGroupBox, self).__init__(title, parent=parent, *args, **kwargs)
+
+        self.cbRule = QComboBox()
+        self.cbRule.addItems(["Rule{}".format(nr + 1) for nr in range(3)])
 
         self.cbEnabled = QCheckBox("Enabled")
         self.cbOnce = QCheckBox("Once")
         self.cbStopOnError = QCheckBox("Stop on error")
         counter = QLabel("511 left")
         counter.setAlignment(Qt.AlignCenter)
-
-        ll = VLayout(margin=[0,0,3,0])
-        ll.addWidgets([self.cbEnabled, self.cbOnce, self.cbStopOnError])
-        ll.addStretch(1)
-
-        self.pbLoad = QPushButton("Reload")
         pbClear = QPushButton("Clear")
         self.pbSave = QPushButton("Save")
 
-        rl = VLayout(margin=[3,0,0,0])
-        rl.addWidgets([self.pbLoad, pbClear, self.pbSave, counter])
-        rl.insertStretch(3,1)
+        hl_func = HLayout(0)
+        hl_func.addWidgets([self.cbRule, self.cbEnabled, self.cbOnce, self.cbStopOnError, pbClear, self.pbSave, counter])
 
-        self.layout().addLayout(ll)
+        self.layout().addLayout(hl_func)
 
         self.text = RuleEditor()
         self.layout().addWidget(self.text)
-
-        self.layout().addLayout(rl)
 
         pbClear.clicked.connect(lambda: self.text.clear())
         self.text.textChanged.connect(lambda: counter.setText("{} left".format(511-len(self.text.toPlainText()))))
