@@ -6,8 +6,7 @@ from PyQt5.QtWidgets import QWidget, QTabWidget, QLineEdit, QTabBar, QLabel, QCo
     QTableWidget, QHeaderView, QSizePolicy, QGroupBox, QFormLayout, QSpacerItem, QTreeView
 
 from GUI import VLayout, HLayout, RuleGroupBox, GroupBoxH, SpinBox, DetailLE, GroupBoxV
-from Util import match_topic
-from Util.libtasmota import modules
+from Util import match_topic, modules
 from Util.mqtt import MqttClient
 
 
