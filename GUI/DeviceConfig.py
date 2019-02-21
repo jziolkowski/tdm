@@ -1,9 +1,10 @@
-from json import loads
+from json import loads, dumps
 
-from PyQt5.QtCore import Qt, QSettings, QTimer, QDir
+from PyQt5.QtCore import Qt, QSettings, QTimer, QDir, QTime, QTime
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QWidget, QTabWidget, QLineEdit, QTabBar, QLabel, QComboBox, QPushButton, QFrame, \
-    QTableWidget, QHeaderView, QSizePolicy, QGroupBox, QFormLayout, QSpacerItem, QTreeView, QCheckBox
+    QTableWidget, QHeaderView, QSizePolicy, QGroupBox, QFormLayout, QSpacerItem, QTreeView, QCheckBox, QRadioButton, QButtonGroup, QTimeEdit, QLabel, \
+    QListWidget, QListWidgetItem, QApplication
 
 from GUI import VLayout, HLayout, RuleGroupBox, GroupBoxH, SpinBox, DetailLE, GroupBoxV
 from Util import match_topic, modules
@@ -93,6 +94,7 @@ class DevicesConfigWidget(QWidget):
 
         if tab == 2:
             self.loadRule(self.rg.cbRule.currentIndex())
+            self.loadTimer(self.cbTimer.currentIndex())
             self.loadRuleTimers()
             self.loadVarMem()
 
@@ -149,6 +151,15 @@ class DevicesConfigWidget(QWidget):
                 elif first.startswith('GPIOs'):
                     self.parseGPIOs(msg)
 
+                elif not first.startswith("Timers") and first.startswith("Timer"):
+                    self.parseTimer(msg[first])
+
+                elif first == "Timers":
+                    self.gbTimers.setChecked(msg[first] == "ON")
+
+                elif first.startswith("Timers"):
+                    pass
+
                 else:
                     print(msg)
 
@@ -158,6 +169,9 @@ class DevicesConfigWidget(QWidget):
                     msg = msg['StatusSTS']
 
                 self.wifi_model.item(0, 1).setText("{} ({})".format(msg['Wifi'].get('SSId', "n/a"), msg['Wifi'].get('RSSI', "n/a")))
+                self.power = {k: msg[k] for k in msg.keys() if k.startswith("POWER")}
+                self.cbxTimerOut.clear()
+                self.cbxTimerOut.addItems(self.power)
 
             elif reply == "STATUS":
                 msg = loads(msg)['Status']
@@ -214,6 +228,10 @@ class DevicesConfigWidget(QWidget):
 
             elif reply == "STATUS7":
                 msg = loads(msg)['StatusTIM']
+                self._sunrise = msg.get('Sunrise', "")
+                self._sunset = msg.get('Sunset', "")
+                self.TimerMode.button(1).setText(self.TimerMode.button(1).text().format(msg.get('Sunrise', "")))
+                self.TimerMode.button(2).setText(self.TimerMode.button(2).text().format(msg.get('Sunset', "")))
 
     def initial_query(self):
         self.mqtt.publish(self.cmnd_topic + "status", 0)
@@ -241,12 +259,6 @@ class DevicesConfigWidget(QWidget):
         self.cbModule.clear()
         self.cbModule.addItems(self.modules)
         self.cbModule.setCurrentText(self.module)
-
-    def updateCBGpios(self):
-        for i, cb in enumerate(self.gpios):
-            cb.clear()
-            cb.addItems(self.supported_gpios)
-            cb.setCurrentText(self.current_gpios[list(self.current_gpios)[i]])
 
     def saveModule(self):
         module = self.cbModule.currentText().split(" ")[0]
@@ -279,6 +291,12 @@ class DevicesConfigWidget(QWidget):
             self.supported_gpios += v
             self.updateCBGpios()
 
+    def updateCBGpios(self):
+        for i, cb in enumerate(self.gpios):
+            cb.clear()
+            cb.addItems(self.supported_gpios)
+            cb.setCurrentText(self.current_gpios[list(self.current_gpios)[i]])
+
     def saveGPIOs(self):
         payload = ""
         for i, g in enumerate(list(self.current_gpios)):
@@ -302,12 +320,12 @@ class DevicesConfigWidget(QWidget):
         text = self.rg.text.toPlainText().replace("\n", " ").replace("\t", " ").replace("  ", " ")
         backlog = {
             'rule_nr': "Rule{}".format(self.rg.cbRule.currentIndex()+ 1),
-            'text': text,
+            'text': text if len(text) > 0 else '""',
             'enabled': "1" if self.rg.cbEnabled.isChecked() else "0",
             'once': "5" if self.rg.cbOnce.isChecked() else "4",
             'stop': "9" if self.rg.cbStopOnError.isChecked() else "8"
         }
-        self.mqtt.publish(self.cmnd_topic + "backlog", payload='{rule_nr} "{text}"; {rule_nr} {once}; {rule_nr} {stop}; {rule_nr} {enabled}; '.format(**backlog))
+        self.mqtt.publish(self.cmnd_topic + "backlog", payload='{rule_nr} {text}; {rule_nr} {once}; {rule_nr} {stop}; {rule_nr} {enabled}; '.format(**backlog))
 
     def loadRuleTimers(self):
         self.mqtt.publish(self.cmnd_topic + "ruletimer")
@@ -337,6 +355,101 @@ class DevicesConfigWidget(QWidget):
         for r, cmd in enumerate(['Var', 'Mem']):
             for c in range(5):
                 self.mqtt.publish(self.cmnd_topic + "{}{}".format(cmd, c+1), payload="{}".format(self.twVM.cellWidget(r, c).text()))
+
+    def toggleTimers(self, state):
+        self.mqtt.publish(self.cmnd_topic + "timers", payload="ON" if state else "OFF")
+
+    def loadTimer(self, idx):
+        self.mqtt.publish(self.cmnd_topic+"Timers")
+        self.mqtt.publish(self.cmnd_topic+"Timer{}".format(idx+1))
+
+    def parseTimer(self, payload):
+        self.blockSignals(True)
+        self.cbTimerArm.setChecked(payload['Arm'])
+        self.cbTimerRpt.setChecked(payload['Repeat'])
+        self.cbxTimerAction.setCurrentIndex(payload['Action'])
+        self.cbxTimerOut.setCurrentIndex(payload['Output']-1)
+        self.TimerMode.button(payload['Mode']).setChecked(True)
+        h, m = map(int, payload["Time"].split(":"))
+        if h < 0:
+            self.cbxTimerPM.setCurrentText("-")
+            h *= -1
+        self.teTimerTime.setTime(QTime(h, m))
+        self.cbxTimerWnd.setCurrentText(str(payload['Window']).zfill(2))
+        for wd,v in enumerate(payload['Days']):
+            self.TimerWeekday.button(wd).setChecked(int(v))
+
+        self.describeTimer()
+        self.blockSignals(False)
+
+    def saveTimer(self):
+        payload = {
+            "Arm": int(self.cbTimerArm.isChecked()),
+            "Mode": self.TimerMode.checkedId(),
+            "Time": self.teTimerTime.time().toString("hh:mm"),
+            "Window": self.cbxTimerWnd.currentIndex(),
+            "Days": "".join([str(int(cb.isChecked())) for cb in self.TimerWeekday.buttons()]),
+            "Repeat": int(self.cbTimerRpt.isChecked()),
+            "Output": self.cbxTimerOut.currentIndex(),
+            "Action": self.cbxTimerAction.currentIndex()}
+        self.mqtt.publish(self.cmnd_topic + "timer{}".format(self.cbTimer.currentIndex()+1), payload=dumps(payload))
+
+    def copyTrigger(self):
+        mode = self.cbxTimerAction.currentText()
+        if mode == "Rule":
+            trigger = "clock#Timer={}".format(self.cbTimer.currentIndex()+1)
+        else:
+            trigger = "{}#state={}".format(self.cbxTimerOut.currentText(), self.cbxTimerAction.currentIndex())
+        QApplication.clipboard().setText("on {} do\n\t\nendon".format(trigger))
+
+    def describeTimer(self):
+        if self.cbTimerArm.isChecked():
+            desc = {'days': '', 'repeat': ''}
+            desc['timer'] = self.cbTimer.currentText().upper()
+            repeat = self.cbTimerRpt.isChecked()
+            out = self.cbxTimerOut.currentText()
+            act = self.cbxTimerAction.currentText()
+            mode = self.TimerMode.checkedId()
+            pm = self.cbxTimerPM.currentText()
+            time = self.teTimerTime.time()
+            wnd = int(self.cbxTimerWnd.currentText())*60
+
+            if act == "Rule":
+                desc['action'] = "trigger clock#Timer={}".format(self.cbTimer.currentIndex()+1)
+            elif act == "Toggle":
+                desc['action'] = "TOGGLE {}".format(out.upper())
+            else:
+                desc['action'] = "set {} to {}".format(out.upper(), act.upper())
+
+            if mode == 0:
+                if wnd == 0:
+                    desc['time'] = "at {}".format(time.toString("hh:mm"))
+                else:
+                    desc['time'] = "somewhere between {} and {}".format(time.addSecs(wnd*-1).toString("hh:mm"), time.addSecs(wnd).toString("hh:mm"))
+            else:
+                prefix = "before" if pm == "-" else "after"
+                mode_desc = "sunrise" if mode == 1 else "sunset"
+                window = "somewhere in a {} minute window centered around ".format(wnd//30)
+                desc['time'] = "{}h{}m {} {}".format(time.hour(), time.minute(), prefix, mode_desc)
+
+                if wnd > 0:
+                    desc['time'] = window + desc['time']
+
+            if repeat:
+                day_names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+                days = [cb.isChecked() for cb in self.TimerWeekday.buttons()]
+                if days.count(True) == 7:
+                    desc['days'] = "everyday"
+                else:
+                    days_list = [day_names[d] for d in range(7) if days[d]]
+                    desc['days'] = "on every {}".format(", ".join(days_list))
+            else:
+                desc['repeat'] = "only ONCE"
+
+            text = "{timer} will {action} {time} {days} {repeat}".format(**desc)
+            self.lbTimerDesc.setText(text)
+        else:
+            self.lbTimerDesc.setText("{} is not armed, it will do nothing.".format(self.cbTimer.currentText().upper()))
 
     def tabInformation(self):
         info = QWidget()
@@ -547,28 +660,92 @@ class DevicesConfigWidget(QWidget):
         hl.addLayout(vl_l)
 
         vl_r = VLayout(0)
-        self.gbTimers = GroupBoxV("Timers")
+        self.gbTimers = GroupBoxV("Timers", spacing=5)
         self.gbTimers.setCheckable(True)
         self.gbTimers.setChecked(False)
+        self.gbTimers.toggled.connect(self.toggleTimers)
 
         self.cbTimer = QComboBox()
         self.cbTimer.addItems(["Timer{}".format(nr+1) for nr in range(16)])
+        self.cbTimer.currentIndexChanged.connect(self.loadTimer)
 
         hl_tmr_arm_rpt = HLayout(0)
         self.cbTimerArm = QCheckBox("Arm")
+        self.cbTimerArm.clicked.connect(lambda x: self.describeTimer())
         self.cbTimerRpt = QCheckBox("Repeat")
+        self.cbTimerRpt.clicked.connect(lambda x: self.describeTimer())
         hl_tmr_arm_rpt.addWidgets([self.cbTimerArm, self.cbTimerRpt])
 
         hl_tmr_out_act = HLayout(0)
         self.cbxTimerOut = QComboBox()
+        self.cbxTimerOut.currentIndexChanged.connect(lambda x: self.describeTimer())
         self.cbxTimerAction = QComboBox()
         self.cbxTimerAction.addItems(["Off", "On", "Toggle", "Rule"])
+        self.cbxTimerAction.currentIndexChanged.connect(lambda x: self.describeTimer())
         hl_tmr_out_act.addWidgets([self.cbxTimerOut, self.cbxTimerAction])
+
+        self.TimerMode = QButtonGroup()
+        rbTime = QRadioButton("Time")
+        rbSunrise = QRadioButton("Sunrise ({})")
+        rbSunset = QRadioButton("Sunset ({})")
+        self.TimerMode.addButton(rbTime, 0)
+        self.TimerMode.addButton(rbSunrise, 1)
+        self.TimerMode.addButton(rbSunset, 2)
+        self.TimerMode.buttonClicked.connect(lambda x: self.describeTimer())
+        gbTimerMode = GroupBoxH("Mode")
+        gbTimerMode.addWidgets(self.TimerMode.buttons())
+
+        hl_tmr_time = HLayout(0)
+        self.cbxTimerPM = QComboBox()
+        self.cbxTimerPM.addItems(["+", "-"])
+        self.cbxTimerPM.currentIndexChanged.connect(lambda x: self.describeTimer())
+
+        self.TimerMode.buttonClicked[int].connect(lambda x: self.cbxTimerPM.setEnabled(x != 0))
+        self.teTimerTime = QTimeEdit()
+        self.teTimerTime.setButtonSymbols(QTimeEdit.NoButtons)
+        self.teTimerTime.setAlignment(Qt.AlignCenter)
+        self.teTimerTime.timeChanged.connect(lambda x: self.describeTimer())
+
+        lbWnd = QLabel("Window:")
+        lbWnd.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.cbxTimerWnd = QComboBox()
+        self.cbxTimerWnd.addItems([str(x).zfill(2) for x in range(0, 16)])
+        self.cbxTimerWnd.currentIndexChanged.connect(lambda x: self.describeTimer())
+
+        hl_tmr_days = HLayout(0)
+        self.TimerWeekday = QButtonGroup()
+        self.TimerWeekday.setExclusive(False)
+        for i, wd in enumerate(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]):
+            cb = QCheckBox(wd)
+            cb.clicked.connect(lambda x: self.describeTimer())
+            hl_tmr_days.addWidget(cb)
+            self.TimerWeekday.addButton(cb, i)
+
+        gbTimerDesc = GroupBoxV("Timer description", 5)
+        gbTimerDesc.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        self.lbTimerDesc = QLabel()
+        self.lbTimerDesc.setAlignment(Qt.AlignCenter)
+        self.lbTimerDesc.setWordWrap(True)
+        gbTimerDesc.layout().addWidget(self.lbTimerDesc)
+        hl_tmr_btns = HLayout(0)
+        btnCopyTrigger = QPushButton("Copy trigger")
+        btnTimerSave = QPushButton("Save")
+        hl_tmr_btns.addWidgets([btnCopyTrigger, btnTimerSave])
+        hl_tmr_btns.insertStretch(1)
+
+        btnTimerSave.clicked.connect(self.saveTimer)
+        btnCopyTrigger.clicked.connect(self.copyTrigger)
+
+        hl_tmr_time.addWidgets([self.cbxTimerPM, self.teTimerTime, lbWnd, self.cbxTimerWnd])
 
         self.gbTimers.layout().addWidget(self.cbTimer)
         self.gbTimers.layout().addLayout(hl_tmr_arm_rpt)
         self.gbTimers.layout().addLayout(hl_tmr_out_act)
-        self.gbTimers.layout().addStretch(1)
+        self.gbTimers.layout().addWidget(gbTimerMode)
+        self.gbTimers.layout().addLayout(hl_tmr_time)
+        self.gbTimers.layout().addLayout(hl_tmr_days)
+        self.gbTimers.layout().addWidget(gbTimerDesc)
+        self.gbTimers.layout().addLayout(hl_tmr_btns)
 
         vl_r.addWidget(self.gbTimers)
 
