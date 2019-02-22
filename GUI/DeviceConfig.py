@@ -34,6 +34,7 @@ class DevicesConfigWidget(QWidget):
         self.gpios = []
         self.supported_gpios = []
         self.current_gpios = {}
+        self.timers = False
 
         self.setLayout(VLayout(margin=[0, 6, 0, 0], spacing=3))
 
@@ -239,6 +240,7 @@ class DevicesConfigWidget(QWidget):
         self.mqtt.publish(self.cmnd_topic + "modules")
         self.mqtt.publish(self.cmnd_topic + "gpio")
         self.mqtt.publish(self.cmnd_topic + "gpios")
+        self.mqtt.publish(self.cmnd_topic + "timers")
 
     def parseModules(self, msg):
         k = list(msg)[0]
@@ -368,13 +370,21 @@ class DevicesConfigWidget(QWidget):
         self.cbTimerArm.setChecked(payload['Arm'])
         self.cbTimerRpt.setChecked(payload['Repeat'])
         self.cbxTimerAction.setCurrentIndex(payload['Action'])
+
         output = payload.get('Output')
         if output:
             self.cbxTimerOut.setEnabled(True)
             self.cbxTimerOut.setCurrentIndex(output-1)
         else:
             self.cbxTimerOut.setEnabled(False)
-        self.TimerMode.button(payload['Mode']).setChecked(True)
+
+        mode = payload.get('Mode')
+        if not mode:
+            mode = 0
+            self.TimerMode.button(1).setEnabled(False)
+            self.TimerMode.button(2).setEnabled(False)
+        self.TimerMode.button(mode).setChecked(True)
+
         h, m = map(int, payload["Time"].split(":"))
         if h < 0:
             self.cbxTimerPM.setCurrentText("-")
