@@ -368,7 +368,12 @@ class DevicesConfigWidget(QWidget):
         self.cbTimerArm.setChecked(payload['Arm'])
         self.cbTimerRpt.setChecked(payload['Repeat'])
         self.cbxTimerAction.setCurrentIndex(payload['Action'])
-        self.cbxTimerOut.setCurrentIndex(payload['Output']-1)
+        output = payload.get('Output')
+        if output:
+            self.cbxTimerOut.setEnabled(True)
+            self.cbxTimerOut.setCurrentIndex(output-1)
+        else:
+            self.cbxTimerOut.setEnabled(False)
         self.TimerMode.button(payload['Mode']).setChecked(True)
         h, m = map(int, payload["Time"].split(":"))
         if h < 0:
@@ -414,22 +419,15 @@ class DevicesConfigWidget(QWidget):
             time = self.teTimerTime.time()
             wnd = int(self.cbxTimerWnd.currentText())*60
 
-            if act == "Rule":
-                desc['action'] = "trigger clock#Timer={}".format(self.cbTimer.currentIndex()+1)
-            elif act == "Toggle":
-                desc['action'] = "TOGGLE {}".format(out.upper())
-            else:
-                desc['action'] = "set {} to {}".format(out.upper(), act.upper())
-
             if mode == 0:
                 if wnd == 0:
                     desc['time'] = "at {}".format(time.toString("hh:mm"))
                 else:
-                    desc['time'] = "somewhere between {} and {}".format(time.addSecs(wnd*-1).toString("hh:mm"), time.addSecs(wnd).toString("hh:mm"))
+                    desc['time'] = "somewhere between {} and {}".format(time.addSecs(wnd * -1).toString("hh:mm"), time.addSecs(wnd).toString("hh:mm"))
             else:
                 prefix = "before" if pm == "-" else "after"
                 mode_desc = "sunrise" if mode == 1 else "sunset"
-                window = "somewhere in a {} minute window centered around ".format(wnd//30)
+                window = "somewhere in a {} minute window centered around ".format(wnd // 30)
                 desc['time'] = "{}h{}m {} {}".format(time.hour(), time.minute(), prefix, mode_desc)
 
                 if wnd > 0:
@@ -446,8 +444,23 @@ class DevicesConfigWidget(QWidget):
             else:
                 desc['repeat'] = "only ONCE"
 
-            text = "{timer} will {action} {time} {days} {repeat}".format(**desc)
+            if act == "Rule":
+                desc['action'] = "trigger clock#Timer={}".format(self.cbTimer.currentIndex() + 1)
+                text = "{timer} will {action} {time} {days} {repeat}".format(**desc)
+
+            elif self.cbxTimerOut.count() > 0:
+
+                    if act == "Toggle":
+                        desc['action'] = "TOGGLE {}".format(out.upper())
+                    else:
+                        desc['action'] = "set {} to {}".format(out.upper(), act.upper())
+
+                    text = "{timer} will {action} {time} {days} {repeat}".format(**desc)
+            else:
+                text = "{timer} will do nothing because there are no relays configured.".format(**desc)
+
             self.lbTimerDesc.setText(text)
+
         else:
             self.lbTimerDesc.setText("{} is not armed, it will do nothing.".format(self.cbTimer.currentText().upper()))
 
