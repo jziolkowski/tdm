@@ -141,7 +141,7 @@ class MqttClient(QtCore.QObject):
     # callbacks
     def on_message(self, mqttc, obj, msg):
         topic = msg.topic
-        mstr = msg.payload.decode("ascii")
+        mstr = msg.payload.decode("utf8")
         # print("on_message", mstr, obj, mqttc)
         self.messageSignal.emit(topic, mstr)
 
