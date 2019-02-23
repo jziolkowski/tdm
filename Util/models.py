@@ -508,7 +508,7 @@ class DeviceDelegate(QStyledItemDelegate):
             if option.state & QStyle.State_Selected:
                 p.fillRect(option.rect, option.palette.highlight())
 
-            px = self.icons.get(index.data().lower())
+            px = self.icons.get(index.data().lower(), "undefined")
 
             x = option.rect.center().x()+1 - px.rect().width() / 2
             y = option.rect.center().y() - px.rect().height() / 2
