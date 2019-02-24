@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QSettings, QDir
-from PyQt5.QtWidgets import QDialog, QLineEdit, QFormLayout, QPushButton, QGroupBox
+from PyQt5.QtWidgets import QDialog, QLineEdit, QFormLayout, QPushButton, QGroupBox, QCheckBox
 
 from GUI import SpinBox, HLayout, VLayout
 
@@ -33,13 +33,16 @@ class BrokerDialog(QDialog):
         lfl.addRow("Password", self.password)
         gbLogin.setLayout(lfl)
 
+        self.cbConnectStartup = QCheckBox("Connect on startup")
+        self.cbConnectStartup.setChecked(int(self.settings.value("connect_on_startup"), 0))
+
         hlBtn = HLayout()
         btnSave = QPushButton("Save")
         btnCancel = QPushButton("Cancel")
         hlBtn.addWidgets([btnSave, btnCancel])
 
         vl = VLayout()
-        vl.addWidgets([gbHost, gbLogin])
+        vl.addWidgets([gbHost, gbLogin, self.cbConnectStartup])
         vl.addLayout(hlBtn)
 
         self.setLayout(vl)
@@ -52,5 +55,6 @@ class BrokerDialog(QDialog):
         self.settings.setValue("port", self.port.value())
         self.settings.setValue("username", self.username.text())
         self.settings.setValue("password", self.password.text())
+        self.settings.setValue("connect_on_startup", int(self.cbConnectStartup.isChecked()))
         self.settings.sync()
         self.done(QDialog.Accepted)

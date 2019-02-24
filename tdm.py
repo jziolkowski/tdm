@@ -19,7 +19,7 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.1.15"
+        self._version = "0.1.16"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
@@ -64,6 +64,9 @@ class MainWindow(QMainWindow):
         self.build_cons_ctx_menu()
 
         self.load_window_state()
+
+        if self.settings.value("connect_on_startup", False):
+            self.actToggleConnect.trigger()
 
     def setup_main_layout(self):
         self.mdi = QMdiArea()
@@ -276,11 +279,9 @@ class MainWindow(QMainWindow):
 
             elif msg == "Online":
                 self.console_log(topic, "LWT for unknown device '{}'. Asking for FullTopic.".format(found.topic), msg, False)
-                self.mqtt_queue.append(["cmnd/{}/fulltopic".format(found.topic),""])
-                self.mqtt_queue.append(["{}/cmnd/fulltopic".format(found.topic),""])
-                # self.fulltopic_queue.append("cmnd/{}/fulltopic".format(found.topic))
-                # self.fulltopic_queue.append("{}/cmnd/fulltopic".format(found.topic))
-                # self.queue_timer.start(1500)
+                self.mqtt_queue.append(["cmnd/{}/fulltopic".format(found.topic), ""])
+                self.mqtt_queue.append(["{}/cmnd/fulltopic".format(found.topic), ""])
+
 
         elif found.reply == 'RESULT':
             full_topic = loads(msg).get('FullTopic')
