@@ -34,7 +34,7 @@ class BrokerDialog(QDialog):
         gbLogin.setLayout(lfl)
 
         self.cbConnectStartup = QCheckBox("Connect on startup")
-        self.cbConnectStartup.setChecked(int(self.settings.value("connect_on_startup"), 0))
+        self.cbConnectStartup.setChecked(int(self.settings.value("connect_on_startup",0)))
 
         hlBtn = HLayout()
         btnSave = QPushButton("Save")
