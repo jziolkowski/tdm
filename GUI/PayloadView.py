@@ -10,7 +10,7 @@ class PayloadViewDialog(QDialog):
 
         fl = QFormLayout()
 
-        lb_timestamp = QLabel(timestamp.toString("yyyy.MM.dd hh:mm:ss"))
+        lb_timestamp = QLabel(timestamp)
 
         le_topic = QLineEdit()
         le_topic.setReadOnly(True)

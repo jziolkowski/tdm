@@ -298,6 +298,9 @@ class ConsoleModel(QAbstractTableModel):
             col = idx.column()
 
             if role == Qt.DisplayRole:
+                if col == CnsMdl.TIMESTAMP:
+                    return self._entries[row][col].toString("yyyy-MM-dd hh:mm:ss")
+
                 return self._entries[row][col]
 
             elif role == Qt.BackgroundColorRole:

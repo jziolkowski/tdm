@@ -19,7 +19,7 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.1.16"
+        self._version = "0.1.17"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
@@ -61,8 +61,6 @@ class MainWindow(QMainWindow):
         self.auto_timer = QTimer()
         self.auto_timer.timeout.connect(self.autoupdate)
 
-        self.build_cons_ctx_menu()
-
         self.load_window_state()
 
         if self.settings.value("connect_on_startup", False):
@@ -81,15 +79,23 @@ class MainWindow(QMainWindow):
         self.devices_splitter.addWidget(mdi_widget)
 
         vl_console = VLayout()
+        hl_filter = HLayout()
+        self.cbFilter = QCheckBox("Console filtering")
+        self.cbxFilterDevice = QComboBox()
+        self.cbxFilterDevice.setEnabled(False)
+        self.cbxFilterDevice.setFixedWidth(200)
+        self.cbxFilterDevice.setModel(self.device_model)
+        self.cbxFilterDevice.setModelColumn(DevMdl.FRIENDLY_NAME)
+        hl_filter.addWidgets([self.cbFilter, self.cbxFilterDevice])
+        hl_filter.addStretch(0)
+        vl_console.addLayout(hl_filter)
+
         self.console_view = TableView()
-        self.console_view.setModel(self.sorted_console_model)
+        self.console_view.setModel(self.console_model)
         self.console_view.setupColumns(columns_console)
         self.console_view.setAlternatingRowColors(True)
-        self.console_view.setSortingEnabled(True)
-        self.console_view.sortByColumn(CnsMdl.TIMESTAMP, Qt.DescendingOrder)
         self.console_view.verticalHeader().setDefaultSectionSize(20)
         self.console_view.setMinimumHeight(200)
-        self.console_view.setContextMenuPolicy(Qt.CustomContextMenu)
 
         vl_console.addWidget(self.console_view)
 
@@ -101,7 +107,9 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.main_splitter)
         self.console_view.clicked.connect(self.select_cons_entry)
         self.console_view.doubleClicked.connect(self.view_payload)
-        self.console_view.customContextMenuRequested.connect(self.show_cons_ctx_menu)
+
+        self.cbFilter.toggled.connect(self.toggle_console_filter)
+        self.cbxFilterDevice.currentTextChanged.connect(self.select_console_filter)
 
     def setup_telemetry_view(self):
         tele_widget = QWidget()
@@ -507,7 +515,8 @@ class MainWindow(QMainWindow):
             self.console_view.resizeColumnToContents(1)
 
     def view_payload(self, idx):
-        idx = self.sorted_console_model.mapToSource(idx)
+        if self.cbFilter.isChecked():
+            idx = self.sorted_console_model.mapToSource(idx)
         row = idx.row()
         timestamp = self.console_model.data(self.console_model.index(row, CnsMdl.TIMESTAMP))
         topic = self.console_model.data(self.console_model.index(row, CnsMdl.TOPIC))
@@ -518,25 +527,6 @@ class MainWindow(QMainWindow):
 
     def select_cons_entry(self, idx):
         self.cons_idx = idx
-
-    def build_cons_ctx_menu(self):
-        self.cons_ctx_menu = QMenu()
-        self.cons_ctx_menu.addAction("View payload", lambda: self.view_payload(self.cons_idx))
-        self.cons_ctx_menu.addSeparator()
-        self.cons_ctx_menu.addAction("Show only this device", lambda: self.cons_set_filter(self.cons_idx))
-        self.cons_ctx_menu.addAction("Show all devices", self.cons_set_filter)
-
-    def show_cons_ctx_menu(self, at):
-        self.select_cons_entry(self.console_view.indexAt(at))
-        self.cons_ctx_menu.popup(self.console_view.viewport().mapToGlobal(at))
-
-    def cons_set_filter(self, idx=None):
-        if idx:
-            idx = self.sorted_console_model.mapToSource(idx)
-            topic = self.console_model.data(self.console_model.index(idx.row(), CnsMdl.FRIENDLY_NAME))
-            self.sorted_console_model.setFilterFixedString(topic)
-        else:
-            self.sorted_console_model.setFilterFixedString("")
 
     def export(self):
         fname, _ = QFileDialog.getSaveFileName(self, "Export device list as...", directory=QDir.homePath(), filter="CSV files (*.csv)")
@@ -567,6 +557,16 @@ class MainWindow(QMainWindow):
     def bssid(self):
         BSSIdDialog().exec_()
         # if dlg.exec_() == QDialog.Accepted:
+
+    def toggle_console_filter(self, state):
+        self.cbxFilterDevice.setEnabled(state)
+        if state:
+            self.console_view.setModel(self.sorted_console_model)
+        else:
+            self.console_view.setModel(self.console_model)
+
+    def select_console_filter(self, fname):
+        self.sorted_console_model.setFilterFixedString(fname)
 
     def closeEvent(self, e):
         self.settings.setValue("window_geometry", self.saveGeometry())
