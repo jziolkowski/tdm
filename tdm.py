@@ -1,6 +1,6 @@
 import sys
 import csv
-from json import loads
+from json import loads, JSONDecodeError
 
 from PyQt5.QtCore import QSortFilterProxyModel, QDir, QTimer
 from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QTreeView, QWidget, \
@@ -19,7 +19,7 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.1.17"
+        self._version = "0.1.18"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
@@ -290,7 +290,6 @@ class MainWindow(QMainWindow):
                 self.mqtt_queue.append(["cmnd/{}/fulltopic".format(found.topic), ""])
                 self.mqtt_queue.append(["{}/cmnd/fulltopic".format(found.topic), ""])
 
-
         elif found.reply == 'RESULT':
             full_topic = loads(msg).get('FullTopic')
             new_topic = loads(msg).get('Topic')
@@ -327,64 +326,72 @@ class MainWindow(QMainWindow):
                 self.device_model.updateValue(found.index, DevMdl.MODULE, template_name)
 
         elif found.index.isValid():
-            if found.reply == 'STATUS':
-                self.console_log(topic, "Received device status", msg)
-                payload = loads(msg)['Status']
-                self.device_model.updateValue(found.index, DevMdl.FRIENDLY_NAME, payload['FriendlyName'][0])
-                self.telemetry_model.setDeviceFriendlyName(self.telemetry_model.devices[found.topic], payload['FriendlyName'][0])
-                # self.tview.resizeColumnToContents(0)
-                module = payload['Module']
-                if module == '0':
-                    self.mqtt.publish(self.device_model.commandTopic(found.index)+"template")
-                else:
-                    self.device_model.updateValue(found.index, DevMdl.MODULE, module)
-
-            elif found.reply == 'STATUS1':
-                self.console_log(topic, "Received program information", msg)
-                payload = loads(msg)['StatusPRM']
-                self.device_model.updateValue(found.index, DevMdl.RESTART_REASON, payload.get('RestartReason'))
-
-            elif found.reply == 'STATUS2':
-                self.console_log(topic, "Received firmware information", msg)
-                payload = loads(msg)['StatusFWR']
-                self.device_model.updateValue(found.index, DevMdl.FIRMWARE, payload['Version'])
-                self.device_model.updateValue(found.index, DevMdl.CORE, payload['Core'])
-
-            elif found.reply == 'STATUS3':
-                self.console_log(topic, "Received syslog information", msg)
-                payload = loads(msg)['StatusLOG']
-                self.device_model.updateValue(found.index, DevMdl.TELEPERIOD, payload['TelePeriod'])
-
-            elif found.reply == 'STATUS5':
-                self.console_log(topic, "Received network status", msg)
-                payload = loads(msg)['StatusNET']
-                self.device_model.updateValue(found.index, DevMdl.MAC, payload['Mac'])
-                self.device_model.updateValue(found.index, DevMdl.IP, payload['IPAddress'])
-
-            elif found.reply == 'STATUS8':
-                self.console_log(topic, "Received telemetry", msg)
-                payload = loads(msg)['StatusSNS']
-                self.parse_telemetry(found.index, payload)
-
-            elif found.reply == 'STATUS11':
-                self.console_log(topic, "Received device state", msg)
-                payload = loads(msg)['StatusSTS']
-                self.parse_state(found.index, payload)
-
-            elif found.reply == 'SENSOR':
-                self.console_log(topic, "Received telemetry", msg)
+            ok = False
+            try:
                 payload = loads(msg)
-                self.parse_telemetry(found.index, payload)
+                ok = True
+            except JSONDecodeError as e:
+                self.console_log(topic, "JSON payload decode error. Check error.log for additional info.")
+                with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
+                    l.write("{}\t{}\t{}\t{}\n".format(QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss"), topic, msg, e.msg))
 
-            elif found.reply == 'STATE':
-                self.console_log(topic, "Received device state", msg)
-                payload = loads(msg)
-                self.parse_state(found.index, payload)
+            if ok:
+                try:
+                    if found.reply == 'STATUS':
+                        self.console_log(topic, "Received device status", msg)
+                        payload = payload['Status']
+                        self.device_model.updateValue(found.index, DevMdl.FRIENDLY_NAME, payload['FriendlyName'][0])
+                        self.telemetry_model.setDeviceFriendlyName(self.telemetry_model.devices[found.topic], payload['FriendlyName'][0])
+                        # self.tview.resizeColumnToContents(0)
+                        module = payload['Module']
+                        if module == '0':
+                            self.mqtt.publish(self.device_model.commandTopic(found.index)+"template")
+                        else:
+                            self.device_model.updateValue(found.index, DevMdl.MODULE, module)
 
-            elif found.reply.startswith('POWER'):
-                self.console_log(topic, "Received {} state".format(found.reply), msg)
-                payload = {found.reply: msg}
-                self.parse_power(found.index, payload)
+                    elif found.reply == 'STATUS1':
+                        self.console_log(topic, "Received program information", msg)
+                        payload = payload['StatusPRM']
+                        self.device_model.updateValue(found.index, DevMdl.RESTART_REASON, payload.get('RestartReason'))
+
+                    elif found.reply == 'STATUS2':
+                        self.console_log(topic, "Received firmware information", msg)
+                        payload = payload['StatusFWR']
+                        self.device_model.updateValue(found.index, DevMdl.FIRMWARE, payload['Version'])
+                        self.device_model.updateValue(found.index, DevMdl.CORE, payload['Core'])
+
+                    elif found.reply == 'STATUS3':
+                        self.console_log(topic, "Received syslog information", msg)
+                        payload = payload['StatusLOG']
+                        self.device_model.updateValue(found.index, DevMdl.TELEPERIOD, payload['TelePeriod'])
+
+                    elif found.reply == 'STATUS5':
+                        self.console_log(topic, "Received network status", msg)
+                        payload = payload['StatusNET']
+                        self.device_model.updateValue(found.index, DevMdl.MAC, payload['Mac'])
+                        self.device_model.updateValue(found.index, DevMdl.IP, payload['IPAddress'])
+
+                    elif found.reply in ('STATE', 'STATUS11'):
+                        self.console_log(topic, "Received device state", msg)
+                        if found.reply == 'STATUS11':
+                            payload = payload['StatusSTS']
+                        self.parse_state(found.index, payload)
+
+                    elif found.reply in ('SENSOR', 'STATUS8'):
+                        self.console_log(topic, "Received telemetry", msg)
+                        if found.reply == 'STATUS8':
+                            payload = payload['StatusSNS']
+                        self.parse_telemetry(found.index, payload)
+
+                    elif found.reply.startswith('POWER'):
+                        self.console_log(topic, "Received {} state".format(found.reply), msg)
+                        payload = {found.reply: msg}
+                        self.parse_power(found.index, payload)
+                except KeyError as k:
+                    self.console_log(topic, "JSON key error. Check error.log for additional info.")
+                    with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
+                        l.write("{}\t{}\t{}\tKeyError: {}\n".format(QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss"),
+                                                          topic, payload, k.args[0]))
 
     def parse_power(self, index, payload, from_state=False):
         old = self.device_model.power(index)
@@ -495,7 +502,7 @@ class MainWindow(QMainWindow):
                     self.tview.expand(d)
         # self.tview.resizeColumnToContents(0)
 
-    def console_log(self, topic, description, payload, known=True):
+    def console_log(self, topic, description, payload="", known=True):
         longest_tp = 0
         longest_fn = 0
         short_topic = "/".join(topic.split("/")[0:-1])

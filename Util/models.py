@@ -306,6 +306,9 @@ class ConsoleModel(QAbstractTableModel):
             elif role == Qt.BackgroundColorRole:
                 if not self._entries[row][CnsMdl.KNOWN]:
                     return QColor("yellow")
+                elif self._entries[row][CnsMdl.PAYLOAD] == "":
+                    return QColor("red")
+
 
     def flags(self, idx):
         return Qt.ItemIsSelectable | Qt.ItemIsEnabled
