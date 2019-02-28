@@ -334,7 +334,7 @@ class MainWindow(QMainWindow):
             elif found.reply == 'STATUS1':
                 self.console_log(topic, "Received program information", msg)
                 payload = loads(msg)['StatusPRM']
-                self.device_model.updateValue(found.index, DevMdl.RESTART_REASON, payload['RestartReason'])
+                self.device_model.updateValue(found.index, DevMdl.RESTART_REASON, payload.get('RestartReason'))
 
             elif found.reply == 'STATUS2':
                 self.console_log(topic, "Received firmware information", msg)
