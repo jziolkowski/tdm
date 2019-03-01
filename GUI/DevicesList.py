@@ -1,7 +1,7 @@
 from PyQt5.QtCore import Qt, QSettings, QSortFilterProxyModel, QUrl, QDir
 from PyQt5.QtGui import QIcon, QDesktopServices
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
-from PyQt5.QtWidgets import QWidget, QMessageBox, QDialog, QMenu, QApplication, QToolButton, QInputDialog
+from PyQt5.QtWidgets import QWidget, QMessageBox, QDialog, QMenu, QApplication, QToolButton, QInputDialog, QFileDialog
 
 from GUI import VLayout, Toolbar, TableView, columns
 from GUI.DeviceConfig import DevicesConfigWidget
@@ -23,7 +23,7 @@ class DevicesListWidget(QWidget):
         self.idx = None
 
         self.nam = QNetworkAccessManager()
-        self.nam.finished.connect(self.nam_reply)
+        self.backup = bytes()
 
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
         self.hidden_columns = self.settings.value("hidden_columns", [1, 2])
@@ -72,7 +72,6 @@ class DevicesListWidget(QWidget):
         self.ctx_menu_relays = QMenu("Relays")
         self.ctx_menu_relays.setIcon(QIcon("GUI/icons/switch.png"))
         relays_btn = self.ctx_menu.addMenu(self.ctx_menu_relays)
-
         self.ctx_menu_relays.setEnabled(False)
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon("GUI/icons/clear.png"), "Clear retained", self.ctx_menu_clean_retained)
@@ -83,6 +82,7 @@ class DevicesListWidget(QWidget):
         copy_btn = self.ctx_menu.addMenu(self.ctx_menu_copy)
 
         self.ctx_menu.addSeparator()
+        self.ctx_menu.addAction("Set teleperiod", self.ctx_menu_teleperiod)
         self.ctx_menu.addAction(QIcon("GUI/icons/restart.png"), "Restart", self.ctx_menu_restart)
         self.ctx_menu.addAction(QIcon("GUI/icons/web.png"), "Open WebUI", self.ctx_menu_webui)
         self.ctx_menu.addSeparator()
@@ -92,7 +92,7 @@ class DevicesListWidget(QWidget):
         self.ctx_menu_ota.addAction("Upgrade", self.ctx_menu_ota_set_upgrade)
         ota_btn = self.ctx_menu.addMenu(self.ctx_menu_ota)
 
-        # self.ctx_menu.addAction("Config backup", self.ctx_menu_config_backup)
+        self.ctx_menu.addAction("Config backup", self.ctx_menu_config_backup)
 
         self.ctx_menu_copy.addAction("IP", lambda: self.ctx_menu_copy_value(DevMdl.IP))
         self.ctx_menu_copy.addAction("MAC", lambda: self.ctx_menu_copy_value(DevMdl.MAC))
@@ -159,6 +159,14 @@ class DevicesListWidget(QWidget):
             for q in initial_queries:
                 self.mqtt.publish("{}/status".format(self.model.commandTopic(self.idx)), payload=q)
 
+    def ctx_menu_teleperiod(self):
+        if self.idx:
+            teleperiod, ok = QInputDialog.getInt(self, "Set telemetry period", "Input 1 to reset to default\n[Min: 10, Max: 3600]", int(self.model.data(self.model.index(self.idx.row(), DevMdl.TELEPERIOD))), 1, 3600)
+            if ok:
+                if teleperiod != 1 and teleperiod < 10:
+                    teleperiod = 10
+            self.mqtt.publish("{}/teleperiod".format(self.model.commandTopic(self.idx)), payload=teleperiod)
+
     def ctx_menu_telemetry(self):
         if self.idx:
             self.mqtt.publish("{}/status".format(self.model.commandTopic(self.idx)), payload=8)
@@ -169,8 +177,11 @@ class DevicesListWidget(QWidget):
 
     def ctx_menu_config_backup(self):
         if self.idx:
+            self.backup = bytes()
             ip = self.model.data(self.model.index(self.idx.row(), DevMdl.IP))
-            self.nam.get(QNetworkRequest(QUrl("http://{}/ld".format(ip))));
+            self.dl = self.nam.get(QNetworkRequest(QUrl("http://{}/dl".format(ip))))
+            self.dl.readyRead.connect(self.get_dump)
+            self.dl.finished.connect(self.save_dump)
 
     def ctx_menu_ota_set_url(self):
         if self.idx:
@@ -257,8 +268,17 @@ class DevicesListWidget(QWidget):
                 if tele_idx:
                     self.telemetry_model.removeRows(tele_idx.row(),1)
 
-    def nam_reply(self, reply):
-        print(reply)
+    def get_dump(self):
+        self.backup += self.dl.readAll()
+
+    def save_dump(self):
+        fname = self.dl.header(QNetworkRequest.ContentDispositionHeader)
+        if fname:
+            fname = fname.split('=')[1]
+            save_file = QFileDialog.getSaveFileName(self, "Save config backup", "{}/TDM/{}".format(QDir.homePath(), fname))[0]
+            if save_file:
+                with open(save_file, "wb") as f:
+                    f.write(self.backup)
 
     def closeEvent(self, event):
         event.ignore()

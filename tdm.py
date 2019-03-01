@@ -19,7 +19,7 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.1.19"
+        self._version = "0.1.20"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
@@ -296,6 +296,7 @@ class MainWindow(QMainWindow):
                 new_topic = loads(msg).get('Topic')
                 template_name = loads(msg).get('NAME')
                 ota_url = loads(msg).get('OtaUrl')
+                teleperiod = loads(msg).get('TelePeriod')
 
                 if full_topic:
                     # TODO: update FullTopic for existing device AFTER the FullTopic changes externally (the message will arrive from new FullTopic)
@@ -329,6 +330,9 @@ class MainWindow(QMainWindow):
 
                 elif ota_url:
                     self.device_model.updateValue(found.index, DevMdl.OTA_URL, ota_url)
+
+                elif teleperiod:
+                    self.device_model.updateValue(found.index, DevMdl.TELEPERIOD, teleperiod)
 
             except JSONDecodeError as e:
                 self.console_log(topic, "JSON payload decode error. Check error.log for additional info.")
