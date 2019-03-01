@@ -31,6 +31,8 @@ columns = {
     DevMdl.POWER: ['Power', False, QHeaderView.ResizeToContents],
     DevMdl.LOADAVG: ['L. avg', False, QHeaderView.ResizeToContents],
     DevMdl.TELEPERIOD: ['TelePrd.', True, QHeaderView.ResizeToContents],
+    DevMdl.MODULE_ID: ['Module ID', True, QHeaderView.ResizeToContents],
+    DevMdl.OTA_URL: ['OTA URL', True, QHeaderView.ResizeToContents],
 }
 
 columns_console = {

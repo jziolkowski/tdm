@@ -19,7 +19,7 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.1.18"
+        self._version = "0.1.19"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
@@ -291,44 +291,57 @@ class MainWindow(QMainWindow):
                 self.mqtt_queue.append(["{}/cmnd/fulltopic".format(found.topic), ""])
 
         elif found.reply == 'RESULT':
-            full_topic = loads(msg).get('FullTopic')
-            new_topic = loads(msg).get('Topic')
-            template_name = loads(msg).get('NAME')
+            try:
+                full_topic = loads(msg).get('FullTopic')
+                new_topic = loads(msg).get('Topic')
+                template_name = loads(msg).get('NAME')
+                ota_url = loads(msg).get('OtaUrl')
 
-            if full_topic:
-                # TODO: update FullTopic for existing device AFTER the FullTopic changes externally (the message will arrive from new FullTopic)
-                if not found.index.isValid():
-                    self.console_log(topic, "FullTopic for {}".format(found.topic), msg, False)
+                if full_topic:
+                    # TODO: update FullTopic for existing device AFTER the FullTopic changes externally (the message will arrive from new FullTopic)
+                    if not found.index.isValid():
+                        self.console_log(topic, "FullTopic for {}".format(found.topic), msg, False)
 
-                    new_idx = self.device_model.addDevice(found.topic, full_topic, lwt='online')
-                    tele_idx = self.telemetry_model.addDevice(TasmotaDevice, found.topic)
-                    self.telemetry_model.devices[found.topic] = tele_idx
-                    #TODO: add QSortFilterProxyModel to telemetry treeview and sort devices after adding
+                        new_idx = self.device_model.addDevice(found.topic, full_topic, lwt='online')
+                        tele_idx = self.telemetry_model.addDevice(TasmotaDevice, found.topic)
+                        self.telemetry_model.devices[found.topic] = tele_idx
+                        #TODO: add QSortFilterProxyModel to telemetry treeview and sort devices after adding
 
-                    self.initial_query(new_idx)
-                    self.console_log(topic, "Added {} with fulltopic {}, querying for STATE".format(found.topic, full_topic), msg)
-                    self.tview.expand(tele_idx)
-                    self.tview.resizeColumnToContents(0)
+                        self.initial_query(new_idx)
+                        self.console_log(topic, "Added {} with fulltopic {}, querying for STATE".format(found.topic, full_topic), msg)
+                        self.tview.expand(tele_idx)
+                        self.tview.resizeColumnToContents(0)
 
-            if new_topic:
-                if found.index.isValid() and found.topic != new_topic:
-                    self.console_log(topic, "New topic for {}".format(found.topic), msg)
+                elif new_topic:
+                    if found.index.isValid() and found.topic != new_topic:
+                        self.console_log(topic, "New topic for {}".format(found.topic), msg)
 
-                    self.device_model.updateValue(found.index, DevMdl.TOPIC, new_topic)
+                        self.device_model.updateValue(found.index, DevMdl.TOPIC, new_topic)
 
-                    tele_idx = self.telemetry_model.devices.get(found.topic)
+                        tele_idx = self.telemetry_model.devices.get(found.topic)
 
-                    if tele_idx:
-                        self.telemetry_model.setDeviceName(tele_idx, new_topic)
-                        self.telemetry_model.devices[new_topic] = self.telemetry_model.devices.pop(found.topic)
+                        if tele_idx:
+                            self.telemetry_model.setDeviceName(tele_idx, new_topic)
+                            self.telemetry_model.devices[new_topic] = self.telemetry_model.devices.pop(found.topic)
 
-            if template_name:
-                self.device_model.updateValue(found.index, DevMdl.MODULE, template_name)
+                elif template_name:
+                    self.device_model.updateValue(found.index, DevMdl.MODULE, "{} (0)".format(template_name))
+
+                elif ota_url:
+                    self.device_model.updateValue(found.index, DevMdl.OTA_URL, ota_url)
+
+            except JSONDecodeError as e:
+                self.console_log(topic, "JSON payload decode error. Check error.log for additional info.")
+                with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
+                    l.write("{}\t{}\t{}\t{}\n".format(QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss"), topic, msg, e.msg))
 
         elif found.index.isValid():
             ok = False
             try:
-                payload = loads(msg)
+                if msg.startswith("{"):
+                    payload = loads(msg)
+                else:
+                    payload = msg
                 ok = True
             except JSONDecodeError as e:
                 self.console_log(topic, "JSON payload decode error. Check error.log for additional info.")
@@ -342,17 +355,19 @@ class MainWindow(QMainWindow):
                         payload = payload['Status']
                         self.device_model.updateValue(found.index, DevMdl.FRIENDLY_NAME, payload['FriendlyName'][0])
                         self.telemetry_model.setDeviceFriendlyName(self.telemetry_model.devices[found.topic], payload['FriendlyName'][0])
-                        # self.tview.resizeColumnToContents(0)
                         module = payload['Module']
-                        if module == '0':
+                        if module == 0:
                             self.mqtt.publish(self.device_model.commandTopic(found.index)+"template")
                         else:
-                            self.device_model.updateValue(found.index, DevMdl.MODULE, module)
+                            self.device_model.updateValue(found.index, DevMdl.MODULE, modules.get(module, 'Unknown'))
+                        self.device_model.updateValue(found.index, DevMdl.MODULE_ID, module)
+
 
                     elif found.reply == 'STATUS1':
                         self.console_log(topic, "Received program information", msg)
                         payload = payload['StatusPRM']
                         self.device_model.updateValue(found.index, DevMdl.RESTART_REASON, payload.get('RestartReason'))
+                        self.device_model.updateValue(found.index, DevMdl.OTA_URL, payload.get('OtaUrl'))
 
                     elif found.reply == 'STATUS2':
                         self.console_log(topic, "Received firmware information", msg)
@@ -387,6 +402,7 @@ class MainWindow(QMainWindow):
                         self.console_log(topic, "Received {} state".format(found.reply), msg)
                         payload = {found.reply: msg}
                         self.parse_power(found.index, payload)
+
                 except KeyError as k:
                     self.console_log(topic, "JSON key error. Check error.log for additional info.")
                     with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
@@ -542,7 +558,7 @@ class MainWindow(QMainWindow):
                 fname += ".csv"
 
             with open(fname, "w", encoding='utf8') as f:
-                column_titles = ['mac', 'topic', 'friendly_name', 'full_topic', 'cmnd_topic', 'stat_topic', 'tele_topic', 'module', 'firmware', 'core']
+                column_titles = ['mac', 'topic', 'friendly_name', 'full_topic', 'cmnd_topic', 'stat_topic', 'tele_topic', 'module', 'module_id', 'firmware', 'core']
                 c = csv.writer(f)
                 c.writerow(column_titles)
 
@@ -557,6 +573,7 @@ class MainWindow(QMainWindow):
                         self.device_model.statTopic(d),
                         self.device_model.teleTopic(d),
                         modules.get(self.device_model.module(d)),
+                        self.device_model.module(d),
                         self.device_model.firmware(d),
                         self.device_model.core(d)
                     ])

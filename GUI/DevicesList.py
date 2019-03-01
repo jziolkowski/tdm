@@ -1,6 +1,7 @@
 from PyQt5.QtCore import Qt, QSettings, QSortFilterProxyModel, QUrl, QDir
 from PyQt5.QtGui import QIcon, QDesktopServices
-from PyQt5.QtWidgets import QWidget, QMessageBox, QDialog, QMenu, QApplication, QToolButton
+from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
+from PyQt5.QtWidgets import QWidget, QMessageBox, QDialog, QMenu, QApplication, QToolButton, QInputDialog
 
 from GUI import VLayout, Toolbar, TableView, columns
 from GUI.DeviceConfig import DevicesConfigWidget
@@ -20,6 +21,9 @@ class DevicesListWidget(QWidget):
         self.mqtt = parent.mqtt
         self.mdi = parent.mdi
         self.idx = None
+
+        self.nam = QNetworkAccessManager()
+        self.nam.finished.connect(self.nam_reply)
 
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
         self.hidden_columns = self.settings.value("hidden_columns", [1, 2])
@@ -81,6 +85,14 @@ class DevicesListWidget(QWidget):
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon("GUI/icons/restart.png"), "Restart", self.ctx_menu_restart)
         self.ctx_menu.addAction(QIcon("GUI/icons/web.png"), "Open WebUI", self.ctx_menu_webui)
+        self.ctx_menu.addSeparator()
+
+        self.ctx_menu_ota = QMenu("OTA upgrade")
+        self.ctx_menu_ota.addAction("Set OTA URL", self.ctx_menu_ota_set_url)
+        self.ctx_menu_ota.addAction("Upgrade", self.ctx_menu_ota_set_upgrade)
+        ota_btn = self.ctx_menu.addMenu(self.ctx_menu_ota)
+
+        # self.ctx_menu.addAction("Config backup", self.ctx_menu_config_backup)
 
         self.ctx_menu_copy.addAction("IP", lambda: self.ctx_menu_copy_value(DevMdl.IP))
         self.ctx_menu_copy.addAction("MAC", lambda: self.ctx_menu_copy_value(DevMdl.MAC))
@@ -93,6 +105,7 @@ class DevicesListWidget(QWidget):
         self.ctx_menu_copy.addAction("TELE topic", lambda: self.ctx_menu_copy_prefix_topic("TELE"))
 
         self.tb.addActions(self.ctx_menu.actions())
+        self.tb.widgetForAction(ota_btn).setPopupMode(QToolButton.InstantPopup)
         self.tb.widgetForAction(relays_btn).setPopupMode(QToolButton.InstantPopup)
         self.tb.widgetForAction(copy_btn).setPopupMode(QToolButton.InstantPopup)
 
@@ -154,6 +167,22 @@ class DevicesListWidget(QWidget):
         if self.idx:
             QDesktopServices.openUrl(QUrl("http://{}".format(self.model.ip(self.idx))))
 
+    def ctx_menu_config_backup(self):
+        if self.idx:
+            ip = self.model.data(self.model.index(self.idx.row(), DevMdl.IP))
+            self.nam.get(QNetworkRequest(QUrl("http://{}/ld".format(ip))));
+
+    def ctx_menu_ota_set_url(self):
+        if self.idx:
+            current_url = self.model.data(self.model.index(self.idx.row(), DevMdl.OTA_URL))
+            url, ok = QInputDialog.getText(self, "Set OTA URL", '100 chars max. Set to "1" to reset to default.', text=current_url)
+            if ok:
+                self.mqtt.publish("{}/otaurl".format(self.model.commandTopic(self.idx)), payload=url)
+
+    def ctx_menu_ota_set_upgrade(self):
+        if QMessageBox.question(self, "OTA Upgrade", "Are you sure to OTA upgrade from\n{}".format(self.ota_url), QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            self.mqtt.publish("{}/upgrade".format(self.model.commandTopic(self.idx)), payload="1")
+
     def show_list_ctx_menu(self, at):
         self.select_device(self.device_list.indexAt(at))
         self.ctx_menu.popup(self.device_list.viewport().mapToGlobal(at))
@@ -197,9 +226,10 @@ class DevicesListWidget(QWidget):
             self.ctx_menu_relays.clear()
 
     def device_config(self, idx=None):
-        dev_cfg = DevicesConfigWidget(self, self.model.topic(self.idx))
-        self.mdi.addSubWindow(dev_cfg)
-        dev_cfg.setWindowState(Qt.WindowMaximized)
+        if self.idx:
+            dev_cfg = DevicesConfigWidget(self, self.model.topic(self.idx))
+            self.mdi.addSubWindow(dev_cfg)
+            dev_cfg.setWindowState(Qt.WindowMaximized)
 
     def device_add(self):
         rc = self.model.rowCount()
@@ -223,6 +253,9 @@ class DevicesListWidget(QWidget):
                 tele_idx = self.telemetry_model.devices.get(topic)
                 if tele_idx:
                     self.telemetry_model.removeRows(tele_idx.row(),1)
+
+    def nam_reply(self, reply):
+        print(reply)
 
     def closeEvent(self, event):
         event.ignore()

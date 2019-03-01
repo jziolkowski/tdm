@@ -96,15 +96,13 @@ class TasmotaDevicesModel(QAbstractTableModel):
             row = idx.row()
             col = idx.column()
 
-            if role in (Qt.DisplayRole, Qt.EditRole):
+            if role in [Qt.DisplayRole, Qt.EditRole]:
                 val = self._devices[row][col]
                 if val and col == DevMdl.UPTIME:
+                    val = str(val)
                     if val.startswith("0T"):
                         val = val.replace('0T', '')
                     return val.replace('T', 'd ')
-
-                elif val and col == DevMdl.MODULE:
-                    return modules.get(val, 'Unknown')
 
                 elif val and col == DevMdl.FIRMWARE:
                     return val.replace('(', ' (')
