@@ -180,8 +180,11 @@ class DevicesListWidget(QWidget):
                 self.mqtt.publish("{}/otaurl".format(self.model.commandTopic(self.idx)), payload=url)
 
     def ctx_menu_ota_set_upgrade(self):
-        if QMessageBox.question(self, "OTA Upgrade", "Are you sure to OTA upgrade from\n{}".format(self.ota_url), QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
-            self.mqtt.publish("{}/upgrade".format(self.model.commandTopic(self.idx)), payload="1")
+        if self.idx:
+            current_url = self.model.data(self.model.index(self.idx.row(), DevMdl.OTA_URL))
+            if QMessageBox.question(self, "OTA Upgrade", "Are you sure to OTA upgrade from\n{}".format(current_url), QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+                self.model.setData(self.model.index(self.idx.row(), DevMdl.FIRMWARE), "Upgrade in progress")
+                self.mqtt.publish("{}/upgrade".format(self.model.commandTopic(self.idx)), payload="1")
 
     def show_list_ctx_menu(self, at):
         self.select_device(self.device_list.indexAt(at))
