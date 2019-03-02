@@ -63,7 +63,7 @@ class MainWindow(QMainWindow):
 
         self.load_window_state()
 
-        if self.settings.value("connect_on_startup", False):
+        if self.settings.value("connect_on_startup", False, bool):
             self.actToggleConnect.trigger()
 
     def setup_main_layout(self):

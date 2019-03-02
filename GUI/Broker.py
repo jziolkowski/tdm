@@ -34,7 +34,7 @@ class BrokerDialog(QDialog):
         gbLogin.setLayout(lfl)
 
         self.cbConnectStartup = QCheckBox("Connect on startup")
-        self.cbConnectStartup.setChecked(int(self.settings.value("connect_on_startup",0)))
+        self.cbConnectStartup.setChecked(self.settings.value("connect_on_startup", False, bool))
 
         hlBtn = HLayout()
         btnSave = QPushButton("Save")
@@ -55,6 +55,6 @@ class BrokerDialog(QDialog):
         self.settings.setValue("port", self.port.value())
         self.settings.setValue("username", self.username.text())
         self.settings.setValue("password", self.password.text())
-        self.settings.setValue("connect_on_startup", int(self.cbConnectStartup.isChecked()))
+        self.settings.setValue("connect_on_startup", self.cbConnectStartup.isChecked())
         self.settings.sync()
         self.done(QDialog.Accepted)

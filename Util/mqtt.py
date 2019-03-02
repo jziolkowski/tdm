@@ -36,7 +36,7 @@ class MqttClient(QtCore.QObject):
 
         self.m_state = MqttClient.Disconnected
 
-        self.m_client =  mqtt.Client(clean_session=self.m_cleanSession,
+        self.m_client =  mqtt.Client("TDM", clean_session=self.m_cleanSession,
             protocol=self.protocolVersion)
 
         self.m_client.on_connect = self.on_connect
@@ -117,7 +117,6 @@ class MqttClient(QtCore.QObject):
                 self.m_client.connect(self.m_hostname,
                     port=self.port,
                     keepalive=self.keepAlive)
-                # self.m_client.username_pw_set("DVES_USER")
 
                 self.state = MqttClient.Connecting
                 self.m_client.loop_start()
