@@ -1,4 +1,4 @@
-from json import loads, dumps
+from json import loads, JSONDecodeError, dumps
 
 from PyQt5.QtCore import Qt, QSettings, QTimer, QDir, QTime, QTime
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
@@ -33,7 +33,7 @@ class DevicesConfigWidget(QWidget):
 
         self.gpios = []
         self.supported_gpios = []
-        self.current_gpios = {}
+        self.gpio_cb = []
         self.timers = False
 
         self.setLayout(VLayout(margin=[0, 6, 0, 0], spacing=3))
@@ -91,8 +91,6 @@ class DevicesConfigWidget(QWidget):
                 self.loadVarMem()
 
     def tabChanged(self, tab):
-        # if tab == 1:
-
         if tab == 2:
             self.loadRule(self.rg.cbRule.currentIndex())
             self.loadTimer(self.cbTimer.currentIndex())
@@ -124,138 +122,141 @@ class DevicesConfigWidget(QWidget):
             match = match.groupdict()
             reply = match['reply']
 
-            if reply == "RESULT":
+            try:
                 msg = loads(msg)
-                first = list(msg)[0]
 
-                if first.startswith('Rule'):
-                    self.parseRule(msg)
+                if reply == "RESULT":
+                    first = list(msg)[0]
 
-                elif first == "T1":
-                    self.parseRuleTimer(msg)
+                    if first.startswith('Rule'):
+                        self.parseRule(msg)
 
-                elif first.startswith('Var'):
-                    self.parseVarMem(msg, 0)
+                    elif first == "T1":
+                        self.parseRuleTimer(msg)
 
-                elif first.startswith('Mem'):
-                    self.parseVarMem(msg, 1)
+                    elif first.startswith('Var'):
+                        self.parseVarMem(msg, 0)
 
-                elif first == "Module":
-                    self.module = msg[first]
+                    elif first.startswith('Mem'):
+                        self.parseVarMem(msg, 1)
 
-                elif first.startswith('Modules'):
-                    self.parseModules(msg)
+                    elif first == "Module":
+                        self.module = msg[first]
+                        self.updateCBModules()
 
-                elif first.startswith('GPIO') and not first.startswith('GPIOs'):
-                    self.parseGPIO(msg)
+                    elif first.startswith('Modules'):
+                        self.parseModules(msg)
 
-                elif first.startswith('GPIOs'):
-                    self.parseGPIOs(msg)
+                    elif first.startswith('GPIO') and not first.startswith('GPIOs'):
+                        self.parse_available_gpio(msg)
 
-                elif not first.startswith("Timers") and first.startswith("Timer"):
-                    self.parseTimer(msg[first])
+                    elif first.startswith('GPIOs'):
+                        self.parse_supported_peripherals(msg)
 
-                elif first == "Timers":
-                    self.gbTimers.setChecked(msg[first] == "ON")
+                    elif not first.startswith("Timers") and first.startswith("Timer"):
+                        self.parseTimer(msg[first])
 
-                elif first.startswith("Timers"):
-                    pass
+                    elif first == "Timers":
+                        self.gbTimers.setChecked(msg[first] == "ON")
 
-                else:
-                    print(msg)
+                    elif first.startswith("Timers"):
+                        pass
 
-            elif reply in ("STATE", "STATUS11"):
-                msg = loads(msg)
-                if reply == "STATUS11":
-                    msg = msg['StatusSTS']
+                    else:
+                        print(msg)
 
-                self.wifi_model.item(0, 1).setText("{} ({})".format(msg['Wifi'].get('SSId', "n/a"), msg['Wifi'].get('RSSI', "n/a")))
-                self.power = {k: msg[k] for k in msg.keys() if k.startswith("POWER")}
-                self.cbxTimerOut.clear()
-                self.cbxTimerOut.addItems(self.power)
+                elif reply in ("STATE", "STATUS11"):
+                    if reply == "STATUS11":
+                        msg = msg['StatusSTS']
 
-            elif reply == "STATUS":
-                msg = loads(msg)['Status']
-                self.lbModule.setText(modules.get(msg.get("Module")))
+                    self.wifi_model.item(0, 1).setText("{} ({})".format(msg['Wifi'].get('SSId', "n/a"), msg['Wifi'].get('RSSI', "n/a")))
+                    self.power = {k: msg[k] for k in msg.keys() if k.startswith("POWER")}
+                    self.cbxTimerOut.clear()
+                    self.cbxTimerOut.addItems(self.power)
 
-                for i, fn in enumerate(msg['FriendlyName']):
-                    self.program_model.item(6+i, 1).setText(msg['FriendlyName'][i])
+                elif reply == "STATUS":
+                    msg = msg['Status']
+                    self.lbModule.setText(modules.get(msg.get("Module")))
 
-                self.mqtt_model.item(4, 1).setText("{}".format(msg.get('Topic', "n/a")))
+                    fname = msg['FriendlyName']
+                    if isinstance(fname, str):
+                        fname = [fname]
+                    for i, fn in enumerate(fname):
+                        self.program_model.item(6+i, 1).setText(msg['FriendlyName'][i])
 
-            elif reply == "STATUS1":
-                msg = loads(msg)['StatusPRM']
-                self.program_model.item(3, 1).setText("{} @{}".format(msg.get('SaveCount', "n/a"), msg.get('SaveAddress', "n/a")))
-                self.program_model.item(4, 1).setText("{}".format(msg.get('BootCount', "n/a")))
-                self.program_model.item(5, 1).setText("{}".format(msg.get('RestartReason', "n/a")))
-                self.mqtt_model.item(5, 1).setText("{}".format(msg.get('GroupTopic', "n/a")))
+                    self.mqtt_model.item(4, 1).setText("{}".format(msg.get('Topic', "n/a")))
 
-            elif reply == "STATUS2":
-                msg = loads(msg)['StatusFWR']
-                self.program_model.item(0, 1).setText("{}".format(msg.get('Version', "n/a")))
-                self.program_model.item(1, 1).setText("{}".format(msg.get('BuildDateTime', "n/a")))
-                self.program_model.item(2, 1).setText("{} / {}".format(msg.get('Core', "n/a"), msg.get('SDK', "n/a")))
+                elif reply == "STATUS1":
+                    msg = msg['StatusPRM']
+                    self.program_model.item(3, 1).setText("{} @{}".format(msg.get('SaveCount', "n/a"), msg.get('SaveAddress', "n/a")))
+                    self.program_model.item(4, 1).setText("{}".format(msg.get('BootCount', "n/a")))
+                    self.program_model.item(5, 1).setText("{}".format(msg.get('RestartReason', "n/a")))
+                    self.mqtt_model.item(5, 1).setText("{}".format(msg.get('GroupTopic', "n/a")))
 
-            elif reply == "STATUS3":
-                msg = loads(msg)['StatusLOG']
+                elif reply == "STATUS2":
+                    msg = msg['StatusFWR']
+                    self.program_model.item(0, 1).setText("{}".format(msg.get('Version', "n/a")))
+                    self.program_model.item(1, 1).setText("{}".format(msg.get('BuildDateTime', "n/a")))
+                    self.program_model.item(2, 1).setText("{} / {}".format(msg.get('Core', "n/a"), msg.get('SDK', "n/a")))
 
-            elif reply == "STATUS4":
-                msg = loads(msg)['StatusMEM']
-                self.esp_model.item(0, 1).setText("n/a")
-                self.esp_model.item(1, 1).setText("{}".format(msg.get('FlashChipId', "n/a")))
-                self.esp_model.item(2, 1).setText("{}".format(msg.get('FlashSize', "n/a")))
-                self.esp_model.item(3, 1).setText("{}".format(msg.get('ProgramFlashSize', "n/a")))
-                self.esp_model.item(4, 1).setText("n/a")
-                self.esp_model.item(5, 1).setText("{}".format(msg.get('Free', "n/a")))
-                self.esp_model.item(6, 1).setText("{}".format(msg.get('Heap', "n/a")))
+                elif reply == "STATUS3":
+                    msg = msg['StatusLOG']
 
-            elif reply == "STATUS5":
-                msg = loads(msg)['StatusNET']
-                self.wifi_model.item(1, 1).setText("{}".format(msg.get('Hostname', "n/a")))
-                self.wifi_model.item(2, 1).setText("{}".format(msg.get('IPAddress', "n/a")))
-                self.wifi_model.item(3, 1).setText("{}".format(msg.get('Gateway', "n/a")))
-                self.wifi_model.item(4, 1).setText("{}".format(msg.get('Subnetmask', "n/a")))
-                self.wifi_model.item(5, 1).setText("{}".format(msg.get('DNSServer', "n/a")))
-                self.wifi_model.item(6, 1).setText("{}".format(msg.get('Mac', "n/a")))
+                elif reply == "STATUS4":
+                    msg = msg['StatusMEM']
+                    self.esp_model.item(0, 1).setText("n/a")
+                    self.esp_model.item(1, 1).setText("{}".format(msg.get('FlashChipId', "n/a")))
+                    self.esp_model.item(2, 1).setText("{}".format(msg.get('FlashSize', "n/a")))
+                    self.esp_model.item(3, 1).setText("{}".format(msg.get('ProgramFlashSize', "n/a")))
+                    self.esp_model.item(4, 1).setText("n/a")
+                    self.esp_model.item(5, 1).setText("{}".format(msg.get('Free', "n/a")))
+                    self.esp_model.item(6, 1).setText("{}".format(msg.get('Heap', "n/a")))
 
-            elif reply == "STATUS6":
-                msg = loads(msg)['StatusMQT']
-                self.mqtt_model.item(0, 1).setText("{}".format(msg.get('MqttHost', "n/a")))
-                self.mqtt_model.item(1, 1).setText("{}".format(msg.get('MqttPort', "n/a")))
-                self.mqtt_model.item(2, 1).setText("{}".format(msg.get('MqttUser', "n/a")))
-                self.mqtt_model.item(3, 1).setText("{}".format(msg.get('MqttClient', "n/a")))
-                self.mqtt_model.item(6, 1).setText("{}".format(self.full_topic))
-                self.mqtt_model.item(7, 1).setText("cmnd/{}_fb".format(msg.get('MqttClient', "n/a")))
+                elif reply == "STATUS5":
+                    msg = msg['StatusNET']
+                    self.wifi_model.item(1, 1).setText("{}".format(msg.get('Hostname', "n/a")))
+                    self.wifi_model.item(2, 1).setText("{}".format(msg.get('IPAddress', "n/a")))
+                    self.wifi_model.item(3, 1).setText("{}".format(msg.get('Gateway', "n/a")))
+                    self.wifi_model.item(4, 1).setText("{}".format(msg.get('Subnetmask', "n/a")))
+                    self.wifi_model.item(5, 1).setText("{}".format(msg.get('DNSServer', "n/a")))
+                    self.wifi_model.item(6, 1).setText("{}".format(msg.get('Mac', "n/a")))
 
-            elif reply == "STATUS7":
-                msg = loads(msg)['StatusTIM']
-                self._sunrise = msg.get('Sunrise', "")
-                self._sunset = msg.get('Sunset', "")
-                self.TimerMode.button(1).setText(self.TimerMode.button(1).text().format(msg.get('Sunrise', "")))
-                self.TimerMode.button(2).setText(self.TimerMode.button(2).text().format(msg.get('Sunset', "")))
+                elif reply == "STATUS6":
+                    msg = msg['StatusMQT']
+                    self.mqtt_model.item(0, 1).setText("{}".format(msg.get('MqttHost', "n/a")))
+                    self.mqtt_model.item(1, 1).setText("{}".format(msg.get('MqttPort', "n/a")))
+                    self.mqtt_model.item(2, 1).setText("{}".format(msg.get('MqttUser', "n/a")))
+                    self.mqtt_model.item(3, 1).setText("{}".format(msg.get('MqttClient', "n/a")))
+                    self.mqtt_model.item(6, 1).setText("{}".format(self.full_topic))
+                    self.mqtt_model.item(7, 1).setText("cmnd/{}_fb".format(msg.get('MqttClient', "n/a")))
+
+                elif reply == "STATUS7":
+                    msg = msg['StatusTIM']
+                    self._sunrise = msg.get('Sunrise', "")
+                    self._sunset = msg.get('Sunset', "")
+                    self.TimerMode.button(1).setText(self.TimerMode.button(1).text().format(msg.get('Sunrise', "")))
+                    self.TimerMode.button(2).setText(self.TimerMode.button(2).text().format(msg.get('Sunset', "")))
+
+            except JSONDecodeError:
+                pass
 
     def initial_query(self):
         self.mqtt.publish(self.cmnd_topic + "status", 0)
-        self.mqtt.publish(self.cmnd_topic + "module")
-        self.mqtt.publish(self.cmnd_topic + "modules")
-        self.mqtt.publish(self.cmnd_topic + "gpio")
-        self.mqtt.publish(self.cmnd_topic + "gpios")
         self.mqtt.publish(self.cmnd_topic + "timers")
+        self.mqtt.publish(self.cmnd_topic + "modules")
+        self.mqtt.publish(self.cmnd_topic + "module")
+        self.mqtt.publish(self.cmnd_topic + "gpios")
+        self.mqtt.publish(self.cmnd_topic + "gpio")
 
     def parseModules(self, msg):
         k = list(msg)[0]
-        nr = k[-1]
         v = msg[k]
 
         if k == "Modules1":
             self.modules = v
 
-        elif k == "Modules2":
+        else:
             self.modules += v
-
-        elif k == "Modules3":
-            self.modules += v
-            self.updateCBModules()
 
     def updateCBModules(self):
         self.cbModule.clear()
@@ -267,44 +268,30 @@ class DevicesConfigWidget(QWidget):
         self.mqtt.publish(self.cmnd_topic + "module", payload=module)
         self.parent().close()
 
-    def parseGPIO(self, msg):
-        for g in list(msg):
-            self.current_gpios[g] = (msg[g])
+    def parse_available_gpio(self, msg):
+        self.gpios = list(msg)
+        for i, g in enumerate(self.gpios):
             cb = QComboBox()
-            self.gpios.append(cb)
-            self.gbGPIO.layout().addRow(QLabel(g), cb)
+            cb.addItems(self.supported_gpios)
+            cb.setCurrentText(msg[g])
+            self.gpio_cb.append(cb)
+            self.gbGPIO.layout().insertRow(0+i, g, cb)
 
-        pbGPIOSet = QPushButton("Save and close (device will restart)")
-        pbGPIOSet.clicked.connect(self.saveGPIOs)
-        self.gbGPIO.layout().addWidget(pbGPIOSet)
-
-    def parseGPIOs(self, msg):
+    def parse_supported_peripherals(self, msg):
         k = list(msg)[0]
-        nr = k[-1]
         v = msg[k]
 
         if k == "GPIOs1":
             self.supported_gpios = v
 
-        elif k == "GPIOs2":
+        else:
             self.supported_gpios += v
-
-        elif k == "GPIOs3":
-            self.supported_gpios += v
-            self.updateCBGpios()
-
-    def updateCBGpios(self):
-        for i, cb in enumerate(self.gpios):
-            cb.clear()
-            cb.addItems(self.supported_gpios)
-            cb.setCurrentText(self.current_gpios[list(self.current_gpios)[i]])
 
     def saveGPIOs(self):
         payload = ""
-        for i, g in enumerate(list(self.current_gpios)):
-            gpio = self.gpios[i].currentText().split(" ")[0]
+        for i, g in enumerate(list(self.gpios)):
+            gpio = self.gpio_cb[i].currentText().split(" ")[0]
             payload += "{} {}; ".format(g, gpio)
-
         self.mqtt.publish(self.cmnd_topic + "backlog", payload=payload)
         self.parent().close()
 
@@ -589,20 +576,17 @@ class DevicesConfigWidget(QWidget):
         module = QWidget()
         module.setLayout(HLayout())
 
-        self.gbModule = QGroupBox("Module")
-        fl_module = QFormLayout()
-
+        self.gbModule = GroupBoxH("Module")
         self.cbModule = QComboBox()
-        fl_module.addRow("Module type", self.cbModule)
-
         self.pbModuleSet = QPushButton("Save and close (device will restart)")
+        self.gbModule.addWidgets([self.cbModule, self.pbModuleSet])
         self.pbModuleSet.clicked.connect(self.saveModule)
-        fl_module.addWidget(self.pbModuleSet)
-
-        self.gbModule.setLayout(fl_module)
 
         self.gbGPIO = QGroupBox("GPIO")
         fl_gpio = QFormLayout()
+        pbGPIOSet = QPushButton("Save and close (device will restart)")
+        fl_gpio.addWidget(pbGPIOSet)
+        pbGPIOSet.clicked.connect(self.saveGPIOs)
 
         self.gbGPIO.setLayout(fl_gpio)
 

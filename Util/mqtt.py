@@ -36,7 +36,7 @@ class MqttClient(QtCore.QObject):
 
         self.m_state = MqttClient.Disconnected
 
-        self.m_client =  mqtt.Client("TDM", clean_session=self.m_cleanSession,
+        self.m_client =  mqtt.Client(clean_session=self.m_cleanSession,
             protocol=self.protocolVersion)
 
         self.m_client.on_connect = self.on_connect
