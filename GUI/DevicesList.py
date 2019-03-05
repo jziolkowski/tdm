@@ -137,7 +137,7 @@ class DevicesListWidget(QWidget):
 
                 for r in relays.keys():
                     self.mqtt.publish(cmnd_topic + r, retain=True)
-                QMessageBox.information(self, "Clear retained", "Cleared reatined messages.")
+                QMessageBox.information(self, "Clear retained", "Cleared retained messages.")
 
     def ctx_menu_power(self, relay=None, state=None):
         if self.idx:
