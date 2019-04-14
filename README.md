@@ -32,10 +32,12 @@ GUI application to discover and monitor devices flashed with [Tasmota firmware](
 
 # Requirements
 
-Python 3.4+
+Python 3.4+ (if not already installed on your system, read the python3 installation instructions for your platform)
 
-PyQt5: <pre>pip install PyQt5</pre>
-paho-mqtt: <pre>pip install paho-mqtt</pre>
+PyQt5: <pre>pip3 install PyQt5</pre>
+paho-mqtt: <pre>pip3 install paho-mqtt</pre>
+
+If you don't have pip3 installed for some weird reason, use <pre>python3 -m pip install \<package\></pre>
 
 Uses free icons from [FatCow](https://www.fatcow.com/free-icons)
 
