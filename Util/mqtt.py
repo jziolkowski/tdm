@@ -21,6 +21,9 @@ class MqttClient(QtCore.QObject):
     keepAliveChanged = QtCore.pyqtSignal(int)
     cleanSessionChanged = QtCore.pyqtSignal(bool)
     protocolVersionChanged = QtCore.pyqtSignal(int)
+    usernameChanged = QtCore.pyqtSignal(str)
+    passwordChanged = QtCore.pyqtSignal(str)
+    clientIdChanged = QtCore.pyqtSignal(str)
 
     messageSignal = QtCore.pyqtSignal(str, str)
 
@@ -28,6 +31,9 @@ class MqttClient(QtCore.QObject):
         super(MqttClient, self).__init__(parent)
 
         self.m_hostname = ""
+        self.m_clientId = ""
+        self.m_username = ""
+        self.m_password = ""
         self.m_port = 1883
         self.ssl = False
         self.m_keepAlive = 60
@@ -35,13 +41,6 @@ class MqttClient(QtCore.QObject):
         self.m_protocolVersion = MqttClient.MQTT_3_1
 
         self.m_state = MqttClient.Disconnected
-
-        self.m_client =  mqtt.Client(clean_session=self.m_cleanSession,
-            protocol=self.protocolVersion)
-
-        self.m_client.on_connect = self.on_connect
-        self.m_client.on_message = self.on_message
-        self.m_client.on_disconnect = self.on_disconnect
 
 
     @QtCore.pyqtProperty(int, notify=stateChanged)
@@ -74,8 +73,35 @@ class MqttClient(QtCore.QObject):
         self.m_port = port
         self.portChanged.emit(port)
 
-    def setAuth(self, username, password):
-        self.m_client.username_pw_set(username, password)
+    @QtCore.pyqtProperty(int, notify=usernameChanged)
+    def username(self):
+        return self.m_username
+
+    @username.setter
+    def username(self, username):
+        if self.m_username == username: return
+        self.m_username = username
+        self.usernameChanged.emit(username)
+
+    @QtCore.pyqtProperty(int, notify=passwordChanged)
+    def password(self):
+        return self.m_password
+
+    @password.setter
+    def password(self, password):
+        if self.m_password == password: return
+        self.m_password = password
+        self.passwordChanged.emit(password)
+
+    @QtCore.pyqtProperty(int, notify=clientIdChanged)
+    def clientId(self):
+        return self.m_clientId
+
+    @clientId.setter
+    def clientId(self, clientId):
+        if self.m_clientId == clientId: return
+        self.m_clientId = clientId
+        self.clientIdChanged.emit(clientId)
 
     @QtCore.pyqtProperty(int, notify=keepAliveChanged)
     def keepAlive(self):
@@ -111,6 +137,13 @@ class MqttClient(QtCore.QObject):
     #################################################################
     @QtCore.pyqtSlot()
     def connectToHost(self):
+        self.m_client =  mqtt.Client(client_id=self.m_clientId, clean_session=self.m_cleanSession,
+            protocol=self.protocolVersion)
+        self.m_client.username_pw_set(self.m_username, self.m_password)
+
+        self.m_client.on_connect = self.on_connect
+        self.m_client.on_message = self.on_message
+        self.m_client.on_disconnect = self.on_disconnect
         if self.m_hostname:
             self.connecting.emit()
             try:
