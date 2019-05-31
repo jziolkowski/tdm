@@ -189,16 +189,7 @@ class MainWindow(QMainWindow):
 
     def toggle_connect(self, state):
         if state and self.mqtt.state == self.mqtt.Disconnected:
-            self.broker_hostname = self.settings.value('hostname', 'localhost')
-            self.broker_port = self.settings.value('port', 1883, int)
-            self.broker_username = self.settings.value('username')
-            self.broker_password = self.settings.value('password')
-
-            self.mqtt.hostname = self.broker_hostname
-            self.mqtt.port = self.broker_port
-
-            if self.broker_username:
-                self.mqtt.setAuth(self.broker_username, self.broker_password)
+            self.mqtt_connect_perform()
             self.mqtt.connectToHost()
         elif not state and self.mqtt.state == self.mqtt.Connected:
             self.mqtt_disconnect()
@@ -211,19 +202,26 @@ class MainWindow(QMainWindow):
                 self.mqtt.publish(cmnd+"STATUS", payload=8)
 
     def mqtt_connect(self):
+        self.mqtt_connect_perform()
+        if self.mqtt.state == self.mqtt.Disconnected:
+            self.mqtt.connectToHost()
+
+    def mqtt_connect_perform(self):
         self.broker_hostname = self.settings.value('hostname', 'localhost')
         self.broker_port = self.settings.value('port', 1883, int)
         self.broker_username = self.settings.value('username')
         self.broker_password = self.settings.value('password')
+        self.broker_clientId = self.settings.value('client_id')
 
         self.mqtt.hostname = self.broker_hostname
         self.mqtt.port = self.broker_port
 
         if self.broker_username:
-            self.mqtt.setAuth(self.broker_username, self.broker_password)
+            self.mqtt.username = self.broker_username
+            self.mqtt.password = self.broker_password
+        if self.broker_clientId:
+            self.mqtt.clientId = self.broker_clientId
 
-        if self.mqtt.state == self.mqtt.Disconnected:
-            self.mqtt.connectToHost()
 
     def mqtt_disconnect(self):
         self.mqtt.disconnectFromHost()
