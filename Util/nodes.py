@@ -306,9 +306,9 @@ class Device(Node):
         return "device"
 
 
-class TasmotaDevice(Device):
+class TelemetryDevice(Device):
     def __init__(self, name=None, parent=None):
-        super(TasmotaDevice, self).__init__(name, parent)
+        super(TelemetryDevice, self).__init__(name, parent)
         self.provide(['Time', 'Vcc'])
         self._friendly_name = ""
 

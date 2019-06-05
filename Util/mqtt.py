@@ -1,5 +1,6 @@
 import paho.mqtt.client as mqtt
 from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSlot
 
 
 class MqttClient(QtCore.QObject):
@@ -22,7 +23,7 @@ class MqttClient(QtCore.QObject):
     cleanSessionChanged = QtCore.pyqtSignal(bool)
     protocolVersionChanged = QtCore.pyqtSignal(int)
 
-    messageSignal = QtCore.pyqtSignal(str, str)
+    messageSignal = QtCore.pyqtSignal(str, str, bool)
 
     def __init__(self, parent=None):
         super(MqttClient, self).__init__(parent)
@@ -132,6 +133,7 @@ class MqttClient(QtCore.QObject):
         if self.state == MqttClient.Connected:
             self.m_client.subscribe(path)
 
+    @pyqtSlot(str, str)
     def publish(self, topic, payload = None, qos=0, retain=False):
         if self.state == MqttClient.Connected:
             self.m_client.publish(topic, payload, qos, retain)
@@ -141,11 +143,10 @@ class MqttClient(QtCore.QObject):
     def on_message(self, mqttc, obj, msg):
         topic = msg.topic
         mstr = msg.payload.decode("utf8")
-        # print("on_message", mstr, obj, mqttc)
-        self.messageSignal.emit(topic, mstr)
+        retained = msg.retain
+        self.messageSignal.emit(topic, mstr, retained)
 
     def on_connect(self, *args):
-        # print("on_connect", client, userdata, rc)
         rc = args[3]
         if rc == 0:
             self.state = MqttClient.Connected
@@ -155,7 +156,6 @@ class MqttClient(QtCore.QObject):
             self.connectError.emit(rc)
 
     def on_disconnect(self, *args):
-        # print("on_disconnect", args)
         self.state = MqttClient.Disconnected
         self.disconnected.emit()
 

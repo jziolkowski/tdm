@@ -1,18 +1,17 @@
 from json import loads, JSONDecodeError, dumps
 
-from PyQt5.QtCore import Qt, QSettings, QTimer, QDir, QTime, QTime
+from PyQt5.QtCore import Qt, QSettings, QTimer, QDir, QTime, QTime, QSize
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QWidget, QTabWidget, QLineEdit, QTabBar, QLabel, QComboBox, QPushButton, QFrame, \
     QTableWidget, QHeaderView, QSizePolicy, QGroupBox, QFormLayout, QSpacerItem, QTreeView, QCheckBox, QRadioButton, QButtonGroup, QTimeEdit, QLabel, \
     QListWidget, QListWidgetItem, QApplication
 
-from GUI import VLayout, HLayout, RuleGroupBox, GroupBoxH, SpinBox, DetailLE, GroupBoxV
-from Util import match_topic, modules
+from GUI import VLayout, HLayout, RuleGroupBox, GroupBoxH, SpinBox, DetailLE, GroupBoxV, DeviceParam, DoubleSpinBox
 from Util.mqtt import MqttClient
 
 
 class DevicesConfigWidget(QWidget):
-    def __init__(self, parent, topic, *args, **kwargs):
+    def __init__(self, topic, *args, **kwargs):
         super(DevicesConfigWidget, self).__init__(*args, **kwargs)
 
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
@@ -63,22 +62,37 @@ class DevicesConfigWidget(QWidget):
 
     def build_tabs(self):
         self.tabs = QTabWidget()
-
         tabInformation = self.tabInformation()
         self.tabs.addTab(tabInformation, "Information")
 
         tabModule = self.tabModule()
-        self.tabs.addTab(tabModule, "Module and Firmware")
+        self.tabs.addTab(tabModule, "Module · Firmware")
+
+        tabWiFiMQTT = self.tabWiFiMQTT()
+        self.tabs.addTab(tabWiFiMQTT, "Wifi · MQTT")
+
+        tabTime = self.tabTime()
+        self.tabs.addTab(tabTime, "Time")
+
+        tabBS = self.tabBS()
+        self.tabs.addTab(tabBS, "Buttons · switches")
+
+        tabRelays = self.tabRelays()
+        self.tabs.addTab(tabRelays, "Relays")
+
+        tabColors = self.tabColors()
+        self.tabs.addTab(tabColors, "Colors · PWM")
 
         self.rule_grps = []
         tabRules = self.tabRules()
-        self.tabs.addTab(tabRules, "Rules and Timers")
-        self.pbRTSet.clicked.connect(self.saveRuleTimers)
-        self.pbVMSet.clicked.connect(self.saveVarMem)
+        self.tabs.addTab(tabRules, "Rules · Timers")
+
 
         self.rg.pbSave.clicked.connect(self.saveRule)
 
-        self.tabs.currentChanged.connect(self.tabChanged)
+        tabLog = self.tabLog()
+        self.tabs.addTab(tabLog, "Logging")
+
         self.tabs.setEnabled(False)
         self.layout().addWidget(self.tabs)
 
@@ -130,6 +144,9 @@ class DevicesConfigWidget(QWidget):
 
                     if first.startswith('Rule'):
                         self.parseRule(msg)
+
+                    elif first == "OtaUrl":
+                        self.dpOTAUrl.input.setText(msg[first])
 
                     elif first == "T1":
                         self.parseRuleTimer(msg)
@@ -192,12 +209,16 @@ class DevicesConfigWidget(QWidget):
                     self.program_model.item(4, 1).setText("{}".format(msg.get('BootCount', "n/a")))
                     self.program_model.item(5, 1).setText("{}".format(msg.get('RestartReason', "n/a")))
                     self.mqtt_model.item(5, 1).setText("{}".format(msg.get('GroupTopic', "n/a")))
+                    self.dpOTAUrl.input.setText(msg.get('OtaUrl'))
 
                 elif reply == "STATUS2":
                     msg = msg['StatusFWR']
                     self.program_model.item(0, 1).setText("{}".format(msg.get('Version', "n/a")))
                     self.program_model.item(1, 1).setText("{}".format(msg.get('BuildDateTime', "n/a")))
                     self.program_model.item(2, 1).setText("{} / {}".format(msg.get('Core', "n/a"), msg.get('SDK', "n/a")))
+                    self.lbFWVersion.setText("Version: {}".format(msg.get('Version', "n/a")))
+                    self.lbFWBuild.setText("Build date/time: {}".format(msg.get('BuildDateTime', "n/a")))
+                    self.lbFWCore.setText("Core: {}".format(msg.get('Core', "n/a")))
 
                 elif reply == "STATUS3":
                     msg = msg['StatusLOG']
@@ -241,12 +262,12 @@ class DevicesConfigWidget(QWidget):
                 pass
 
     def initial_query(self):
-        self.mqtt.publish(self.cmnd_topic + "status", 0)
-        self.mqtt.publish(self.cmnd_topic + "timers")
-        self.mqtt.publish(self.cmnd_topic + "modules")
-        self.mqtt.publish(self.cmnd_topic + "module")
-        self.mqtt.publish(self.cmnd_topic + "gpios")
-        self.mqtt.publish(self.cmnd_topic + "gpio")
+        self.publish("status", 0)
+        self.publish("timers")
+        self.publish("modules")
+        self.publish("module")
+        self.publish("gpios")
+        self.publish("gpio")
 
     def parseModules(self, msg):
         k = list(msg)[0]
@@ -265,7 +286,7 @@ class DevicesConfigWidget(QWidget):
 
     def saveModule(self):
         module = self.cbModule.currentText().split(" ")[0]
-        self.mqtt.publish(self.cmnd_topic + "module", payload=module)
+        self.publish("module", module)
         self.parent().close()
 
     def parse_available_gpio(self, msg):
@@ -292,11 +313,11 @@ class DevicesConfigWidget(QWidget):
         for i, g in enumerate(list(self.gpios)):
             gpio = self.gpio_cb[i].currentText().split(" ")[0]
             payload += "{} {}; ".format(g, gpio)
-        self.mqtt.publish(self.cmnd_topic + "backlog", payload=payload)
+        self.publish("backlog", payload)
         self.parent().close()
 
     def loadRule(self, idx):
-        self.mqtt.publish(self.cmnd_topic+"Rule{}".format(idx+1))
+        self.publish("Rule{}".format(idx+1))
 
     def parseRule(self, msg):
         rule, once, stop, _, rules = list(msg)
@@ -314,10 +335,10 @@ class DevicesConfigWidget(QWidget):
             'once': "5" if self.rg.cbOnce.isChecked() else "4",
             'stop': "9" if self.rg.cbStopOnError.isChecked() else "8"
         }
-        self.mqtt.publish(self.cmnd_topic + "backlog", payload='{rule_nr} {text}; {rule_nr} {once}; {rule_nr} {stop}; {rule_nr} {enabled}; '.format(**backlog))
+        self.publish("backlog", '{rule_nr} {text}; {rule_nr} {once}; {rule_nr} {stop}; {rule_nr} {enabled}; '.format(**backlog))
 
     def loadRuleTimers(self):
-        self.mqtt.publish(self.cmnd_topic + "ruletimer")
+        self.publish("ruletimer")
 
     def parseRuleTimer(self, msg):
         for c in range(8):
@@ -326,12 +347,12 @@ class DevicesConfigWidget(QWidget):
 
     def saveRuleTimers(self):
         for t in range(8):
-            self.mqtt.publish(self.cmnd_topic + "ruletimer{}".format(t + 1), payload=self.twRT.cellWidget(0, t).value())
+            self.publish("ruletimer{}".format(t + 1), self.twRT.cellWidget(0, t).value())
 
     def loadVarMem(self):
         for x in range(5):
-            self.mqtt.publish(self.cmnd_topic + "var{}".format(x+1))
-            self.mqtt.publish(self.cmnd_topic + "mem{}".format(x+1))
+            self.publish("var{}".format(x+1))
+            self.publish("mem{}".format(x+1))
 
     def parseVarMem(self, msg, row):
         k = list(msg)[0]
@@ -343,14 +364,14 @@ class DevicesConfigWidget(QWidget):
     def saveVarMem(self):
         for r, cmd in enumerate(['Var', 'Mem']):
             for c in range(5):
-                self.mqtt.publish(self.cmnd_topic + "{}{}".format(cmd, c+1), payload="{}".format(self.twVM.cellWidget(r, c).text()))
+                self.publish("{}{}".format(cmd, c+1), "{}".format(self.twVM.cellWidget(r, c).text()))
 
     def toggleTimers(self, state):
-        self.mqtt.publish(self.cmnd_topic + "timers", payload="ON" if state else "OFF")
+        self.publish("timers", "ON" if state else "OFF")
 
     def loadTimer(self, idx):
-        self.mqtt.publish(self.cmnd_topic+"Timers")
-        self.mqtt.publish(self.cmnd_topic+"Timer{}".format(idx+1))
+        self.publish("Timers")
+        self.publish("Timer{}".format(idx+1))
 
     def parseTimer(self, payload):
         self.blockSignals(True)
@@ -394,7 +415,7 @@ class DevicesConfigWidget(QWidget):
             "Repeat": int(self.cbTimerRpt.isChecked()),
             "Output": self.cbxTimerOut.currentIndex(),
             "Action": self.cbxTimerAction.currentIndex()}
-        self.mqtt.publish(self.cmnd_topic + "timer{}".format(self.cbTimer.currentIndex()+1), payload=dumps(payload))
+        self.publish("timer{}".format(self.cbTimer.currentIndex()+1), dumps(payload))
 
     def copyTrigger(self):
         mode = self.cbxTimerAction.currentText()
@@ -461,6 +482,21 @@ class DevicesConfigWidget(QWidget):
         else:
             self.lbTimerDesc.setText("{} is not armed, it will do nothing.".format(self.cbTimer.currentText().upper()))
 
+    def setOTA(self):
+        self.publish("otaurl", self.dpOTAUrl.input.text())
+
+    def OTAUpgrade(self):
+        self.publish("upgrade", 1)
+
+    def setBlinkCount(self):
+        self.publish("blinkcount", self.dpBlinkCount.input.value())
+
+    def setBlinkTime(self):
+        self.publish("blinktime", self.dpBlinkTime.input.value())
+
+    def publish(self, command, payload=None):
+        self.mqtt.publish(self.cmnd_topic + command, payload=payload)
+
     def tabInformation(self):
         info = QWidget()
         vl = VLayout()
@@ -500,24 +536,6 @@ class DevicesConfigWidget(QWidget):
         tvESP.setModel(self.esp_model)
         tvESP.resizeColumnToContents(0)
         gbESP.addWidget(tvESP)
-
-        # self.emul_model = QStandardItemModel()
-        # for d in ["Emulation", "mDNS Discovery"]:
-        #     k = QStandardItem(d)
-        #     k.setEditable(False)
-        #     v = QStandardItem()
-        #     v.setTextAlignment(Qt.AlignVCenter | Qt.AlignRight)
-        #     v.setEditable(False)
-        #     self.emul_model.appendRow([k, v])
-        #
-        # gbEmul = GroupBoxH("Emulation")
-        # gbEmul.setFlat(True)
-        # tvEmul = QTreeView()
-        # tvEmul.setHeaderHidden(True)
-        # tvEmul.setRootIsDecorated(False)
-        # tvEmul.setModel(self.emul_model)
-        # tvEmul.resizeColumnToContents(0)
-        # gbEmul.addWidget(tvEmul)
 
         self.wifi_model = QStandardItemModel()
         for d in ["AP1 SSId (RSSI)", "Hostname", "IP Address", "Gateway", "Subnet Mask", "DNS Server", "MAC Address"]:
@@ -592,18 +610,69 @@ class DevicesConfigWidget(QWidget):
 
         mg_vl = VLayout([0, 0, 3, 0])
         mg_vl.addWidgets([self.gbModule, self.gbGPIO])
-        mg_vl.setStretch(0,1)
-        mg_vl.setStretch(1,3)
+        mg_vl.addStretch(0)
 
         self.gbFirmware = GroupBoxV("Firmware", margin=[3, 0, 0, 0])
-        lb = QLabel("Feature under development.")
-        lb.setAlignment(Qt.AlignCenter)
-        lb.setEnabled(False)
-        self.gbFirmware.addWidget(lb)
+        self.lbFWVersion = QLabel()
+        self.lbFWCore = QLabel()
+        self.lbFWBuild = QLabel()
+
+        self.dpOTAUrl = DeviceParam("OTA URL", QLineEdit(), ["Set", "Upgrade"], [self.setOTA, self.OTAUpgrade])
+
+        self.gbFirmware.addWidgets([self.lbFWVersion, self.lbFWBuild, self.lbFWCore, self.dpOTAUrl])
+        self.gbFirmware.layout().addStretch(0)
 
         module.layout().addLayout(mg_vl)
         module.layout().addWidget(self.gbFirmware)
         return module
+
+    def tabWiFiMQTT(self):
+        wm = QWidget()
+        wm.setLayout(HLayout())
+
+        return wm
+
+    def tabTime(self):
+        time = QWidget()
+        time.setLayout(HLayout())
+
+        return time
+
+    def tabBS(self):
+        bs = QWidget()
+        bs.setLayout(HLayout())
+
+        return bs
+
+    def tabRelays(self):
+        relays = QWidget()
+        relays.setLayout(HLayout())
+
+        self.dpBlinkCount = DeviceParam("BlinkCount", SpinBox(minimum=0, maximum=32000), ["Set"], [self.setBlinkCount])
+        self.dpBlinkTime = DeviceParam("BlinkTime [ms]", DoubleSpinBox(minimum=2, maximum=3600), ["Set"], [self.setBlinkTime])
+
+        cbPowerOnState = QComboBox()
+        cbPowerOnState.addItems(['OFF', 'ON', 'TOGGLE', '* Last saved state', 'ON and disable control', 'ON after PulseTime'])
+        self.dpPowerOnState = DeviceParam("PowerOnState", cbPowerOnState, ["Set"], [lambda: print('x')])
+
+        vl_l = VLayout()
+        vl_r = VLayout()
+
+        vl_l.addWidgets([self.dpBlinkCount, self.dpPowerOnState])
+        vl_r.addWidgets([self.dpBlinkTime])
+
+        vl_l.addStretch(0)
+        vl_r.addStretch(0)
+
+        relays.layout().addLayout(vl_l)
+        relays.layout().addLayout(vl_r)
+        return relays
+
+    def tabColors(self):
+        colors = QWidget()
+        colors.setLayout(HLayout())
+
+        return colors
 
     def tabRules(self):
         rules = QWidget()
@@ -611,6 +680,7 @@ class DevicesConfigWidget(QWidget):
         hl = HLayout(0)
         vl_l = VLayout(0)
         self.rg = RuleGroupBox(rules, "Rule editor")
+        self.rg.pbSave.clicked.connect(self.saveRule)
         self.rg.setFlat(True)
         self.rg.cbRule.currentIndexChanged.connect(self.loadRule)
         vl_l.addWidget(self.rg)
@@ -620,6 +690,9 @@ class DevicesConfigWidget(QWidget):
         self.pbRTPoll = QPushButton("Poll")
         self.pbRTPoll.setCheckable(True)
         self.pbRTSet = QPushButton("Set")
+
+        self.pbRTSet.clicked.connect(self.saveRuleTimers)
+
 
         vl_RT_func.addWidgets([self.pbRTPoll, self.pbRTSet])
         vl_RT_func.addStretch(1)
@@ -641,6 +714,7 @@ class DevicesConfigWidget(QWidget):
         self.pbVMPoll = QPushButton("Poll")
         self.pbVMPoll.setCheckable(True)
         self.pbVMSet = QPushButton("Set")
+        self.pbVMSet.clicked.connect(self.saveVarMem)
 
         vl_VM_func.addWidgets([self.pbVMPoll, self.pbVMSet])
         vl_VM_func.addStretch(1)
@@ -766,6 +840,12 @@ class DevicesConfigWidget(QWidget):
         rules.layout().setStretch(1,0)
 
         return rules
+
+    def tabLog(self):
+        log = QWidget()
+        log.setLayout(HLayout())
+
+        return log
 
     def closeEvent(self, event):
         self.mqtt.disconnectFromHost()

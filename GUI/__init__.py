@@ -1,48 +1,49 @@
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QFontDatabase, QFont
+from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableView, QSpinBox, QAction, QToolBar, \
-    QHeaderView, QCheckBox, QPushButton, QPlainTextEdit, QLineEdit, QSizePolicy, QComboBox
+    QHeaderView, QCheckBox, QPushButton, QPlainTextEdit, QLineEdit, QComboBox, QFrame, QDoubleSpinBox, QTreeWidgetItem
 
 # from GUI.DeviceEdit import DeviceEditDialog
-from Util import DevMdl, CnsMdl
-
-columns = {
-    DevMdl.LWT: ['LWT', False, QHeaderView.ResizeToContents],
-    DevMdl.TOPIC: ['Topic', True, QHeaderView.ResizeToContents],
-    DevMdl.FULL_TOPIC: ['Full topic', True, QHeaderView.ResizeToContents],
-    DevMdl.FRIENDLY_NAME: ['Name', False, QHeaderView.Stretch],
-
-    DevMdl.MODULE: ['Module', False, QHeaderView.Stretch],
-    DevMdl.FIRMWARE: ['Firmware', False, QHeaderView.ResizeToContents],
-    DevMdl.CORE: ['Core', True, QHeaderView.ResizeToContents],
-
-    DevMdl.MAC: ['MAC', False, QHeaderView.ResizeToContents],
-    DevMdl.IP: ['IP', False, QHeaderView.ResizeToContents],
-
-    DevMdl.SSID: ['SSID', True, QHeaderView.ResizeToContents],
-    DevMdl.BSSID: ['BSSID', True, QHeaderView.ResizeToContents],
-    DevMdl.CHANNEL: ['Channel', True, QHeaderView.ResizeToContents],
-    DevMdl.RSSI: ['RSSI', False, QHeaderView.ResizeToContents],
-    DevMdl.LINKCOUNT: ['LinkCnt', False, QHeaderView.ResizeToContents],
-    DevMdl.DOWNTIME: ['Downtime', False, QHeaderView.ResizeToContents],
-
-    DevMdl.UPTIME: ['Uptime', False, QHeaderView.ResizeToContents],
-    DevMdl.RESTART_REASON: ['Restart reason', True, QHeaderView.ResizeToContents],
-    DevMdl.POWER: ['Power', False, QHeaderView.ResizeToContents],
-    DevMdl.LOADAVG: ['L. avg', False, QHeaderView.ResizeToContents],
-    DevMdl.TELEPERIOD: ['TelePrd.', True, QHeaderView.ResizeToContents],
-    DevMdl.MODULE_ID: ['Module ID', True, QHeaderView.ResizeToContents],
-    DevMdl.OTA_URL: ['OTA URL', True, QHeaderView.ResizeToContents],
-}
-
-columns_console = {
-    CnsMdl.TIMESTAMP: ['Timestamp', False, QHeaderView.ResizeToContents],
-    CnsMdl.TOPIC: ['Topic', False, QHeaderView.ResizeToContents],
-    CnsMdl.FRIENDLY_NAME: ['Friendly name', False, QHeaderView.ResizeToContents],
-    CnsMdl.DESCRIPTION: ['Description', False, QHeaderView.Stretch],
-    CnsMdl.PAYLOAD: ['Payload', True, 1],
-    CnsMdl.KNOWN: ['Known', True, 1],
-}
+# from Util import DevMdl, CnsMdl
+#
+# columns = {
+#     DevMdl.LWT: ['LWT', False, QHeaderView.ResizeToContents],
+#     DevMdl.FRIENDLY_NAME: ['Name', False, QHeaderView.Stretch],
+#
+#     DevMdl.TOPIC: ['Topic', True, QHeaderView.ResizeToContents],
+#     DevMdl.FULL_TOPIC: ['Full topic', True, QHeaderView.ResizeToContents],
+#
+#     DevMdl.MODULE: ['Module', False, QHeaderView.Stretch],
+#     DevMdl.FIRMWARE: ['Firmware', False, QHeaderView.ResizeToContents],
+#     DevMdl.CORE: ['Core', True, QHeaderView.ResizeToContents],
+#
+#     DevMdl.MAC: ['MAC', False, QHeaderView.ResizeToContents],
+#     DevMdl.IP: ['IP', False, QHeaderView.ResizeToContents],
+#
+#     DevMdl.SSID: ['SSID', True, QHeaderView.ResizeToContents],
+#     DevMdl.BSSID: ['BSSID', True, QHeaderView.ResizeToContents],
+#     DevMdl.CHANNEL: ['Channel', True, QHeaderView.ResizeToContents],
+#     DevMdl.RSSI: ['RSSI', False, QHeaderView.ResizeToContents],
+#     DevMdl.LINKCOUNT: ['LinkCnt', False, QHeaderView.ResizeToContents],
+#     DevMdl.DOWNTIME: ['Downtime', False, QHeaderView.ResizeToContents],
+#
+#     DevMdl.UPTIME: ['Uptime', False, QHeaderView.ResizeToContents],
+#     DevMdl.RESTART_REASON: ['Restart reason', True, QHeaderView.ResizeToContents],
+#     DevMdl.POWER: ['Power', False, QHeaderView.ResizeToContents],
+#     DevMdl.LOADAVG: ['L. avg', False, QHeaderView.ResizeToContents],
+#     DevMdl.TELEPERIOD: ['TelePrd.', True, QHeaderView.ResizeToContents],
+#     DevMdl.MODULE_ID: ['Module ID', True, QHeaderView.ResizeToContents],
+#     DevMdl.OTA_URL: ['OTA URL', True, QHeaderView.ResizeToContents],
+# }
+#
+# columns_console = {
+#     CnsMdl.TIMESTAMP: ['Timestamp', False, QHeaderView.ResizeToContents],
+#     CnsMdl.TOPIC: ['Topic', False, QHeaderView.ResizeToContents],
+#     CnsMdl.FRIENDLY_NAME: ['Friendly name', False, QHeaderView.ResizeToContents],
+#     CnsMdl.DESCRIPTION: ['Description', False, QHeaderView.Stretch],
+#     CnsMdl.PAYLOAD: ['Payload', True, 1],
+#     CnsMdl.KNOWN: ['Known', True, 1],
+# }
 
 
 class VLayout(QVBoxLayout):
@@ -137,7 +138,7 @@ class TableView(QTableView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
 
         self.setSelectionBehavior(QTableView.SelectRows)
-        self.setSelectionMode(QTableView.SingleSelection)
+        # self.setSelectionMode(QTableView.SingleSelection)
 
         self.setEditTriggers(self.NoEditTriggers)
 
@@ -164,6 +165,13 @@ class TableView(QTableView):
             for col in hidden:
                 self.setColumnHidden(int(col), True)
 
+    def setupView(self, view):
+        for i, c in enumerate(view):
+            if c in ("FriendlyName", "Module", "Topic", "FullTopic"):
+                self.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
+            else:
+                self.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
+
 
 class SpinBox(QSpinBox):
     def __init__(self, *args, **kwargs):
@@ -172,7 +180,16 @@ class SpinBox(QSpinBox):
         self.setMinimum(kwargs.get('minimum', 1))
         self.setMaximum(kwargs.get('maximum', 65535))
         self.setAlignment(Qt.AlignCenter)
-        # self.setMaximumWidth(45)
+
+
+class DoubleSpinBox(QDoubleSpinBox):
+    def __init__(self, *args, **kwargs):
+        super(DoubleSpinBox, self).__init__(*args, **kwargs)
+        self.setButtonSymbols(self.NoButtons)
+        self.setMinimum(kwargs.get('minimum', 1))
+        self.setMaximum(kwargs.get('maximum', 65535))
+        self.setDecimals(kwargs.get('precision', 1))
+        self.setAlignment(Qt.AlignCenter)
 
 
 class CheckableAction(QAction):
@@ -238,4 +255,78 @@ class DetailLE(QLineEdit):
         # self.setText(detail)
         self.setReadOnly(True)
         self.setAlignment(Qt.AlignCenter)
+
+
+class DeviceParam(QFrame):
+    def __init__(self, title, input, btns, funcs):
+        super(DeviceParam, self).__init__()
+        hl = HLayout(0)
+        self.input = input
+        hl.addWidgets([QLabel(title), self.input])
+
+        for b, f in zip(btns, funcs):
+            pb = QPushButton(b)
+            pb.clicked.connect(f)
+            hl.addWidget(pb)
+
+        for i in range(hl.count()):
+            hl.setStretch(i, 2 if i == 1 else 1)
+
+        self.setLayout(hl)
+
+
+class TelemetryDevice(QTreeWidgetItem):
+    def __init__(self, name=""):
+        super().__init__()
+        self.unit = ""
+        self.icon = ""
+        self.setData(0, Qt.DisplayRole, name)
+        self.setData(1, Qt.DisplayRole, "")
+
+    def setIcon(self, icon):
+        self.icon = icon
+
+    def setValue(self, value):
+        self.setData(1, Qt.DisplayRole, value)
+
+    def setUnit(self, unit):
+        self.unit = unit
+
+    def data(self, col, role=Qt.DisplayRole):
+        if role == Qt.DisplayRole:
+            if col == 1:
+                return "{} {}".format(QTreeWidgetItem.data(self, 1, Qt.DisplayRole), self.unit)
+
+        if role == Qt.DecorationRole and col == 0:
+            return QIcon("GUI/icons/{}.png".format(self.icon))
+
+        return QTreeWidgetItem.data(self, col, role)
+
+
+class TimeItem(TelemetryDevice):
+    def __init__(self):
+        super().__init__("Time")
+        self.setIcon("time")
+
+
+class TextItem(TelemetryDevice):
+    def __init__(self):
+        super().__init__()
+
+
+class CounterItem(TelemetryDevice):
+    def __init__(self):
+        super().__init__("Counter")
+        self.setIcon("counter")
+        self.items = {}
+
+    def setValues(self, values):
+        for k in values.keys():
+            item = self.items.get(k)
+            if not item:
+                item = TextItem()
+                item.setData(0, Qt.DisplayRole, k)
+                self.items[k] = item
+                self.addChild(item)
+            item.setData(1, Qt.DisplayRole, values[k])
 

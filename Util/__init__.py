@@ -1,168 +1,30 @@
 import re
-from enum import IntEnum
+from json import loads, JSONDecodeError
 
-DevMdl = IntEnum('DevMdl', ["LWT", "TOPIC", "FULL_TOPIC", "FRIENDLY_NAME", "MODULE", "FIRMWARE", "CORE", "MAC", "IP", "SSID", "BSSID", "CHANNEL", "RSSI", "LINKCOUNT", "DOWNTIME", "UPTIME", "RESTART_REASON", "POWER", "LOADAVG", "TELEPERIOD", "MODULE_ID", "OTA_URL"], start=0)
-CnsMdl = IntEnum('CnsMdl', ["TIMESTAMP", "TOPIC", "FRIENDLY_NAME", "DESCRIPTION", "PAYLOAD", "KNOWN"], start=0)
+from PyQt5.QtCore import QDir, QDateTime
 
-initial_queries = [None, 1, 2, 3, 5, 8, 11]
+commands = [
+    "Backlog", "BlinkCount", "BlinkTime", "ButtonDebounce", "FanSpeed", "Interlock", "LedMask", "LedPower", "LedPower", "LedState", "Power", "PowerOnState", "PulseTime", "SwitchDebounce", "SwitchMode",
+    "Delay", "Emulation", "Event", "FriendlyName", "Gpios", "Gpio", "I2Cscan", "LogHost", "LogPort", "Modules", "Module", "OtaUrl", "Pwm", "PwmFrequency", "PwmRange", "Reset", "Restart", "Template", "SaveData", "SerialLog", "Sleep", "State", "Status", "SysLog", "Timezone", "TimeSTD", "TimeDST", "Upgrade", "Upload", "WebLog",
+    "AP", "Hostname", "IPAddress1", "IPAddress2", "IPAddress3", "IPAddress4", "NtpServer", "Password", "Ssid", "WebPassword", "WebSend", "WebServer", "WebRefresh", "WebColor", "WifiConfig",
+    "ButtonRetain", "ButtonTopic", "FullTopic", "GroupTopic", "MqttClient", "MqttFingerprint", "MqttHost", "MqttPassword", "MqttPort", "MqttRetry", "MqttUser", "PowerRetain", "Prefix1", "Prefix2", "Prefix3", "Publish", "Publish2", "SensorRetain", "StateText1", "StateText2", "StateText3", "StateText4", "SwitchRetain", "SwitchTopic", "TelePeriod", "Topic",
+    "Rule", "RuleTimer", "Mem", "Var", "Add", "Sub", "Mult", "Scale", "CalcRes",
+    "Latitude", "Longitude", "Timers", "Timer",
+    "AdcParam", "Altitude", "AmpRes", "Counter", "CounterDebounce", "CounterType", "EnergyRes", "HumRes", "PressRes", "Sensor13", "Sensor15", "Sensor20", "Sensor27", "Sensor34", "TempRes", "VoltRes", "WattRes", "WeightRes",
+    "AmpRes", "CurrentHigh", "CurrentLow", "CurrentSet", "EnergyRes", "EnergyReset", "EnergyReset1", "EnergyReset2", "EnergyReset3", "FreqRes", "FrequencySet", "MaxPower", "MaxPowerHold", "MaxPowerWindow", "PowerDelta", "PowerHigh", "PowerLow", "PowerSet", "Status", "VoltageHigh", "VoltageLow", "VoltageSet", "VoltRes", "WattRes",
+    "Channel", "Color", "Color2", "Color3", "Color4", "Color5", "Color6", "CT", "Dimmer", "Fade", "HsbColor", "HsbColor1", "HsbColor2", "HsbColor3", "Led", "LedTable", "Pixels", "Rotation", "Scheme", "Speed", "Wakeup", "WakeupDuration", "White", "Width1", "Width2", "Width3", "Width4",
+    "RfCode", "RfHigh", "RfHost", "RfKey", "RfLow", "RfRaw", "RfSync",
+    "IRsend", "IRhvac",
+    "SetOption0", "SetOption1", "SetOption2", "SetOption3", "SetOption4", "SetOption8", "SetOption10", "SetOption11", "SetOption12", "SetOption13", "SetOption15", "SetOption16", "SetOption17", "SetOption18", "SetOption19", "SetOption20", "SetOption21", "SetOption24", "SetOption26", "SetOption28", "SetOption29", "SetOption30", "SetOption31", "SetOption32", "SetOption33", "SetOption34", "SetOption36", "SetOption37", "SetOption38", "SetOption51", "SetOption52", "SetOption53", "SetOption54", "SetOption55", "SetOption56", "SetOption57", "SetOption58", "SetOption59", "SetOption60", "SetOption61", "SetOption62", "SetOption63", "SetOption64",
+    "Baudrate", "SBaudrate", "SerialDelimiter", "SerialDelimiter", "SerialSend", "SerialSend2", "SerialSend3", "SerialSend4", "SerialSend5", "SSerialSend", "SSerialSend2", "SSerialSend3", "SSerialSend4", "SSerialSend5",
+    "MP3DAC", "MP3Device", "MP3EQ", "MP3Pause", "MP3Play", "MP3Reset", "MP3Stop", "MP3Track", "MP3Volume",
+    "DomoticzIdx", "DomoticzKeyIdx", "DomoticzSensorIdx", "DomoticzSwitchIdx", "DomoticzUpdateTimer",
+    "KnxTx_Cmnd", "KnxTx_Val", "KNX_ENABLED", "KNX_ENHANCED", "KNX_PA", "KNX_GA", "KNX_GA", "KNX_CB", "KNX_CB",
+    "Display", "DisplayAddress", "DisplayDimmer", "DisplayMode", "DisplayModel", "DisplayRefresh", "DisplaySize", "DisplayRotate", "DisplayText", "DisplayCols", "DisplayRows", "DisplayFont",
+]
 
-modules = {
-    1: 'Sonoff Basic (01)',
-    2: 'Sonoff RF (02)',
-    4: 'Sonoff TH (04)',
-    5: 'Sonoff Dual (05)',
-    39: 'Sonoff Dual R2 (39)',
-    6: 'Sonoff Pow (06)',
-    43: 'Sonoff Pow R2 (43)',
-    7: 'Sonoff 4CH (07)',
-    23: 'Sonoff 4CH Pro (23)',
-    41: 'Sonoff S31 (41)',
-    8: 'Sonoff S2X (08)',
-    10: 'Sonoff Touch (10)',
-    28: 'Sonoff T1 1CH (28)',
-    29: 'Sonoff T1 2CH (29)',
-    30: 'Sonoff T1 3CH (30)',
-    11: 'Sonoff LED (11)',
-    22: 'Sonoff BN-SZ (22)',
-    26: 'Sonoff B1 (26)',
-    9: 'Slampher (09)',
-    21: 'Sonoff SC (21)',
-    44: 'Sonoff iFan02 (44)',
-    25: 'Sonoff Bridge (25)',
-    3: 'Sonoff SV (03)',
-    19: 'Sonoff Dev (19)',
-    12: '1 Channel (12)',
-    13: '4 Channel (13)',
-    14: 'Motor C/AC (14)',
-    15: 'ElectroDragon (15)',
-    16: 'EXS Relay(s) (16)',
-    31: 'Supla Espablo (31)',
-    35: 'Luani HVIO (35)',
-    33: 'Yunshan Relay (33)',
-    17: 'WiOn (17)',
-    46: 'Shelly 1 (46)',
-    47: 'Shelly 2 (47)',
-    45: 'BlitzWolf SHP (45)',
-    52: 'Teckin (52)',
-    59: 'Teckin US (59)',
-    53: 'AplicWDP303075 (53)',
-    55: 'Gosund SP1 v23 (55)',
-    57: 'SK03 Outdoor (57)',
-    49: 'Neo Coolcam (49)',
-    51: 'OBI Socket (51)',
-    60: 'Manzoku strip (60)',
-    50: 'ESP Switch (50)',
-    54: 'Tuya Dimmer (54)',
-    56: 'ARMTR Dimmer (56)',
-    58: 'PS-16-DZ (58)',
-    20: 'H801 (20)',
-    34: 'MagicHome (34)',
-    37: 'Arilux LC01 (37)',
-    40: 'Arilux LC06 (40)',
-    38: 'Arilux LC11 (38)',
-    42: 'Zengge WF017 (42)',
-    24: 'Huafan SS (24)',
-    36: 'KMC 70011 (36)',
-    27: 'AiLight (27)',
-    48: 'Xiaomi Philips (48)',
-    32: 'Witty Cloud (32)',
-    18: 'Generic (18)',
-}
-gpio = {
-    "0": "None (0)",
-    "17": "Button1 (17)",
-    "90": "Button1n (90)",
-    "122": "Button1i (122)",
-    "126": "Button1in (126)",
-    "18": "Button2 (18)",
-    "91": "Button2n (91)",
-    "123": "Button2i (123)",
-    "127": "Button2in (127)",
-    "19": "Button3 (19)",
-    "92": "Button3n (92)",
-    "124": "Button3i (124)",
-    "128": "Button3in (128)",
-    "20": "Button4 (20)",
-    "93": "Button4n (93)",
-    "125": "Button4i (125)",
-    "129": "Button4in (129)",
-    "9": "Switch1 (9)",
-    "82": "Switch1n (82)",
-    "10": "Switch2 (10)",
-    "83": "Switch2n (83)",
-    "11": "Switch3 (11)",
-    "84": "Switch3n (84)",
-    "12": "Switch4 (12)",
-    "85": "Switch4n (85)",
-    "13": "Switch5 (13)",
-    "86": "Switch5n (86)",
-    "14": "Switch6 (14)",
-    "87": "Switch6n (87)",
-    "15": "Switch7 (15)",
-    "88": "Switch7n (88)",
-    "16": "Switch8 (16)",
-    "89": "Switch8n (89)",
-    "21": "Relay1 (21)",
-    "29": "Relay1i (29)",
-    "22": "Relay2 (22)",
-    "30": "Relay2i (30)",
-    "23": "Relay3 (23)",
-    "31": "Relay3i (31)",
-    "24": "Relay4 (24)",
-    "32": "Relay4i (32)",
-    "25": "Relay5 (25)",
-    "33": "Relay5i (33)",
-    "26": "Relay6 (26)",
-    "34": "Relay6i (34)",
-    "27": "Relay7 (27)",
-    "35": "Relay7i (35)",
-    "28": "Relay8 (28)",
-    "36": "Relay8i (36)",
-    "54": "Led3 (54)",
-    "58": "Led3i (58)",
-    "55": "Led4 (55)",
-    "59": "Led4i (59)",
-    "42": "Counter1 (42)",
-    "94": "Counter1n (94)",
-    "43": "Counter2 (43)",
-    "95": "Counter2n (95)",
-    "44": "Counter3 (44)",
-    "96": "Counter3n (96)",
-    "45": "Counter4 (45)",
-    "97": "Counter4n (97)",
-    "5": "I2C SCL (5)",
-    "6": "I2C SDA (6)",
-    "1": "DHT11 (1)",
-    "2": "AM2301 (2)",
-    "3": "SI7021 (3)",
-    "4": "DS18x20 (4)",
-    "7": "WS2812 (7)",
-    "8": "IRsend (8)",
-    "51": "IRrecv (51)",
-    "105": "RFSend (105)",
-    "106": "RFrecv (106)",
-    "73": "SR04 Tri (73)",
-    "74": "SR04 Ech (74)",
-    "102": "HX711 SCK (102)",
-    "103": "HX711 DAT (103)",
-    "71": "SerBr Tx (71)",
-    "72": "SerBr Rx (72)",
-    "60": "MHZ Tx (60)",
-    "61": "MHZ Rx (61)",
-    "64": "SAir Tx (64)",
-    "65": "SAir Rx (65)",
-    "101": "SDS0X1 Tx (101)",
-    "70": "SDS0X1 Rx (70)",
-    "62": "PZEM0XX Tx (62)",
-    "63": "PZEM004 Rx (63)",
-    "98": "PZEM016 Rx (98)",
-    "99": "PZEM017 Rx (99)",
-    "69": "PMS5003 (69)",
-    "104": "TX20 (104)",
-    "107": "Tuya Tx (107)",
-    "108": "Tuya Rx (108)"
-    }
 
+# todo remove
 class found_obj(object):
     def __init__(self, d):
         self.__dict__ = d
@@ -171,8 +33,153 @@ class found_obj(object):
         return "PREFIX={},TOPIC={},REPLY={}".format(self.__dict__.get('prefix'), self.__dict__.get('topic'), self.__dict__.get('reply'))
 
 
-def match_topic(full_topic, topic):
-    full_topic = full_topic + "(?P<reply>.*)"
-    full_topic = full_topic.replace("%topic%", "(?P<topic>.*?)")
-    full_topic = full_topic.replace("%prefix%", "(?P<prefix>.*?)")
-    return re.fullmatch(full_topic, topic)
+def parse_topic(full_topic, topic):
+    full_topic = "{}(?P<reply>.*)".format(full_topic).replace("%topic%", "(?P<topic>.*?)").replace("%prefix%", "(?P<prefix>.*?)")
+    return re.fullmatch(full_topic, topic).groupdict()
+
+
+class TasmotaEnvironment(object):
+    def __init__(self):
+        self.devices = []
+
+    def find_device(self, topic):
+        for d in self.devices:
+            if d.matches(topic):
+                return d
+        return None
+
+
+class TasmotaDevice(object):
+    def __init__(self, topic, fulltopic, friendlyname=""):
+        self.p = {
+            "LWT": "undefined",
+            "Topic": topic,
+            "FullTopic": fulltopic,
+            "FriendlyName": [friendlyname],
+            "Template": {},
+        }
+
+        self.env = []
+        self.history = []
+
+        # property changed callback pointer
+        self.property_changed = None
+
+        self.t = None
+        # telemetry changed callback pointer
+        self.telemetry_changed = None
+
+        self.m = {}
+        # module changed callback pointer
+        self.module_changed = None
+
+        self.g = {}
+
+        self.reply = ""
+
+    def build_topic(self, prefix):
+        return self.p['FullTopic'].replace("%prefix%", prefix).replace("%topic%", self.p['Topic'])
+
+    def cmnd_topic(self, command=""):
+        return self.build_topic("cmnd") + command
+
+    def stat_topic(self):
+        return self.build_topic("stat")
+
+    def tele_topic(self):
+        return self.build_topic("tele")
+
+    def is_default(self):
+        return self.p['FullTopic'] in ["%prefix%/%topic%/", "%topic%/%prefix%/"]
+
+    def update_property(self, k, v):
+        old = self.p.get('k')
+        if self.property_changed and (not old or old != v):
+            self.property_changed(self, k)
+        self.p[k] = v
+
+    def module(self):
+        mdls = []
+        for v in self.m.values():
+            mdls += v
+
+        mdl = [m for m in mdls if m.startswith(str(self.p.get('Module')))]
+        if mdl:
+            return mdl[0].split(" (")[1].rstrip(")")
+        if self.p['LWT'] == 'Online':
+            return "Fetching module name..."
+
+    def matches(self, topic):
+        parsed = parse_topic(self.p['FullTopic'], topic)
+        self.reply = parsed.get('reply')
+        return parsed.get('topic') == self.p['Topic']
+
+    def parse_message(self, topic, msg):
+        parse_statuses = ["STATUS{}".format(s) for s in [1, 2, 3, 4, 5, 6, 7]]
+
+        try:
+            payload = loads(msg)
+
+            if self.reply == 'STATUS':
+                payload = payload['Status']
+                for k, v in payload.items():
+                    self.update_property(k, v)
+
+            elif self.reply in parse_statuses:
+                payload = payload[list(payload.keys())[0]]
+                for k, v in payload.items():
+                    self.update_property(k, v)
+
+            elif self.reply in ('STATE', 'STATUS11'):
+                if self.reply == 'STATUS11':
+                    payload = payload['StatusSTS']
+
+                for k, v in payload.items():
+                    if isinstance(v, dict):
+                        for kk, vv in v.items():
+                            self.update_property(kk, vv)
+                    else:
+                        self.update_property(k, v)
+
+                    # self.parse_power(payload)
+
+            elif self.reply.startswith("POWER"):
+                self.update_property(self.reply, msg)
+                # if self.property_changed:
+                #     self.property_changed(self, "Power")
+
+            elif self.reply == 'RESULT':
+                for k, v in payload.items():
+
+                    if k.startswith("Modules"):
+                        self.m[k] = v
+                        self.module_changed(self)
+
+                    elif k == 'NAME':
+                        self.p['Template'] = payload
+                        if self.module_changed:
+                            self.module_changed(self)
+                        break
+
+                    elif k.startswith('POWER'):
+                        self.update_property(k, v)
+                        # if self.property_changed:
+                        #     self.property_changed(self, "Power")
+
+                    else:
+                        self.update_property(k, v)
+
+        except JSONDecodeError as e:
+            with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
+                l.write("{}\t{}\t{}\t{}\n"
+                        .format(QDateTime.currentDateTime()
+                                .toString("yyyy-MM-dd hh:mm:ss"), topic, msg, e.msg))
+
+    def power(self):
+        return {k: v for k, v in self.p.items() if k.startswith('POWER')}
+
+    def __repr__(self):
+        fname = self.p.get('FriendlyName')
+        fname = fname[0] if fname else self.p['Topic']
+
+        return "<TasmotaDevice {}: {}>".format(fname, self.p['Topic'])
