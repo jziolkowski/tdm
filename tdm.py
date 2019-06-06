@@ -1,25 +1,26 @@
+import re
 import sys
 import csv
 from json import loads, JSONDecodeError
 
-from PyQt5.QtCore import QTimer, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QFileDialog
+from PyQt5.QtCore import QTimer, pyqtSignal, pyqtSlot, QSettings, QDir, QSize, Qt, QDateTime
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QFileDialog, QAction
 
-from GUI import *
+from GUI import Toolbar
 from GUI.BSSID import BSSIdDialog
 from GUI.Broker import BrokerDialog
 from GUI.DeviceConsole import DeviceConsoleWidget
+from GUI.DeviceRules import DeviceRulesWidget
 from GUI.DeviceTelemetry import DeviceTelemetryWidget
 from GUI.DevicesList import DevicesListWidget
-from Util import TasmotaDevice, TasmotaEnvironment, parse_topic
-from Util.models import *
+from GUI.Patterns import PatternsDialog
+from Util import TasmotaDevice, TasmotaEnvironment, parse_topic, lwt_patterns
+from Util.models import TasmotaDevicesModel
 from Util.mqtt import MqttClient
 
 
 class MainWindow(QMainWindow):
-
-    telemetry = pyqtSignal(str, str)
-
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self._version = "0.2.0"
@@ -27,6 +28,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
         self.env = TasmotaEnvironment()
+        self.device = None
 
         self.mqtt_queue = []
         self.fulltopic_queue = []
@@ -49,7 +51,7 @@ class MainWindow(QMainWindow):
             self.settings.endGroup()
         self.settings.endGroup()
 
-        self.device_model = TasmotaDevicesModel2(self.env)
+        self.device_model = TasmotaDevicesModel(self.env)
 
         self.setup_mqtt()
         self.setup_main_layout()
@@ -75,7 +77,6 @@ class MainWindow(QMainWindow):
     def setup_main_layout(self):
         self.mdi = QMdiArea()
         self.mdi.setActivationOrder(QMdiArea.ActivationHistoryOrder)
-        self.mdi.setOption(QMdiArea.DontMaximizeSubWindowOnActivation)
         self.mdi.setTabsClosable(True)
 
         self.setCentralWidget(self.mdi)
@@ -93,6 +94,8 @@ class MainWindow(QMainWindow):
         sub = self.mdi.addSubWindow(self.devices_list)
         sub.setWindowState(Qt.WindowMaximized)
         self.devices_list.deviceSelected.connect(self.selectDevice)
+        self.devices_list.openConsole.connect(self.openConsole)
+        self.devices_list.openRulesEditor.connect(self.openRulesEditor)
 
     def load_window_state(self):
         wndGeometry = self.settings.value('window_geometry')
@@ -104,6 +107,7 @@ class MainWindow(QMainWindow):
         mSetup.addAction(QIcon("./GUI/icons/connections.png"), "MQTT Broker", self.setup_broker)
         # mSetup.addAction(QIcon(), "Auto telemetry period", lambda: print('asd'))
         mSetup.addAction(QIcon("./GUI/icons/bssid.png"), "BSSId aliases", self.bssid)
+        mSetup.addAction(QIcon("GUI/icons/regex.png"), "Autodiscovery patterns", self.patterns)
 
         mDevices = self.menuBar().addMenu("My devices")
         actAdd = mDevices.addAction(QIcon("GUI/icons/add.png"), "Add", self.export)
@@ -111,12 +115,12 @@ class MainWindow(QMainWindow):
         mDevices.addSeparator()
 
         mDevices.addSeparator()
-        mDevices.addAction(QIcon("./GUI/icons/export.png"), "Export list", self.export)
+        mDevices.addAction(QIcon("GUI/icons/export.png"), "Export list", self.export)
 
         mDevices.setEnabled(False)
 
     def build_toolbars(self):
-        main_toolbar = Toolbar(orientation=Qt.Horizontal, iconsize=16, label_position=Qt.ToolButtonTextBesideIcon)
+        main_toolbar = Toolbar(orientation=Qt.Horizontal, iconsize=24, label_position=Qt.ToolButtonTextBesideIcon)
         main_toolbar.setObjectName("main_toolbar")
         self.addToolBar(main_toolbar)
 
@@ -255,32 +259,36 @@ class MainWindow(QMainWindow):
                     self.initial_query(device, True)
 
             elif msg == "Online":
-                split_topic = topic.split('/')
-                possible_topic = split_topic[1]
+                custom_patterns = []
+                self.settings.beginGroup("Patterns")
+                for k in self.settings.childKeys():
+                    custom_patterns.append(self.settings.value(k))
+                self.settings.endGroup()
 
-                if possible_topic in ('tele', 'stat'):
-                    possible_topic = split_topic[0]
-
-                # todo: add dialog to custom auto-detect fulltopics
-                self.mqtt_queue.append(["cmnd/{}/fulltopic".format(possible_topic), ""])
-                self.mqtt_queue.append(["{}/cmnd/fulltopic".format(possible_topic), ""])
+                for p in lwt_patterns + custom_patterns:
+                    match = re.fullmatch(p.replace("%topic%", "(?P<topic>.*?)").replace("%prefix%", "(?P<prefix>.*?)") + ".*$", topic)
+                    if match:
+                        possible_topic = match.groupdict().get('topic')
+                        if possible_topic not in ('tele', 'stat'):
+                            self.mqtt_queue.append([p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic) + "FullTopic", ""])
 
         elif topic.endswith("RESULT"):
-            try:
-                full_topic = loads(msg).get('FullTopic')
+            if not device:
+                try:
+                    full_topic = loads(msg).get('FullTopic')
 
-                if full_topic:
-                    parsed = parse_topic(full_topic, topic)
-                    if parsed:
-                        d = TasmotaDevice(parsed['topic'], full_topic)
-                        d.update_property("LWT", "online")
-                        self.env.devices.append(d)
-                        self.device_model.addDevice(d)
-                        self.initial_query(d, True)
+                    if full_topic:
+                        parsed = parse_topic(full_topic, topic)
+                        if parsed:
+                            d = TasmotaDevice(parsed['topic'], full_topic)
+                            d.update_property("LWT", "online")
+                            self.env.devices.append(d)
+                            self.device_model.addDevice(d)
+                            self.initial_query(d, True)
 
-            except JSONDecodeError as e:
-                with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
-                    l.write("{}\t{}\t{}\t{}\n".format(QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss"), topic, msg, e.msg))
+                except JSONDecodeError as e:
+                    with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
+                        l.write("{}\t{}\t{}\t{}\n".format(QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss"), topic, msg, e.msg))
 
     # todo: rework
     def export(self):
@@ -313,6 +321,9 @@ class MainWindow(QMainWindow):
     def bssid(self):
         BSSIdDialog().exec_()
 
+    def patterns(self):
+        PatternsDialog().exec_()
+
     @pyqtSlot(TasmotaDevice)
     def selectDevice(self, d):
         self.device = d
@@ -330,11 +341,28 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot()
     def openConsole(self):
-        console_widget = DeviceConsoleWidget(self.device)
-        self.mqtt.messageSignal.connect(console_widget.consoleAppend)
-        console_widget.sendCommand.connect(self.mqtt.publish)
-        self.addDockWidget(Qt.BottomDockWidgetArea, console_widget)
-        console_widget.command.setFocus()
+        if self.device:
+            console_widget = DeviceConsoleWidget(self.device)
+            self.mqtt.messageSignal.connect(console_widget.consoleAppend)
+            console_widget.sendCommand.connect(self.mqtt.publish)
+            self.addDockWidget(Qt.BottomDockWidgetArea, console_widget)
+            console_widget.command.setFocus()
+
+    @pyqtSlot()
+    def openRulesEditor(self):
+        if self.device:
+            rules = DeviceRulesWidget(self.device)
+            self.mqtt.messageSignal.connect(rules.parse_message)
+            self.mdi.setViewMode(QMdiArea.TabbedView)
+            self.mdi.addSubWindow(rules)
+            rules.setWindowState(Qt.WindowMaximized)
+            rules.destroyed.connect(self.updateMDI)
+
+    def updateMDI(self):
+        if len(self.mdi.subWindowList()) == 1:
+            self.mdi.setViewMode(QMdiArea.SubWindowView)
+            self.devices_list.setWindowState(Qt.WindowMaximized)
+
 
     def closeEvent(self, e):
         self.settings.setValue("version", self._version)

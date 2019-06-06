@@ -270,9 +270,10 @@ from Util.nodes import *
 #         self.dataChanged.emit(first, last)
 
 
-class TasmotaDevicesModel2(QAbstractTableModel):
+class TasmotaDevicesModel(QAbstractTableModel):
     def __init__(self, tasmota_env):
         super().__init__()
+        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
         self.tasmota_env = tasmota_env
         self.columns = []
 
@@ -295,7 +296,12 @@ class TasmotaDevicesModel2(QAbstractTableModel):
             idx = self.index(row, power_idx)
             self.dataChanged.emit(idx, idx)
 
-        if key in self.columns:
+        elif key in ("RSSI", "LWT"):
+            fname_idx = self.columns.index("FriendlyName")
+            idx = self.index(row, fname_idx)
+            self.dataChanged.emit(idx, idx)
+
+        elif key in self.columns:
             col = self.columns.index(key)
             idx = self.index(row, col)
             self.dataChanged.emit(idx, idx)
@@ -351,18 +357,25 @@ class TasmotaDevicesModel2(QAbstractTableModel):
                 elif col_name == "Power":
                     return d.power()
 
+                elif col_name == "CommandTopic":
+                    return d.cmnd_topic()
+
+                elif col_name == "StatTopic":
+                    return d.stat_topic()
+
+                elif col_name == "TeleTopic":
+                    return d.tele_topic()
+
+                elif col_name == "FallbackTopic":
+                    return "cmnd/{}_fb/".format(d.p.get('MqttClient'))
+
+                elif col_name == "BSSId":
+                    alias = self.settings.value("BSSId/{}".format(val))
+                    if alias:
+                        return alias
+
                 return val
 
-
-
-            #
-            #     elif col == DevMdl.BSSID:
-            #         alias = self.settings.value("BSSID/{}".format(val))
-            #         if alias:
-            #             return alias
-            #
-            #     return self._devices[row][col]
-            #
             elif role == Qt.TextAlignmentRole:
                 # Left-aligned columns
                 if col_name in ("FriendlyName", "Topic", "FullTopic", "Module", "RestartReason", "OtaUrl", "Hostname", "Version"):
@@ -378,6 +391,22 @@ class TasmotaDevicesModel2(QAbstractTableModel):
                 else:
                     return Qt.AlignCenter
 
+            elif role == Qt.DecorationRole and col_name == "FriendlyName":
+                if d.p['LWT'] == "online":
+                    rssi = int(d.p.get("RSSI", 0))
+
+                    if rssi > 0 and rssi < 50:
+                        return QIcon("GUI/icons/status_low.png")
+
+                    elif rssi < 75:
+                        return QIcon("GUI/icons/status_medium.png")
+
+                    elif rssi >= 75:
+                        return QIcon("GUI/icons/status_high.png")
+
+                return QIcon("GUI/icons/status_offline.png")
+
+
             elif role == Qt.BackgroundColorRole and col_name == "RSSI":
                 rssi = int(d.p.get("RSSI", 0))
                 if rssi > 0 and rssi < 50:
@@ -391,8 +420,8 @@ class TasmotaDevicesModel2(QAbstractTableModel):
                 if col_name == "Firmware":
                     return d.p.get('FriendlyName')
 
-                # elif col_name == "BSSID":
-                #     return self._devices[row][DevMdl.BSSID]
+                elif col_name == "BSSId":
+                    return d.p.get('BSSId')
 
                 elif col_name == "FriendlyName":
                     fn = d.p['FriendlyName']
@@ -669,7 +698,6 @@ class DeviceDelegate(QStyledItemDelegate):
         col = index.column()
         col_name = index.model().sourceModel().columns[col]
 
-
         if col_name == "LWT":
             if option.state & QStyle.State_Selected:
                 p.fillRect(option.rect, option.palette.highlight())
@@ -740,6 +768,7 @@ class DeviceDelegate(QStyledItemDelegate):
                     p.drawRect(state)
 
             p.restore()
+
         else:
             QStyledItemDelegate.paint(self, p, option, index)
 

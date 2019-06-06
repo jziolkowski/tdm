@@ -1,8 +1,10 @@
-from PyQt5.QtCore import Qt, QSettings, QSortFilterProxyModel, QUrl, QDir, QSize, QObject, pyqtSignal, QModelIndex
-from PyQt5.QtGui import QIcon, QDesktopServices, QKeySequence
+from json import dumps
+
+from PyQt5.QtCore import Qt, QSettings, QSortFilterProxyModel, QUrl, QDir, pyqtSignal, QSize
+from PyQt5.QtGui import QIcon, QDesktopServices
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from PyQt5.QtWidgets import QWidget, QMessageBox, QDialog, QMenu, QApplication, QToolButton, QInputDialog, QFileDialog, \
-    QAction, QActionGroup, QLabel, QShortcut
+    QAction, QActionGroup, QLabel, QShortcut, QSizePolicy
 
 from GUI import VLayout, Toolbar, TableView
 from GUI.DeviceConfig import DevicesConfigWidget
@@ -15,6 +17,8 @@ from Util.nodes import TelemetryDevice
 class DevicesListWidget(QWidget):
 
     deviceSelected = pyqtSignal(TasmotaDevice)
+    openRulesEditor = pyqtSignal()
+    openConsole = pyqtSignal()
 
     def __init__(self, parent, *args, **kwargs):
         super(DevicesListWidget, self).__init__(*args, **kwargs)
@@ -23,7 +27,7 @@ class DevicesListWidget(QWidget):
         self.setLayout(VLayout(margin=0, spacing=0))
 
         self.mqtt = parent.mqtt
-        self.mdi = parent.mdi
+        # self.mdi = parent.mdi
 
         self.device = None
 
@@ -32,21 +36,22 @@ class DevicesListWidget(QWidget):
 
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
 
-        base_view = ["LWT", "FriendlyName"]
+        base_view = ["FriendlyName"]
         self.views = {
-            "Home":  base_view + ["Module", "RSSI", "Power", "LoadAvg", "LinkCount", "Uptime"],
-            "Health": base_view + ["BootCount", "RestartReason", "LoadAvg", "Sleep", "LinkCount", "RSSI"],
+            "Home":  base_view + ["Module", "Power", "LoadAvg", "LinkCount", "Uptime"],
+            "Health": base_view + ["Uptime", "BootCount", "RestartReason", "LoadAvg", "Sleep", "LinkCount", "RSSI"],
             "Firmware": base_view + ["Version", "Core", "SDK",  "ProgramSize", "Free", "OtaUrl"],
             "Wifi":     base_view + ["Hostname", "Mac", "IPAddress", "Gateway", "SSId", "BSSId", "Channel", "RSSI", "LinkCount", "Downtime"],
-            "MQTT":     base_view + ["Topic", "FullTopic", "GroupTopic"],
+            "MQTT":     base_view + ["Topic", "FullTopic", "CommandTopic", "StatTopic", "TeleTopic", "FallbackTopic", "GroupTopic"],
         }
 
-        self.tb = Toolbar(Qt.Horizontal, 16, Qt.ToolButtonTextBesideIcon)
-        self.tb_views = Toolbar(Qt.Horizontal, 16, Qt.ToolButtonTextBesideIcon)
+        self.tb = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonTextBesideIcon)
+        self.tb_views = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonTextBesideIcon)
 
         self.layout().addWidget(self.tb)
 
         self.device_list = TableView()
+        self.device_list.setIconSize(QSize(24,24))
         self.model = parent.device_model
         self.model.setupColumns(self.views["Home"])
         self.sorted_device_model = QSortFilterProxyModel()
@@ -68,16 +73,10 @@ class DevicesListWidget(QWidget):
         self.ctx_menu = QMenu()
         self.ctx_menu_relays = None
 
-        self.actTelemetry = QAction(QIcon(""), "Telemetry")
-        self.actTelemetry.triggered.connect(parent.openTelemetry)
-
-        self.actConsole = QAction(QIcon(""), "Console")
-        self.actConsole.triggered.connect(parent.openConsole)
-
         self.create_actions()
         self.create_view_buttons()
 
-        self.device_list.doubleClicked.connect(self.actConsole.trigger)
+        self.device_list.doubleClicked.connect(lambda: self.openConsole.emit())
 
     def create_actions(self):
         self.ctx_menu_cfg = QMenu("Configure")
@@ -97,8 +96,10 @@ class DevicesListWidget(QWidget):
         # cfg_btn = self.ctx_menu.addMenu(self.ctx_menu_cfg)
 
         self.ctx_menu.addSeparator()
+
         # self.ctx_menu.addAction(self.actTelemetry)
-        self.ctx_menu.addAction(self.actConsole)
+        self.ctx_menu.addAction(QIcon("GUI/icons/textfield.png"), "Console", lambda: self.openConsole.emit())
+        self.ctx_menu.addAction(QIcon(), "Rules", lambda: self.openRulesEditor.emit())
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon("GUI/icons/refresh.png"), "Refresh", self.ctx_menu_refresh)
 
@@ -114,11 +115,7 @@ class DevicesListWidget(QWidget):
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon("GUI/icons/clear.png"), "Clear retained", self.ctx_menu_clean_retained)
         self.ctx_menu.addSeparator()
-
-        self.ctx_menu_copy = QMenu("Copy")
-        self.ctx_menu_copy.setIcon(QIcon("GUI/icons/copy.png"))
-        copy_btn = self.ctx_menu.addMenu(self.ctx_menu_copy)
-
+        self.ctx_menu.addAction(QIcon(), "Copy", self.ctx_menu_copy)
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon("GUI/icons/restart.png"), "Restart", self.ctx_menu_restart)
         self.ctx_menu.addAction(QIcon("GUI/icons/web.png"), "Open WebUI", self.ctx_menu_webui)
@@ -132,24 +129,10 @@ class DevicesListWidget(QWidget):
 
         self.ctx_menu.addAction("Config backup", self.ctx_menu_config_backup)
 
-        # self.ctx_menu.addSeparator()
-        # self.ctx_menu.addAction(QIcon("GUI/icons/delete.png"), "Remove", self.device_delete)
-
-        self.ctx_menu_copy.addAction("IP", lambda: self.ctx_menu_copy_value("IPAddress"))
-        self.ctx_menu_copy.addAction("MAC", lambda: self.ctx_menu_copy_value("Mac"))
-        self.ctx_menu_copy.addAction("BSSID", lambda: self.ctx_menu_copy_value("BSSId"))
-        self.ctx_menu_copy.addSeparator()
-        self.ctx_menu_copy.addAction("Topic", lambda: self.ctx_menu_copy_value("Topic"))
-        self.ctx_menu_copy.addAction("FullTopic", lambda: self.ctx_menu_copy_value("FullTopic"))
-        self.ctx_menu_copy.addAction("STAT topic", lambda: self.ctx_menu_copy_prefix_topic("STAT"))
-        self.ctx_menu_copy.addAction("CMND topic", lambda: self.ctx_menu_copy_prefix_topic("CMND"))
-        self.ctx_menu_copy.addAction("TELE topic", lambda: self.ctx_menu_copy_prefix_topic("TELE"))
-
         self.tb.addActions(self.ctx_menu.actions())
         self.tb.widgetForAction(ota_btn).setPopupMode(QToolButton.InstantPopup)
         # self.tb.widgetForAction(cfg_btn).setPopupMode(QToolButton.InstantPopup)
         self.tb.widgetForAction(relays_btn).setPopupMode(QToolButton.InstantPopup)
-        self.tb.widgetForAction(copy_btn).setPopupMode(QToolButton.InstantPopup)
 
         shortcuts_toggle = [QShortcut(self.device_list) for _ in range(8)]
         for i, s in enumerate(shortcuts_toggle, start=1):
@@ -168,24 +151,18 @@ class DevicesListWidget(QWidget):
         self.tb_views.addActions(ag_views.actions())
         ag_views.actions()[0].setChecked(True)
 
+        stretch = QWidget()
+        stretch.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum))
+        self.tb_views.addWidget(stretch)
+        # actEditView = self.tb_views.addAction("Edit views...")
+
     def change_view(self, a=None):
         view = self.views[self.sender().text()]
         self.model.setupColumns(view)
         self.device_list.setupView(view)
 
-    def ctx_menu_copy_value(self, column):
-        if self.device:
-            QApplication.clipboard().setText(self.device.p.get(column))
-
-    def ctx_menu_copy_prefix_topic(self, prefix):
-        if self.device:
-            if prefix == "STAT":
-                topic = self.device.stat_topic()
-            elif prefix == "CMND":
-                topic = self.device.cmnd_topic()
-            elif prefix == "TELE":
-                topic = self.device.tele_topic()
-            QApplication.clipboard().setText(topic)
+    def ctx_menu_copy(self):
+        QApplication.clipboard().setText(dumps(self.model.data(self.sorted_device_model.mapToSource(self.idx))))
 
     def ctx_menu_clean_retained(self):
         if self.device:
@@ -258,6 +235,7 @@ class DevicesListWidget(QWidget):
         self.ctx_menu.popup(self.device_list.viewport().mapToGlobal(at))
 
     def select_device(self, idx):
+        self.idx = idx
         self.device = self.model.deviceAtRow(self.sorted_device_model.mapToSource(idx).row())
         self.deviceSelected.emit(self.device)
 
@@ -282,26 +260,6 @@ class DevicesListWidget(QWidget):
             dev_cfg = DevicesConfigWidget(self.model.topic(self.idx))
             sw = self.mdi.addSubWindow(dev_cfg)
             dev_cfg.setWindowState(Qt.WindowMaximized)
-
-    def device_add(self):
-        rc = self.model.rowCount()
-        self.model.insertRow(rc)
-        dlg = DeviceEditDialog(self.model, rc)
-        dlg.full_topic.setText("%prefix%/%topic%/")
-
-        if dlg.exec_() == QDialog.Accepted:
-            self.model.setData(self.model.index(rc, DevMdl.FRIENDLY_NAME), self.model.data(self.model.index(rc, DevMdl.TOPIC)))
-            topic = dlg.topic.text()
-            tele_dev = self.telemetry_model.addDevice(TasmotaDevice, topic)
-            self.telemetry_model.devices[topic] = tele_dev
-        else:
-            self.model.removeRow(rc)
-
-    def device_delete(self):
-        if self.idx:
-            topic = self.model.topic(self.idx)
-            if QMessageBox.question(self, "Confirm", "Do you want to remove '{}' from devices list?".format(topic)) == QMessageBox.Yes:
-                self.model.removeRows(self.idx.row(),1)
 
     def get_dump(self):
         self.backup += self.dl.readAll()

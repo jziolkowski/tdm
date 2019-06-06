@@ -23,6 +23,10 @@ commands = [
     "Display", "DisplayAddress", "DisplayDimmer", "DisplayMode", "DisplayModel", "DisplayRefresh", "DisplaySize", "DisplayRotate", "DisplayText", "DisplayCols", "DisplayRows", "DisplayFont",
 ]
 
+lwt_patterns = [
+    "%prefix%/%topic%/",  # = %prefix%/%topic% (Tasmota default)
+    "%topic%/%prefix%/"  # = %topic%/%prefix% (Tasmota with SetOption19 enabled for HomeAssistant AutoDiscovery)
+]
 
 # todo remove
 class found_obj(object):
@@ -35,7 +39,10 @@ class found_obj(object):
 
 def parse_topic(full_topic, topic):
     full_topic = "{}(?P<reply>.*)".format(full_topic).replace("%topic%", "(?P<topic>.*?)").replace("%prefix%", "(?P<prefix>.*?)")
-    return re.fullmatch(full_topic, topic).groupdict()
+    match = re.fullmatch(full_topic, topic)
+    if match:
+        return match.groupdict()
+    return {}
 
 
 class TasmotaEnvironment(object):
@@ -61,6 +68,7 @@ class TasmotaDevice(object):
 
         self.env = []
         self.history = []
+        self.rules = []
 
         # property changed callback pointer
         self.property_changed = None
@@ -76,6 +84,7 @@ class TasmotaDevice(object):
         self.g = {}
 
         self.reply = ""
+        self.prefix = ""
 
     def build_topic(self, prefix):
         return self.p['FullTopic'].replace("%prefix%", prefix).replace("%topic%", self.p['Topic'])
@@ -112,68 +121,66 @@ class TasmotaDevice(object):
     def matches(self, topic):
         parsed = parse_topic(self.p['FullTopic'], topic)
         self.reply = parsed.get('reply')
+        self.prefix = parsed.get('prefix')
         return parsed.get('topic') == self.p['Topic']
 
     def parse_message(self, topic, msg):
         parse_statuses = ["STATUS{}".format(s) for s in [1, 2, 3, 4, 5, 6, 7]]
+        if self.prefix in ("stat", "tele"):
+            try:
+                payload = loads(msg)
 
-        try:
-            payload = loads(msg)
+                if self.reply == 'STATUS':
 
-            if self.reply == 'STATUS':
-                payload = payload['Status']
-                for k, v in payload.items():
-                    self.update_property(k, v)
-
-            elif self.reply in parse_statuses:
-                payload = payload[list(payload.keys())[0]]
-                for k, v in payload.items():
-                    self.update_property(k, v)
-
-            elif self.reply in ('STATE', 'STATUS11'):
-                if self.reply == 'STATUS11':
-                    payload = payload['StatusSTS']
-
-                for k, v in payload.items():
-                    if isinstance(v, dict):
-                        for kk, vv in v.items():
-                            self.update_property(kk, vv)
-                    else:
+                    payload = payload['Status']
+                    for k, v in payload.items():
                         self.update_property(k, v)
 
-                    # self.parse_power(payload)
+                elif self.reply in parse_statuses:
+                    payload = payload[list(payload.keys())[0]]
+                    for k, v in payload.items():
+                        self.update_property(k, v)
 
-            elif self.reply.startswith("POWER"):
-                self.update_property(self.reply, msg)
-                # if self.property_changed:
-                #     self.property_changed(self, "Power")
+                elif self.reply in ('STATE', 'STATUS11'):
+                    if self.reply == 'STATUS11':
+                        payload = payload['StatusSTS']
 
-            elif self.reply == 'RESULT':
-                for k, v in payload.items():
+                    for k, v in payload.items():
+                        if isinstance(v, dict):
+                            for kk, vv in v.items():
+                                self.update_property(kk, vv)
+                        else:
+                            self.update_property(k, v)
 
-                    if k.startswith("Modules"):
-                        self.m[k] = v
-                        self.module_changed(self)
+                        # self.parse_power(payload)
 
-                    elif k == 'NAME':
-                        self.p['Template'] = payload
-                        if self.module_changed:
+                elif self.reply.startswith("POWER"):
+                    self.update_property(self.reply, msg)
+
+                elif self.reply == 'RESULT':
+                    for k, v in payload.items():
+
+                        if k.startswith("Modules"):
+                            self.m[k] = v
                             self.module_changed(self)
-                        break
 
-                    elif k.startswith('POWER'):
-                        self.update_property(k, v)
-                        # if self.property_changed:
-                        #     self.property_changed(self, "Power")
+                        elif k == 'NAME':
+                            self.p['Template'] = payload
+                            if self.module_changed:
+                                self.module_changed(self)
+                            break
 
-                    else:
-                        self.update_property(k, v)
+                        elif k.startswith('POWER'):
+                            self.update_property(k, v)
 
-        except JSONDecodeError as e:
-            with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
-                l.write("{}\t{}\t{}\t{}\n"
-                        .format(QDateTime.currentDateTime()
-                                .toString("yyyy-MM-dd hh:mm:ss"), topic, msg, e.msg))
+                        else:
+                            self.update_property(k, v)
+
+            except JSONDecodeError as e:
+                with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
+                    l.write("{}\t{}\t{}\t{}\n"
+                            .format(QDateTime.currentDateTime()
+                                    .toString("yyyy-MM-dd hh:mm:ss"), topic, msg, e.msg))
 
     def power(self):
         return {k: v for k, v in self.p.items() if k.startswith('POWER')}

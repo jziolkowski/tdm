@@ -91,7 +91,7 @@ class DeviceConsoleWidget(QDockWidget):
             topic = "{}{}".format(self.device.cmnd_topic(), cmd)
 
             payload = " ".join(split_cmd_input[1:])
-            self.consoleAppend(topic, payload)
+            # self.consoleAppend(topic, payload)
             self.sendCommand.emit(topic, payload)
             self.command.clear()
 

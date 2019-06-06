@@ -3,48 +3,6 @@ from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableView, QSpinBox, QAction, QToolBar, \
     QHeaderView, QCheckBox, QPushButton, QPlainTextEdit, QLineEdit, QComboBox, QFrame, QDoubleSpinBox, QTreeWidgetItem
 
-# from GUI.DeviceEdit import DeviceEditDialog
-# from Util import DevMdl, CnsMdl
-#
-# columns = {
-#     DevMdl.LWT: ['LWT', False, QHeaderView.ResizeToContents],
-#     DevMdl.FRIENDLY_NAME: ['Name', False, QHeaderView.Stretch],
-#
-#     DevMdl.TOPIC: ['Topic', True, QHeaderView.ResizeToContents],
-#     DevMdl.FULL_TOPIC: ['Full topic', True, QHeaderView.ResizeToContents],
-#
-#     DevMdl.MODULE: ['Module', False, QHeaderView.Stretch],
-#     DevMdl.FIRMWARE: ['Firmware', False, QHeaderView.ResizeToContents],
-#     DevMdl.CORE: ['Core', True, QHeaderView.ResizeToContents],
-#
-#     DevMdl.MAC: ['MAC', False, QHeaderView.ResizeToContents],
-#     DevMdl.IP: ['IP', False, QHeaderView.ResizeToContents],
-#
-#     DevMdl.SSID: ['SSID', True, QHeaderView.ResizeToContents],
-#     DevMdl.BSSID: ['BSSID', True, QHeaderView.ResizeToContents],
-#     DevMdl.CHANNEL: ['Channel', True, QHeaderView.ResizeToContents],
-#     DevMdl.RSSI: ['RSSI', False, QHeaderView.ResizeToContents],
-#     DevMdl.LINKCOUNT: ['LinkCnt', False, QHeaderView.ResizeToContents],
-#     DevMdl.DOWNTIME: ['Downtime', False, QHeaderView.ResizeToContents],
-#
-#     DevMdl.UPTIME: ['Uptime', False, QHeaderView.ResizeToContents],
-#     DevMdl.RESTART_REASON: ['Restart reason', True, QHeaderView.ResizeToContents],
-#     DevMdl.POWER: ['Power', False, QHeaderView.ResizeToContents],
-#     DevMdl.LOADAVG: ['L. avg', False, QHeaderView.ResizeToContents],
-#     DevMdl.TELEPERIOD: ['TelePrd.', True, QHeaderView.ResizeToContents],
-#     DevMdl.MODULE_ID: ['Module ID', True, QHeaderView.ResizeToContents],
-#     DevMdl.OTA_URL: ['OTA URL', True, QHeaderView.ResizeToContents],
-# }
-#
-# columns_console = {
-#     CnsMdl.TIMESTAMP: ['Timestamp', False, QHeaderView.ResizeToContents],
-#     CnsMdl.TOPIC: ['Topic', False, QHeaderView.ResizeToContents],
-#     CnsMdl.FRIENDLY_NAME: ['Friendly name', False, QHeaderView.ResizeToContents],
-#     CnsMdl.DESCRIPTION: ['Description', False, QHeaderView.Stretch],
-#     CnsMdl.PAYLOAD: ['Payload', True, 1],
-#     CnsMdl.KNOWN: ['Known', True, 1],
-# }
-
 
 class VLayout(QVBoxLayout):
     def __init__(self, margin=3, spacing=3, label = '', *args, **kwargs):
@@ -138,7 +96,7 @@ class TableView(QTableView):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
 
         self.setSelectionBehavior(QTableView.SelectRows)
-        # self.setSelectionMode(QTableView.SingleSelection)
+        self.setSelectionMode(QTableView.SingleSelection)
 
         self.setEditTriggers(self.NoEditTriggers)
 
