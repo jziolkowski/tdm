@@ -177,7 +177,7 @@ class DevicesListWidget(QWidget):
             relays = self.device.power()
             if relay:
                 if relay == 1 and len(relays) == 1:
-                    self.mqtt.publish(self.device.cmnd_topic("power".format(relay)), payload=state)
+                    self.mqtt.publish(self.device.cmnd_topic("power"), payload=state)
 
                 elif relays.get("POWER{}".format(relay)):
                     self.mqtt.publish(self.device.cmnd_topic("power{}".format(relay)), payload=state)
@@ -244,22 +244,22 @@ class DevicesListWidget(QWidget):
             self.ctx_menu_relays.setEnabled(True)
             self.ctx_menu_relays.clear()
 
-            for i, r in enumerate(relays.keys()):
+            for i, r in enumerate(relays.keys(), start=1):
                 actR = self.ctx_menu_relays.addAction("{} ON".format(r))
-                actR.triggered.connect(lambda st, x=r: self.ctx_menu_power(x, "ON"))
+                actR.triggered.connect(lambda st, x=i: self.ctx_menu_power(x, "ON"))
 
                 actR = self.ctx_menu_relays.addAction("{} OFF".format(r))
-                actR.triggered.connect(lambda st, x=r: self.ctx_menu_power(x, "OFF"))
+                actR.triggered.connect(lambda st, x=i: self.ctx_menu_power(x, "OFF"))
                 self.ctx_menu_relays.addSeparator()
         else:
             self.ctx_menu_relays.setEnabled(False)
             self.ctx_menu_relays.clear()
 
-    def device_config(self, idx=None):
-        if self.idx:
-            dev_cfg = DevicesConfigWidget(self.model.topic(self.idx))
-            sw = self.mdi.addSubWindow(dev_cfg)
-            dev_cfg.setWindowState(Qt.WindowMaximized)
+    # def device_config(self, idx=None):
+    #     if self.idx:
+    #         dev_cfg = DevicesConfigWidget(self.model.topic(self.idx))
+    #         sw = self.mdi.addSubWindow(dev_cfg)
+    #         dev_cfg.setWindowState(Qt.WindowMaximized)
 
     def get_dump(self):
         self.backup += self.dl.readAll()
