@@ -34,7 +34,7 @@ class MainWindow(QMainWindow):
         self.fulltopic_queue = []
 
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
-        self.setMinimumSize(QSize(1280, 800))
+        self.setMinimumSize(QSize(1280, 720))
 
         self.settings.beginGroup("Devices")
         for d in self.settings.childGroups():
