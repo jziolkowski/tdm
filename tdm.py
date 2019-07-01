@@ -498,7 +498,7 @@ class MainWindow(QMainWindow):
                     self.tview.expand(d)
 
                 if sensor == 'COUNTER':
-                    d = node.devices().get(sensor)
+                    d = node.devices().get("Counter")
                     if not d:
                         d = self.telemetry_model.addDevice(CounterSns, "Counter", device)
                     pr = self.telemetry_model.getNode(d).provides()
