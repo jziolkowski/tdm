@@ -513,6 +513,7 @@ sensor_map = {
     'BME280': BME280,
     'SHT3X-0x44': ThermometerHumidity,
     'SI7020': ThermometerHumidity,
+    'BMP180': ThermometerPressure,
     'BMP280': ThermometerPressure,
     'LM75AD': Thermometer,
     'MHZ19B': MHZ19B,
