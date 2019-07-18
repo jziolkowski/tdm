@@ -34,7 +34,7 @@ class MainWindow(QMainWindow):
         self.fulltopic_queue = []
 
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
-        self.setMinimumSize(QSize(1280, 720))
+        self.setMinimumSize(QSize(1000, 618))  # because golden ratio :)
 
         self.settings.beginGroup("Devices")
         for d in self.settings.childGroups():
@@ -65,7 +65,7 @@ class MainWindow(QMainWindow):
         self.queue_timer.start(250)
 
         self.auto_timer = QTimer()
-        self.auto_timer.timeout.connect(self.autoupdate)
+        self.auto_timer.timeout.connect(self.auto_telemetry)
 
         self.load_window_state()
 
@@ -104,20 +104,20 @@ class MainWindow(QMainWindow):
 
     def build_mainmenu(self):
         mSetup = self.menuBar().addMenu("Options")
-        mSetup.addAction(QIcon("./GUI/icons/connections.png"), "MQTT Broker", self.setup_broker)
-        # mSetup.addAction(QIcon(), "Auto telemetry period", lambda: print('asd'))
-        mSetup.addAction(QIcon("./GUI/icons/bssid.png"), "BSSId aliases", self.bssid)
-        mSetup.addAction(QIcon("GUI/icons/regex.png"), "Autodiscovery patterns", self.patterns)
+        mSetup.addAction(QIcon(), "MQTT Broker", self.setup_broker)
+        mSetup.addAction(QIcon(), "Auto telemetry period", lambda: print('asd'))
+        mSetup.addAction(QIcon(), "BSSId aliases", self.bssid)
+        mSetup.addAction(QIcon(), "Autodiscovery patterns", self.patterns)
 
-        mDevices = self.menuBar().addMenu("My devices")
-        actAdd = mDevices.addAction(QIcon("GUI/icons/add.png"), "Add", self.export)
-        actRemove = mDevices.addAction(QIcon("GUI/icons/delete.png"), "Remove", self.export)
-        mDevices.addSeparator()
-
-        mDevices.addSeparator()
-        mDevices.addAction(QIcon("GUI/icons/export.png"), "Export list", self.export)
-
-        mDevices.setEnabled(False)
+        # mDevices = self.menuBar().addMenu("My devices")
+        # actAdd = mDevices.addAction(QIcon("GUI/icons/add.png"), "Add", self.export)
+        # actRemove = mDevices.addAction(QIcon("GUI/icons/delete.png"), "Remove", self.export)
+        # mDevices.addSeparator()
+        #
+        # mDevices.addSeparator()
+        # mDevices.addAction(QIcon("GUI/icons/export.png"), "Export list", self.export)
+        #
+        # mDevices.setEnabled(False)
 
     def build_toolbars(self):
         main_toolbar = Toolbar(orientation=Qt.Horizontal, iconsize=24, label_position=Qt.ToolButtonTextBesideIcon)
@@ -129,7 +129,7 @@ class MainWindow(QMainWindow):
         self.actToggleConnect.toggled.connect(self.toggle_connect)
         main_toolbar.addAction(self.actToggleConnect)
 
-        self.actToggleAutoUpdate = QAction(QIcon("./GUI/icons/automatic.png"), "Auto telemetry")
+        self.actToggleAutoUpdate = QAction(QIcon("./GUI/icons/auto_telemetry.png"), "Auto telemetry")
         self.actToggleAutoUpdate.setCheckable(True)
         self.actToggleAutoUpdate.toggled.connect(self.toggle_autoupdate)
         main_toolbar.addAction(self.actToggleAutoUpdate)
@@ -175,7 +175,7 @@ class MainWindow(QMainWindow):
         elif not state and self.mqtt.state == self.mqtt.Connected:
             self.mqtt_disconnect()
 
-    def autoupdate(self):
+    def auto_telemetry(self):
         if self.mqtt.state == self.mqtt.Connected:
             for d in self.env.devices:
                 self.mqtt.publish("{}STATUS".format(d.cmnd_topic()), payload=8)
@@ -209,17 +209,23 @@ class MainWindow(QMainWindow):
         self.mqtt_subscribe()
 
     def mqtt_subscribe(self):
+        # subscribe to default and SO19 topics
         topics = ["+/stat/#", "+/tele/#", "stat/#", "tele/#", "+/cmnd/#", "cmnd/#"]
 
         for d in self.env.devices:
             # todo: verify
             if not d.is_default():
+                # if a device has a non-standard FullTopic, subscribe to them as well
                 topics.append(d.stat_topic()+"#")
                 topics.append(d.tele_topic()+"#")
                 topics.append(d.cmnd_topic()+"#")
 
         for t in topics:
             self.mqtt.subscribe(t)
+
+    @pyqtSlot(str, str)
+    def mqtt_publish(self, t, p):
+        self.mqtt.publish(t, p)
 
     def mqtt_publish_queue(self):
         for q in self.mqtt_queue:
@@ -244,8 +250,10 @@ class MainWindow(QMainWindow):
         self.actToggleConnect.setChecked(False)
 
     def mqtt_message(self, topic, msg):
+        # try to find a device by matching known FullTopics against the MQTT topic of the message
         device = self.env.find_device(topic)
         if device:
+            # forward the message for processing
             device.parse_message(topic, msg)
 
         if topic.endswith("LWT"):
@@ -259,6 +267,9 @@ class MainWindow(QMainWindow):
                     self.initial_query(device, True)
 
             elif msg == "Online":
+                # received LWT from an unknown device
+                # first part of Tasmota Autodiscovery algorithm
+                # begin by loading default and user-provided FullTopic patterns
                 custom_patterns = []
                 self.settings.beginGroup("Patterns")
                 for k in self.settings.childKeys():
@@ -266,20 +277,28 @@ class MainWindow(QMainWindow):
                 self.settings.endGroup()
 
                 for p in lwt_patterns + custom_patterns:
+                    # for all the patterns, match the LWT topic (it follows the device's FullTopic syntax
                     match = re.fullmatch(p.replace("%topic%", "(?P<topic>.*?)").replace("%prefix%", "(?P<prefix>.*?)") + ".*$", topic)
                     if match:
+                        # assume that the matched topic is the one configured in device settings
                         possible_topic = match.groupdict().get('topic')
                         if possible_topic not in ('tele', 'stat'):
+                            # if the assumed topic is different from tele or stat, there is a chance that it's a valid topic
+                            # query the assumed device for its FullTopic. False positives won't reply.
                             self.mqtt_queue.append([p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic) + "FullTopic", ""])
 
         elif topic.endswith("RESULT"):
+            # we have a reply from an unknown device
             if not device:
+                # second part of Tasmota Autodiscovery algorithm
                 try:
                     full_topic = loads(msg).get('FullTopic')
-
                     if full_topic:
+                        # the device replies with its FullTopic
+                        # here the Topic is extracted using the returned FullTopic, identifying the device
                         parsed = parse_topic(full_topic, topic)
                         if parsed:
+                            # the topic matches, we can add the device to our environment and Device List
                             d = TasmotaDevice(parsed['topic'], full_topic)
                             d.update_property("LWT", "online")
                             self.env.devices.append(d)
@@ -353,21 +372,27 @@ class MainWindow(QMainWindow):
         if self.device:
             rules = DeviceRulesWidget(self.device)
             self.mqtt.messageSignal.connect(rules.parse_message)
+            rules.sendCommand.connect(self.mqtt_publish)
             self.mdi.setViewMode(QMdiArea.TabbedView)
             self.mdi.addSubWindow(rules)
             rules.setWindowState(Qt.WindowMaximized)
             rules.destroyed.connect(self.updateMDI)
+            self.mqtt_queue.append((self.device.cmnd_topic("ruletimer"), ""))
+            for i in range(1, 6):
+                self.mqtt_queue.append((self.device.cmnd_topic("Var{}".format(i)), ""))
+                self.mqtt_queue.append((self.device.cmnd_topic("Mem{}".format(i)), ""))
+
 
     def updateMDI(self):
         if len(self.mdi.subWindowList()) == 1:
             self.mdi.setViewMode(QMdiArea.SubWindowView)
             self.devices_list.setWindowState(Qt.WindowMaximized)
 
-
     def closeEvent(self, e):
         self.settings.setValue("version", self._version)
         self.settings.setValue("window_geometry", self.saveGeometry())
 
+        # save devices
         self.settings.beginGroup("Devices")
         for d in self.env.devices:
             self.settings.setValue("{}/full_topic".format(d.p['Topic']), d.p['FullTopic'])

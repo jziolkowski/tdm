@@ -1,14 +1,15 @@
 from json import loads, JSONDecodeError
 
-from PyQt5.QtCore import QSize, QSettings, QDir, pyqtSlot, Qt, QTimer
+from PyQt5.QtCore import QSize, QSettings, QDir, pyqtSlot, Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QDialog, QTableWidget, QHeaderView, QTableWidgetItem, QPushButton, QLabel, QWidget, \
-    QMessageBox, QComboBox, QCheckBox, QPlainTextEdit, QGroupBox, QListWidget
+    QMessageBox, QComboBox, QCheckBox, QPlainTextEdit, QGroupBox, QListWidget, QInputDialog
 
 from GUI import VLayout, HLayout, Toolbar, CheckableAction, GroupBoxV, GroupBoxH
 
 
 class DeviceRulesWidget(QWidget):
+    sendCommand = pyqtSignal(str, str)
 
     def __init__(self, device, *args, **kwargs):
         super(DeviceRulesWidget, self).__init__(*args, **kwargs)
@@ -18,6 +19,12 @@ class DeviceRulesWidget(QWidget):
         self.poll_timer = QTimer()
         self.poll_timer.timeout.connect(self.poll)
         self.poll_timer.start(1000)
+
+        self.vars = ['', '', '', '', '']
+        self.var = None
+
+        self.mem = None
+        self.rt = None
 
         tb = Toolbar(iconsize=24, label_position=Qt.ToolButtonTextBesideIcon)
         vl = VLayout(margin=0, spacing=0)
@@ -74,23 +81,27 @@ class DeviceRulesWidget(QWidget):
 
         ###### VARS
         self.gbVars = GroupBoxV("VARs")
-        self.vars = QListWidget()
-        self.vars.setAlternatingRowColors(True)
-        self.vars.addItems(["VAR{}: ".format(i) for i in range(1, 6)])
-        self.gbVars.addWidget(self.vars)
+        self.lwVars = QListWidget()
+        self.lwVars.setAlternatingRowColors(True)
+        self.lwVars.addItems(["VAR{}: loading...".format(i) for i in range(1, 6)])
+        self.lwVars.clicked.connect(self.select_var)
+        self.lwVars.doubleClicked.connect(self.set_var)
+        self.gbVars.addWidget(self.lwVars)
 
         ###### MEMS
         self.gbMems = GroupBoxV("MEMs")
         self.mems = QListWidget()
         self.mems.setAlternatingRowColors(True)
-        self.mems.addItems(["MEM{}: ".format(i) for i in range(1, 6)])
+        self.mems.addItems(["MEM{}: loading...".format(i) for i in range(1, 6)])
+        self.mems.clicked.connect(self.select_mem)
         self.gbMems.addWidget(self.mems)
 
         ###### RuleTimers
         self.gbRTs = GroupBoxV("Rule timers")
         self.rts = QListWidget()
         self.rts.setAlternatingRowColors(True)
-        self.rts.addItems(["RuleTimer{}: ".format(i) for i in range(1, 9)])
+        self.rts.addItems(["RuleTimer{}: loading...".format(i) for i in range(1, 9)])
+        self.rts.clicked.connect(self.select_rt)
         self.gbRTs.addWidget(self.rts)
 
         vl_helpers.addWidgets([self.gbPolling, self.gbVars, self.gbMems, self.gbRTs])
@@ -102,20 +113,35 @@ class DeviceRulesWidget(QWidget):
         vl.addLayout(hl)
         self.setLayout(vl)
 
-        self.load_rule("Rule1")
-
     def load_rule(self, text):
-        print(text)
+        self.sendCommand.emit(self.device.cmnd_topic(text), "")
 
     def poll(self):
         if self.pbPollVars.isChecked():
-            print('var')
+            self.sendCommand.emit(self.device.cmnd_topic("backlog"), "var1; var2; var3; var4; var5")
 
         if self.pbPollMems.isChecked():
-            print('mem')
+            self.sendCommand.emit(self.device.cmnd_topic("backlog"), "mem1; mem2; mem3; mem4; mem5")
 
         if self.pbPollRTs.isChecked():
-            print('rt')
+            self.sendCommand.emit(self.device.cmnd_topic("ruletimer"), "")
+
+    def select_var(self, idx):
+        self.var = idx.row()
+
+    def set_var(self, idx):
+        curr = self.vars[self.var]
+        new, ok = QInputDialog.getText(self, "Set VAR", "Set VAR{} value. Empty to clear.".format(self.var+1), text=curr)
+        if ok:
+            if new == '':
+                new = '"'
+            self.sendCommand.emit(self.device.cmnd_topic("var{}".format(self.var+1)), new)
+
+    def select_mem(self, idx):
+        self.mem = idx.row()
+
+    def select_rt(self, idx):
+        self.rt = idx.row()
 
     parse_message = pyqtSlot(str, str)
     def parse_message(self, topic, msg):
@@ -126,7 +152,16 @@ class DeviceRulesWidget(QWidget):
                     first = list(payload)[0]
 
                     if first.startswith('Rule'):
-                        print(payload)
+                        self.editor.setPlainText(payload['Rules'].replace(" on ", "\non ").replace(" do ", " do\n\t").replace(" endon", "\nendon ").rstrip(" "))
+
+                    elif first.startswith('Var'):
+                        row = int(first.replace("Var", ""))-1
+                        self.lwVars.item(row).setText("VAR{}: {}".format(row+1, payload[first]))
+                        self.vars[row] = payload[first]
+
+                    elif first == 'T1':
+                        for i, rt in enumerate(payload.keys()):
+                            self.rts.item(i).setText("RuleTimer{}: {}".format(i+1, payload[rt]))
 
                 except JSONDecodeError as e:
                     QMessageBox.critical(self, "Rule loading error", "Can't load the rule from device.\n{}".format(e))

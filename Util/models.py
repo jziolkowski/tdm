@@ -5,7 +5,6 @@ from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, QAbstractTableMode
 from PyQt5.QtGui import QIcon, QColor, QPixmap, QFont, QPen
 from PyQt5.QtWidgets import QStyledItemDelegate, QStyle
 
-from Util import found_obj
 from Util.nodes import *
 
 
@@ -331,8 +330,11 @@ class TasmotaDevicesModel(QAbstractTableModel):
             if role in [Qt.DisplayRole, Qt.EditRole]:
                 val = d.p.get(col_name, "")
 
-                if col_name == "FriendlyName" and val:
-                    val = val[0]
+                if col_name == "FriendlyName":
+                    if val:
+                        val = val[0]
+                    else:
+                        d.p['Topic']
 
                 elif col_name == "Module":
                     if val == 0:
@@ -378,7 +380,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
             elif role == Qt.TextAlignmentRole:
                 # Left-aligned columns
-                if col_name in ("FriendlyName", "Topic", "FullTopic", "Module", "RestartReason", "OtaUrl", "Hostname", "Version"):
+                if col_name in ("FriendlyName", "Module", "RestartReason", "OtaUrl", "Hostname", "Version") or col_name.endswith("Topic"):
                     return Qt.AlignLeft | Qt.AlignVCenter
 
                 # Right-aligned columns

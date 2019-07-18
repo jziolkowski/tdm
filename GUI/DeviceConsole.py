@@ -142,7 +142,9 @@ class JSONHighLighter(QSyntaxHighlighter):
             (r'\[.*\] ', 0, self.STYLES['tstamp']),
             (r'\s.*(stat|tele).*\s', 0, self.STYLES['brace']),
             (r'\s.*cmnd.*\s', 0, self.STYLES['command']),
-            (r'\"\w*\":', 0, self.STYLES['keyword']),
+            (r'\"\w*\"(?=:)', 0, self.STYLES['keyword']),
+            (r':\"\w*\"', 0, self.STYLES['error']),
+
             (r'\{\"Command\":\"Unknown\"\}', 0, self.STYLES['error']),
         ]
 

@@ -4,9 +4,9 @@ from PyQt5.QtCore import Qt, QSettings, QSortFilterProxyModel, QUrl, QDir, pyqtS
 from PyQt5.QtGui import QIcon, QDesktopServices
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from PyQt5.QtWidgets import QWidget, QMessageBox, QDialog, QMenu, QApplication, QToolButton, QInputDialog, QFileDialog, \
-    QAction, QActionGroup, QLabel, QShortcut, QSizePolicy
+    QAction, QActionGroup, QLabel, QShortcut, QSizePolicy, QComboBox, QLineEdit
 
-from GUI import VLayout, Toolbar, TableView
+from GUI import VLayout, Toolbar, TableView, HLayout
 from GUI.DeviceConfig import DevicesConfigWidget
 from GUI.DeviceEdit import DeviceEditDialog
 from Util import TasmotaDevice
@@ -30,6 +30,7 @@ class DevicesListWidget(QWidget):
         # self.mdi = parent.mdi
 
         self.device = None
+        self.idx = None
 
         self.nam = QNetworkAccessManager()
         self.backup = bytes()
@@ -39,7 +40,7 @@ class DevicesListWidget(QWidget):
         base_view = ["FriendlyName"]
         self.views = {
             "Home":  base_view + ["Module", "Power", "LoadAvg", "LinkCount", "Uptime"],
-            "Health": base_view + ["Uptime", "BootCount", "RestartReason", "LoadAvg", "Sleep", "LinkCount", "RSSI"],
+            "Health": base_view + ["Uptime", "BootCount", "RestartReason", "LoadAvg", "Sleep", "MqttCount", "LinkCount", "RSSI"],
             "Firmware": base_view + ["Version", "Core", "SDK",  "ProgramSize", "Free", "OtaUrl"],
             "Wifi":     base_view + ["Hostname", "Mac", "IPAddress", "Gateway", "SSId", "BSSId", "Channel", "RSSI", "LinkCount", "Downtime"],
             "MQTT":     base_view + ["Topic", "FullTopic", "CommandTopic", "StatTopic", "TeleTopic", "FallbackTopic", "GroupTopic"],
@@ -47,15 +48,19 @@ class DevicesListWidget(QWidget):
 
         self.tb = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonTextBesideIcon)
         self.tb_views = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonTextBesideIcon)
+        self.tb_filter = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonTextBesideIcon)
 
         self.layout().addWidget(self.tb)
+        self.layout().addWidget(self.tb_filter)
 
         self.device_list = TableView()
-        self.device_list.setIconSize(QSize(24,24))
+        self.device_list.setIconSize(QSize(24, 24))
         self.model = parent.device_model
         self.model.setupColumns(self.views["Home"])
         self.sorted_device_model = QSortFilterProxyModel()
+        self.sorted_device_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.sorted_device_model.setSourceModel(parent.device_model)
+        self.sorted_device_model.setFilterKeyColumn(-1)
         self.device_list.setModel(self.sorted_device_model)
         self.device_list.setupView(self.views["Home"])
         self.device_list.setSortingEnabled(True)
@@ -67,6 +72,7 @@ class DevicesListWidget(QWidget):
 
         self.layout().addWidget(self.tb_views)
 
+
         self.device_list.clicked.connect(self.select_device)
         self.device_list.customContextMenuRequested.connect(self.show_list_ctx_menu)
 
@@ -75,6 +81,7 @@ class DevicesListWidget(QWidget):
 
         self.create_actions()
         self.create_view_buttons()
+        self.create_view_filter()
 
         self.device_list.doubleClicked.connect(lambda: self.openConsole.emit())
 
@@ -94,45 +101,32 @@ class DevicesListWidget(QWidget):
         self.ctx_menu_cfg.addAction(QIcon(), "Logging", self.ctx_menu_teleperiod)
 
         # cfg_btn = self.ctx_menu.addMenu(self.ctx_menu_cfg)
-
-        self.ctx_menu.addSeparator()
-
-        # self.ctx_menu.addAction(self.actTelemetry)
-        self.ctx_menu.addAction(QIcon("GUI/icons/textfield.png"), "Console", lambda: self.openConsole.emit())
-        self.ctx_menu.addAction(QIcon(), "Rules", lambda: self.openRulesEditor.emit())
-        self.ctx_menu.addSeparator()
+        # self.ctx_menu.addSeparator()
+        self.ctx_menu.addAction(QIcon("GUI/icons/console.png"), "Console", lambda: self.openConsole.emit())
+        self.ctx_menu.addAction(QIcon("GUI/icons/rules.png"), "Rules", lambda: self.openRulesEditor.emit())
+        self.ctx_menu.addAction(QIcon("GUI/icons/telemetry.png"), "Telemetry", lambda: self.openConsole.emit())
+        self.ctx_menu.addAction(QIcon("GUI/icons/web.png"), "WebUI", self.ctx_menu_webui)
         self.ctx_menu.addAction(QIcon("GUI/icons/refresh.png"), "Refresh", self.ctx_menu_refresh)
 
         self.ctx_menu.addSeparator()
-        self.ctx_menu.addAction(QIcon("GUI/icons/on.png"), "Power ON", lambda: self.ctx_menu_power(state="ON"))
-        self.ctx_menu.addAction(QIcon("GUI/icons/off.png"), "Power OFF", lambda: self.ctx_menu_power(state="OFF"))
 
-        self.ctx_menu_relays = QMenu("Relays")
-        self.ctx_menu_relays.setIcon(QIcon("GUI/icons/switch.png"))
-        relays_btn = self.ctx_menu.addMenu(self.ctx_menu_relays)
+        # self.ctx_menu.addAction(QIcon("GUI/icons/p2_on.png"), "", lambda: self.ctx_menu_power(state="ON"))
+        # self.ctx_menu.addAction(QIcon("GUI/icons/p2_off.png"), "", lambda: self.ctx_menu_power(state="OFF"))
 
-        self.ctx_menu_relays.setEnabled(False)
+        # self.ctx_menu_relays = QMenu("Relays")
+        # self.ctx_menu_relays.setIcon(QIcon("GUI/icons/switch.png"))
+        # relays_btn = self.ctx_menu.addMenu(self.ctx_menu_relays)
+
+        # self.ctx_menu_relays.setEnabled(False)
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon("GUI/icons/clear.png"), "Clear retained", self.ctx_menu_clean_retained)
         self.ctx_menu.addSeparator()
-        self.ctx_menu.addAction(QIcon(), "Copy", self.ctx_menu_copy)
+        self.ctx_menu.addAction(QIcon("GUI/icons/copy.png"), "Copy", self.ctx_menu_copy)
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon("GUI/icons/restart.png"), "Restart", self.ctx_menu_restart)
-        self.ctx_menu.addAction(QIcon("GUI/icons/web.png"), "Open WebUI", self.ctx_menu_webui)
-        self.ctx_menu.addSeparator()
-
-        self.ctx_menu_ota = QMenu("OTA")
-        self.ctx_menu_ota.setIcon(QIcon("GUI/icons/ota.png"))
-        self.ctx_menu_ota.addAction("Set OTA URL", self.ctx_menu_ota_set_url)
-        self.ctx_menu_ota.addAction("Upgrade", self.ctx_menu_ota_set_upgrade)
-        ota_btn = self.ctx_menu.addMenu(self.ctx_menu_ota)
-
-        self.ctx_menu.addAction("Config backup", self.ctx_menu_config_backup)
 
         self.tb.addActions(self.ctx_menu.actions())
-        self.tb.widgetForAction(ota_btn).setPopupMode(QToolButton.InstantPopup)
-        # self.tb.widgetForAction(cfg_btn).setPopupMode(QToolButton.InstantPopup)
-        self.tb.widgetForAction(relays_btn).setPopupMode(QToolButton.InstantPopup)
+        # self.tb.widgetForAction(relays_btn).setPopupMode(QToolButton.InstantPopup)
 
         shortcuts_toggle = [QShortcut(self.device_list) for _ in range(8)]
         for i, s in enumerate(shortcuts_toggle, start=1):
@@ -156,13 +150,34 @@ class DevicesListWidget(QWidget):
         self.tb_views.addWidget(stretch)
         # actEditView = self.tb_views.addAction("Edit views...")
 
+    def create_view_filter(self):
+        self.tb_filter.addWidget(QLabel("Show devices: "))
+        self.cbxLWT = QComboBox()
+        self.cbxLWT.addItems(["All", "Online", "Offline"])
+        self.cbxLWT.currentTextChanged.connect(self.build_filter_regex)
+        self.tb_filter.addWidget(self.cbxLWT)
+
+        self.tb_filter.addWidget(QLabel(" Search: "))
+        self.leSearch = QLineEdit()
+        self.leSearch.setClearButtonEnabled(True)
+        self.leSearch.textChanged.connect(self.build_filter_regex)
+        self.tb_filter.addWidget(self.leSearch)
+
+    def build_filter_regex(self, txt):
+        query = self.leSearch.text()
+        if self.cbxLWT.currentText() != "All":
+            print('asd')
+            query = "{}|{}".format(self.cbxLWT.currentText(), query)
+        self.sorted_device_model.setFilterRegExp(query)
+
     def change_view(self, a=None):
         view = self.views[self.sender().text()]
         self.model.setupColumns(view)
         self.device_list.setupView(view)
 
     def ctx_menu_copy(self):
-        QApplication.clipboard().setText(dumps(self.model.data(self.sorted_device_model.mapToSource(self.idx))))
+        if self.idx:
+            QApplication.clipboard().setText(dumps(self.model.data(self.sorted_device_model.mapToSource(self.idx))))
 
     def ctx_menu_clean_retained(self):
         if self.device:
@@ -239,21 +254,21 @@ class DevicesListWidget(QWidget):
         self.device = self.model.deviceAtRow(self.sorted_device_model.mapToSource(idx).row())
         self.deviceSelected.emit(self.device)
 
-        relays = self.device.power()
-        if relays and len(relays.keys()) > 1:
-            self.ctx_menu_relays.setEnabled(True)
-            self.ctx_menu_relays.clear()
-
-            for i, r in enumerate(relays.keys(), start=1):
-                actR = self.ctx_menu_relays.addAction("{} ON".format(r))
-                actR.triggered.connect(lambda st, x=i: self.ctx_menu_power(x, "ON"))
-
-                actR = self.ctx_menu_relays.addAction("{} OFF".format(r))
-                actR.triggered.connect(lambda st, x=i: self.ctx_menu_power(x, "OFF"))
-                self.ctx_menu_relays.addSeparator()
-        else:
-            self.ctx_menu_relays.setEnabled(False)
-            self.ctx_menu_relays.clear()
+        # relays = self.device.power()
+        # if relays and len(relays.keys()) > 1:
+        #     self.ctx_menu_relays.setEnabled(True)
+        #     self.ctx_menu_relays.clear()
+        #
+        #     for i, r in enumerate(relays.keys(), start=1):
+        #         actR = self.ctx_menu_relays.addAction("{} ON".format(r))
+        #         actR.triggered.connect(lambda st, x=i: self.ctx_menu_power(x, "ON"))
+        #
+        #         actR = self.ctx_menu_relays.addAction("{} OFF".format(r))
+        #         actR.triggered.connect(lambda st, x=i: self.ctx_menu_power(x, "OFF"))
+        #         self.ctx_menu_relays.addSeparator()
+        # else:
+        #     self.ctx_menu_relays.setEnabled(False)
+        #     self.ctx_menu_relays.clear()
 
     # def device_config(self, idx=None):
     #     if self.idx:

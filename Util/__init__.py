@@ -1,4 +1,5 @@
 import re
+from collections import namedtuple
 from json import loads, JSONDecodeError
 
 from PyQt5.QtCore import QDir, QDateTime
@@ -28,16 +29,15 @@ lwt_patterns = [
     "%topic%/%prefix%/"  # = %topic%/%prefix% (Tasmota with SetOption19 enabled for HomeAssistant AutoDiscovery)
 ]
 
-# todo remove
-class found_obj(object):
-    def __init__(self, d):
-        self.__dict__ = d
-
-    def __repr__(self):
-        return "PREFIX={},TOPIC={},REPLY={}".format(self.__dict__.get('prefix'), self.__dict__.get('topic'), self.__dict__.get('reply'))
+DeviceRule = namedtuple("DeviceRule", ['enabled', 'once', 'stop_on_error', 'rules'])
 
 
 def parse_topic(full_topic, topic):
+    """
+    :param full_topic: FullTopic to match against
+    :param topic: MQTT topic from which the reply arrived
+    :return: If match is found, returns dictionary including device Topic, prefix (cmnd/tele/stat) and reply endpoint
+    """
     full_topic = "{}(?P<reply>.*)".format(full_topic).replace("%topic%", "(?P<topic>.*?)").replace("%prefix%", "(?P<prefix>.*?)")
     match = re.fullmatch(full_topic, topic)
     if match:
@@ -66,7 +66,7 @@ class TasmotaDevice(object):
             "Template": {},
         }
 
-        self.env = []
+        self.env = None
         self.history = []
         self.rules = []
 
