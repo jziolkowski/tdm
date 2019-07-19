@@ -378,10 +378,10 @@ class MainWindow(QMainWindow):
             rules.setWindowState(Qt.WindowMaximized)
             rules.destroyed.connect(self.updateMDI)
             self.mqtt_queue.append((self.device.cmnd_topic("ruletimer"), ""))
+            self.mqtt_queue.append((self.device.cmnd_topic("rule1"), ""))
             for i in range(1, 6):
                 self.mqtt_queue.append((self.device.cmnd_topic("Var{}".format(i)), ""))
                 self.mqtt_queue.append((self.device.cmnd_topic("Mem{}".format(i)), ""))
-
 
     def updateMDI(self):
         if len(self.mdi.subWindowList()) == 1:

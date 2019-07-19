@@ -1,12 +1,13 @@
 from json import loads, JSONDecodeError
 
 from PyQt5.QtCore import QSize, QSettings, QDir, pyqtSlot, Qt, QTimer, pyqtSignal
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QFont, QSyntaxHighlighter, QTextCharFormat, QColor
 from PyQt5.QtWidgets import QDialog, QTableWidget, QHeaderView, QTableWidgetItem, QPushButton, QLabel, QWidget, \
     QMessageBox, QComboBox, QCheckBox, QPlainTextEdit, QGroupBox, QListWidget, QInputDialog
 
 from GUI import VLayout, HLayout, Toolbar, CheckableAction, GroupBoxV, GroupBoxH
 
+import re
 
 class DeviceRulesWidget(QWidget):
     sendCommand = pyqtSignal(str, str)
@@ -25,6 +26,9 @@ class DeviceRulesWidget(QWidget):
 
         self.mem = None
         self.rt = None
+
+        fnt_mono = QFont("asd")
+        fnt_mono.setStyleHint(QFont.Monospace)
 
         tb = Toolbar(iconsize=24, label_position=Qt.ToolButtonTextBesideIcon)
         vl = VLayout(margin=0, spacing=0)
@@ -62,9 +66,13 @@ class DeviceRulesWidget(QWidget):
 
         self.gbEditor = GroupBoxV("Rule editor")
         self.editor = QPlainTextEdit()
+        self.editor.setFont(fnt_mono)
+        self.editor.setPlaceholderText("loading...")
         self.gbEditor.addWidget(self.editor)
 
         hl.addWidgets([self.gbTriggers, self.gbEditor])
+
+        self.rules_hl = RuleHighLighter(self.editor.document())
 
         vl_helpers = VLayout(margin=[0, 0, 3, 0])
 
@@ -152,7 +160,7 @@ class DeviceRulesWidget(QWidget):
                     first = list(payload)[0]
 
                     if first.startswith('Rule'):
-                        self.editor.setPlainText(payload['Rules'].replace(" on ", "\non ").replace(" do ", " do\n\t").replace(" endon", "\nendon ").rstrip(" "))
+                        self.editor.setPlainText(payload['Rules'].replace(" on ", "\non ").replace(" do ", " do\n ").replace(" endon", "\nendon ").rstrip(" "))
 
                     elif first.startswith('Var'):
                         row = int(first.replace("Var", ""))-1
@@ -167,3 +175,34 @@ class DeviceRulesWidget(QWidget):
                     QMessageBox.critical(self, "Rule loading error", "Can't load the rule from device.\n{}".format(e))
 
 
+class RuleHighLighter(QSyntaxHighlighter):
+    control = QTextCharFormat()
+    control.setForeground(QColor("#fa8d33"))
+
+    trigger = QTextCharFormat()
+    trigger.setForeground(QColor("#399ee6"))
+
+    command = QTextCharFormat()
+    command.setBackground(QColor("red"))
+
+    control_words = ["on", "do", "endon"]
+
+    def __init__(self, document):
+        QSyntaxHighlighter.__init__(self, document)
+
+        rules = []
+        rules += [(r'(?:^|\s+)(%s)(?:\s+|$)' % cw, self.control) for cw in self.control_words]
+
+        rules += [
+            (r'\s+(.*#.*)\s+do', self.trigger),
+            # (r'(?:do^\s+|do\s+)(.*)(?:\s+endon|\nendon)', self.command),
+            (r'do\r\n\s+(.*)', self.command),
+        ]
+        self.rules = [(re.compile(pat, re.IGNORECASE), fmt) for (pat, fmt) in rules]
+
+    def highlightBlock(self, text):
+        print(self.document().toRawText())
+        for exp, fmt in self.rules:
+            for fi in re.finditer(exp, text):
+                self.setFormat(fi.start(1), fi.end(1)-fi.start(1), fmt)
+                print(fi.re, fi.groups(), fi.start(1), fi.end(1), fi.end(1)-fi.start(1))
