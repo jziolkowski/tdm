@@ -1,7 +1,8 @@
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableView, QSpinBox, QAction, QToolBar, \
-    QHeaderView, QCheckBox, QPushButton, QPlainTextEdit, QLineEdit, QComboBox, QFrame, QDoubleSpinBox, QTreeWidgetItem
+    QHeaderView, QCheckBox, QPushButton, QPlainTextEdit, QLineEdit, QComboBox, QFrame, QDoubleSpinBox, QTreeWidgetItem, \
+    QWidget, QSizePolicy
 
 
 class VLayout(QVBoxLayout):
@@ -163,6 +164,11 @@ class Toolbar(QToolBar):
         self.setIconSize(QSize(iconsize,iconsize))
         self.setOrientation(orientation)
         self.setToolButtonStyle(label_position)
+
+    def addSpacer(self):
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.addWidget(spacer)
 
 
 class RuleEditor(QPlainTextEdit):

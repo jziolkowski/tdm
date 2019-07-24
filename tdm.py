@@ -212,6 +212,8 @@ class MainWindow(QMainWindow):
         # subscribe to default and SO19 topics
         topics = ["+/stat/#", "+/tele/#", "stat/#", "tele/#", "+/cmnd/#", "cmnd/#"]
 
+        # TODO: subscribe to custom discovery topics
+
         for d in self.env.devices:
             # todo: verify
             if not d.is_default():

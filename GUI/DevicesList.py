@@ -72,7 +72,6 @@ class DevicesListWidget(QWidget):
 
         self.layout().addWidget(self.tb_views)
 
-
         self.device_list.clicked.connect(self.select_device)
         self.device_list.customContextMenuRequested.connect(self.show_list_ctx_menu)
 
@@ -108,7 +107,7 @@ class DevicesListWidget(QWidget):
         self.ctx_menu.addAction(QIcon("GUI/icons/web.png"), "WebUI", self.ctx_menu_webui)
         self.ctx_menu.addAction(QIcon("GUI/icons/refresh.png"), "Refresh", self.ctx_menu_refresh)
 
-        self.ctx_menu.addSeparator()
+        # self.ctx_menu.addSeparator()
 
         # self.ctx_menu.addAction(QIcon("GUI/icons/p2_on.png"), "", lambda: self.ctx_menu_power(state="ON"))
         # self.ctx_menu.addAction(QIcon("GUI/icons/p2_off.png"), "", lambda: self.ctx_menu_power(state="OFF"))
@@ -151,11 +150,11 @@ class DevicesListWidget(QWidget):
         # actEditView = self.tb_views.addAction("Edit views...")
 
     def create_view_filter(self):
-        self.tb_filter.addWidget(QLabel("Show devices: "))
-        self.cbxLWT = QComboBox()
-        self.cbxLWT.addItems(["All", "Online", "Offline"])
-        self.cbxLWT.currentTextChanged.connect(self.build_filter_regex)
-        self.tb_filter.addWidget(self.cbxLWT)
+        # self.tb_filter.addWidget(QLabel("Show devices: "))
+        # self.cbxLWT = QComboBox()
+        # self.cbxLWT.addItems(["All", "Online"d, "Offline"])
+        # self.cbxLWT.currentTextChanged.connect(self.build_filter_regex)
+        # self.tb_filter.addWidget(self.cbxLWT)
 
         self.tb_filter.addWidget(QLabel(" Search: "))
         self.leSearch = QLineEdit()
@@ -165,9 +164,8 @@ class DevicesListWidget(QWidget):
 
     def build_filter_regex(self, txt):
         query = self.leSearch.text()
-        if self.cbxLWT.currentText() != "All":
-            print('asd')
-            query = "{}|{}".format(self.cbxLWT.currentText(), query)
+        # if self.cbxLWT.currentText() != "All":
+        #     query = "{}|{}".format(self.cbxLWT.currentText(), query)
         self.sorted_device_model.setFilterRegExp(query)
 
     def change_view(self, a=None):
