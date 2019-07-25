@@ -27,7 +27,6 @@ class DevicesListWidget(QWidget):
         self.setLayout(VLayout(margin=0, spacing=0))
 
         self.mqtt = parent.mqtt
-        # self.mdi = parent.mdi
 
         self.device = None
         self.idx = None
@@ -47,8 +46,9 @@ class DevicesListWidget(QWidget):
         }
 
         self.tb = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonTextBesideIcon)
-        self.tb_views = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonTextBesideIcon)
+        self.tb_relays = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonIconOnly)
         self.tb_filter = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonTextBesideIcon)
+        self.tb_views = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonTextBesideIcon)
 
         self.layout().addWidget(self.tb)
         self.layout().addWidget(self.tb_filter)
@@ -57,10 +57,12 @@ class DevicesListWidget(QWidget):
         self.device_list.setIconSize(QSize(24, 24))
         self.model = parent.device_model
         self.model.setupColumns(self.views["Home"])
+
         self.sorted_device_model = QSortFilterProxyModel()
         self.sorted_device_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.sorted_device_model.setSourceModel(parent.device_model)
         self.sorted_device_model.setFilterKeyColumn(-1)
+
         self.device_list.setModel(self.sorted_device_model)
         self.device_list.setupView(self.views["Home"])
         self.device_list.setSortingEnabled(True)
@@ -99,24 +101,11 @@ class DevicesListWidget(QWidget):
         self.ctx_menu_cfg.addAction(QIcon(), "Timers", self.ctx_menu_teleperiod)
         self.ctx_menu_cfg.addAction(QIcon(), "Logging", self.ctx_menu_teleperiod)
 
-        # cfg_btn = self.ctx_menu.addMenu(self.ctx_menu_cfg)
-        # self.ctx_menu.addSeparator()
-        self.ctx_menu.addAction(QIcon("GUI/icons/console.png"), "Console", lambda: self.openConsole.emit())
-        self.ctx_menu.addAction(QIcon("GUI/icons/rules.png"), "Rules", lambda: self.openRulesEditor.emit())
-        self.ctx_menu.addAction(QIcon("GUI/icons/telemetry.png"), "Telemetry", lambda: self.openConsole.emit())
-        self.ctx_menu.addAction(QIcon("GUI/icons/web.png"), "WebUI", self.ctx_menu_webui)
+        self.ctx_menu.addMenu(self.ctx_menu_cfg)
+        self.ctx_menu.addSeparator()
+
         self.ctx_menu.addAction(QIcon("GUI/icons/refresh.png"), "Refresh", self.ctx_menu_refresh)
 
-        # self.ctx_menu.addSeparator()
-
-        # self.ctx_menu.addAction(QIcon("GUI/icons/p2_on.png"), "", lambda: self.ctx_menu_power(state="ON"))
-        # self.ctx_menu.addAction(QIcon("GUI/icons/p2_off.png"), "", lambda: self.ctx_menu_power(state="OFF"))
-
-        # self.ctx_menu_relays = QMenu("Relays")
-        # self.ctx_menu_relays.setIcon(QIcon("GUI/icons/switch.png"))
-        # relays_btn = self.ctx_menu.addMenu(self.ctx_menu_relays)
-
-        # self.ctx_menu_relays.setEnabled(False)
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon("GUI/icons/clear.png"), "Clear retained", self.ctx_menu_clean_retained)
         self.ctx_menu.addSeparator()
@@ -124,13 +113,39 @@ class DevicesListWidget(QWidget):
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon("GUI/icons/restart.png"), "Restart", self.ctx_menu_restart)
 
-        self.tb.addActions(self.ctx_menu.actions())
-        # self.tb.widgetForAction(relays_btn).setPopupMode(QToolButton.InstantPopup)
+        self.ctx_menu.addSeparator()
 
-        shortcuts_toggle = [QShortcut(self.device_list) for _ in range(8)]
-        for i, s in enumerate(shortcuts_toggle, start=1):
-            s.setKey("F{}".format(i))
-            s.activated.connect(lambda i=i: self.ctx_menu_power(i, "toggle"))
+        console = self.tb.addAction(QIcon("GUI/icons/console.png"), "Console", lambda: self.openRulesEditor.emit())
+        console.setShortcut("Ctrl+E")
+
+        rules = self.tb.addAction(QIcon("GUI/icons/rules.png"), "Rules", lambda: self.openRulesEditor.emit())
+        rules.setShortcut("Ctrl+R")
+
+        telemetry = self.tb.addAction(QIcon("GUI/icons/telemetry.png"), "Telemetry", lambda: self.openConsole.emit())
+        telemetry.setShortcut("Ctrl+T")
+
+        self.tb.addAction(QIcon("GUI/icons/web.png"), "WebUI", self.ctx_menu_webui)
+
+        self.tb.addWidget(QLabel(" Relays:"))
+
+        self.agAllPower = QActionGroup(self)
+        self.agAllPower.addAction("All ON")
+        self.agAllPower.addAction("All OFF")
+        self.agAllPower.setVisible(False)
+        self.agAllPower.setExclusive(False)
+        self.agAllPower.triggered.connect(self.toggle_power_all)
+        self.tb.addActions(self.agAllPower.actions())
+
+        self.agRelays = QActionGroup(self)
+        self.agRelays.setVisible(False)
+        self.agRelays.setExclusive(False)
+        for a in range(1, 9):
+            act = QAction(QIcon("GUI/icons/{}.png".format(a)), "")
+            act.setShortcut("F{}".format(a))
+            self.agRelays.addAction(act)
+
+        self.agRelays.triggered.connect(self.toggle_power)
+        self.tb.addActions(self.agRelays.actions())
 
     def create_view_buttons(self):
         self.tb_views.addWidget(QLabel("View mode: "))
@@ -185,20 +200,6 @@ class DevicesListWidget(QWidget):
                     self.mqtt.publish(self.device.cmnd_topic(r), retain=True)
                 QMessageBox.information(self, "Clear retained", "Cleared retained messages.")
 
-    def ctx_menu_power(self, relay=None, state=None):
-        if self.device:
-            relays = self.device.power()
-            if relay:
-                if relay == 1 and len(relays) == 1:
-                    self.mqtt.publish(self.device.cmnd_topic("power"), payload=state)
-
-                elif relays.get("POWER{}".format(relay)):
-                    self.mqtt.publish(self.device.cmnd_topic("power{}".format(relay)), payload=state)
-
-            elif not relay and relays:
-                for r in relays.keys():
-                    self.mqtt.publish(self.device.cmnd_topic(r), payload=state)
-
     def ctx_menu_restart(self):
         if self.device:
             self.mqtt.publish(self.device.cmnd_topic("restart"), payload="1")
@@ -252,27 +253,24 @@ class DevicesListWidget(QWidget):
         self.device = self.model.deviceAtRow(self.sorted_device_model.mapToSource(idx).row())
         self.deviceSelected.emit(self.device)
 
-        # relays = self.device.power()
-        # if relays and len(relays.keys()) > 1:
-        #     self.ctx_menu_relays.setEnabled(True)
-        #     self.ctx_menu_relays.clear()
-        #
-        #     for i, r in enumerate(relays.keys(), start=1):
-        #         actR = self.ctx_menu_relays.addAction("{} ON".format(r))
-        #         actR.triggered.connect(lambda st, x=i: self.ctx_menu_power(x, "ON"))
-        #
-        #         actR = self.ctx_menu_relays.addAction("{} OFF".format(r))
-        #         actR.triggered.connect(lambda st, x=i: self.ctx_menu_power(x, "OFF"))
-        #         self.ctx_menu_relays.addSeparator()
-        # else:
-        #     self.ctx_menu_relays.setEnabled(False)
-        #     self.ctx_menu_relays.clear()
+        relays = self.device.power()
 
-    # def device_config(self, idx=None):
-    #     if self.idx:
-    #         dev_cfg = DevicesConfigWidget(self.model.topic(self.idx))
-    #         sw = self.mdi.addSubWindow(dev_cfg)
-    #         dev_cfg.setWindowState(Qt.WindowMaximized)
+        self.agAllPower.setVisible(len(relays) > 1)
+
+        for i, a in enumerate(self.agRelays.actions()):
+            a.setVisible(i < len(relays))
+
+    def toggle_power(self, action):
+        if self.device:
+            idx = self.agRelays.actions().index(action)
+            relay = list(self.device.power().keys())[idx]
+            self.mqtt.publish(self.device.cmnd_topic(relay), "toggle")
+
+    def toggle_power_all(self, action):
+        if self.device:
+            idx = self.agAllPower.actions().index(action)
+            for r in self.device.power().keys():
+                self.mqtt.publish(self.device.cmnd_topic(r), str(not bool(idx)))
 
     def get_dump(self):
         self.backup += self.dl.readAll()
