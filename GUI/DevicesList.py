@@ -19,6 +19,8 @@ class DevicesListWidget(QWidget):
     deviceSelected = pyqtSignal(TasmotaDevice)
     openRulesEditor = pyqtSignal()
     openConsole = pyqtSignal()
+    openTelemetry = pyqtSignal()
+    openWebUI = pyqtSignal()
 
     def __init__(self, parent, *args, **kwargs):
         super(DevicesListWidget, self).__init__(*args, **kwargs)
@@ -88,18 +90,19 @@ class DevicesListWidget(QWidget):
 
     def create_actions(self):
         self.ctx_menu_cfg = QMenu("Configure")
-        self.ctx_menu_cfg.setIcon(QIcon("GUI/icons/configure.png"))
-        self.ctx_menu_cfg.addAction(QIcon(), "Module and GPIO", self.ctx_menu_teleperiod)
-        self.ctx_menu_cfg.addAction(QIcon(), "Wifi", self.ctx_menu_teleperiod)
-        self.ctx_menu_cfg.addAction(QIcon(), "Time", self.ctx_menu_teleperiod)
-        self.ctx_menu_cfg.addAction(QIcon(), "MQTT", self.ctx_menu_teleperiod)
-        self.ctx_menu_cfg.addAction(QIcon(), "Firmware and OTA", self.ctx_menu_teleperiod)
-        self.ctx_menu_cfg.addAction(QIcon(), "Relays", self.ctx_menu_teleperiod)
-        self.ctx_menu_cfg.addAction(QIcon(), "Colors and PWM", self.ctx_menu_teleperiod)
-        self.ctx_menu_cfg.addAction(QIcon(), "Buttons and switches", self.ctx_menu_teleperiod)
-        self.ctx_menu_cfg.addAction(QIcon(), "Rules", self.ctx_menu_teleperiod)
-        self.ctx_menu_cfg.addAction(QIcon(), "Timers", self.ctx_menu_teleperiod)
-        self.ctx_menu_cfg.addAction(QIcon(), "Logging", self.ctx_menu_teleperiod)
+        self.ctx_menu_cfg.setIcon(QIcon("GUI/icons/settings.png"))
+        self.ctx_menu_cfg.addAction("Module", self.ctx_menu_teleperiod)
+        self.ctx_menu_cfg.addAction("GPIO", self.ctx_menu_teleperiod)
+        self.ctx_menu_cfg.addAction("Template", self.ctx_menu_teleperiod)
+        self.ctx_menu_cfg.addAction("Wifi", self.ctx_menu_teleperiod)
+        self.ctx_menu_cfg.addAction("Time", self.ctx_menu_teleperiod)
+        self.ctx_menu_cfg.addAction("MQTT", self.ctx_menu_teleperiod)
+        self.ctx_menu_cfg.addAction("Firmware and OTA", self.ctx_menu_teleperiod)
+        self.ctx_menu_cfg.addAction("Relays", self.ctx_menu_teleperiod)
+        self.ctx_menu_cfg.addAction("Colors and PWM", self.ctx_menu_teleperiod)
+        self.ctx_menu_cfg.addAction("Buttons and switches", self.ctx_menu_teleperiod)
+        self.ctx_menu_cfg.addAction("Timers", self.ctx_menu_teleperiod)
+        self.ctx_menu_cfg.addAction("Logging", self.ctx_menu_teleperiod)
 
         self.ctx_menu.addMenu(self.ctx_menu_cfg)
         self.ctx_menu.addSeparator()
@@ -112,8 +115,13 @@ class DevicesListWidget(QWidget):
         self.ctx_menu.addAction(QIcon("GUI/icons/copy.png"), "Copy", self.ctx_menu_copy)
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon("GUI/icons/restart.png"), "Restart", self.ctx_menu_restart)
-
         self.ctx_menu.addSeparator()
+        self.ctx_menu.addAction(QIcon("GUI/icons/edit.png"), "Edit")
+        self.ctx_menu.addAction(QIcon("GUI/icons/delete.png"), "Delete")
+
+        ##### Toolbar
+        add = self.tb.addAction(QIcon("GUI/icons/add.png"), "Add...")
+        add.setShortcut("Ctrl+N")
 
         console = self.tb.addAction(QIcon("GUI/icons/console.png"), "Console", lambda: self.openRulesEditor.emit())
         console.setShortcut("Ctrl+E")
@@ -125,7 +133,9 @@ class DevicesListWidget(QWidget):
         telemetry.setShortcut("Ctrl+T")
 
         self.tb.addAction(QIcon("GUI/icons/web.png"), "WebUI", self.ctx_menu_webui)
+        self.tb.addAction(QIcon(), "Multi Command", self.ctx_menu_webui)
 
+        self.tb.addSeparator()
         self.tb.addWidget(QLabel(" Relays:"))
 
         self.agAllPower = QActionGroup(self)
@@ -224,7 +234,7 @@ class DevicesListWidget(QWidget):
 
     def ctx_menu_webui(self):
         if self.device:
-            QDesktopServices.openUrl(QUrl("http://{}".format(self.device.p['IPAddress'])))
+            self.openWebUI.emit()
 
     def ctx_menu_config_backup(self):
         if self.device:

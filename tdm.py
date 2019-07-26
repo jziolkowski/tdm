@@ -3,11 +3,16 @@ import sys
 import csv
 from json import loads, JSONDecodeError
 
-from PyQt5.QtCore import QTimer, pyqtSignal, pyqtSlot, QSettings, QDir, QSize, Qt, QDateTime
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QFileDialog, QAction
+from PyQt5.QtCore import QTimer, pyqtSlot, QSettings, QDir, QSize, Qt, QDateTime, QUrl
+from PyQt5.QtGui import QIcon, QDesktopServices
+from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QFileDialog, QAction, QFrame
 
-from GUI import Toolbar
+try:
+    from PyQt5.QtWebEngineWidgets import QWebEngineView
+except ImportError:
+    pass
+
+from GUI import Toolbar, VLayout
 from GUI.BSSID import BSSIdDialog
 from GUI.Broker import BrokerDialog
 from GUI.DeviceConsole import DeviceConsoleWidget
@@ -96,6 +101,7 @@ class MainWindow(QMainWindow):
         self.devices_list.deviceSelected.connect(self.selectDevice)
         self.devices_list.openConsole.connect(self.openConsole)
         self.devices_list.openRulesEditor.connect(self.openRulesEditor)
+        self.devices_list.openWebUI.connect(self.openWebUI)
 
     def load_window_state(self):
         wndGeometry = self.settings.value('window_geometry')
@@ -384,6 +390,30 @@ class MainWindow(QMainWindow):
             for i in range(1, 6):
                 self.mqtt_queue.append((self.device.cmnd_topic("Var{}".format(i)), ""))
                 self.mqtt_queue.append((self.device.cmnd_topic("Mem{}".format(i)), ""))
+
+    @pyqtSlot()
+    def openWebUI(self):
+        if self.device:
+            url = QUrl("http://{}".format(self.device.p['IPAddress']))
+
+            try:
+                webui = QWebEngineView()
+                webui.load(url)
+
+                frm_webui = QFrame()
+                frm_webui.setWindowTitle("WebUI [{}]".format(self.device.p['FriendlyName'][0]))
+                frm_webui.setFrameShape(QFrame.StyledPanel)
+                frm_webui.setLayout(VLayout(0))
+                frm_webui.layout().addWidget(webui)
+                frm_webui.destroyed.connect(self.updateMDI)
+
+                self.mdi.addSubWindow(frm_webui)
+                self.mdi.setViewMode(QMdiArea.TabbedView)
+                frm_webui.setWindowState(Qt.WindowMaximized)
+
+            except NameError:
+                QDesktopServices.openUrl(QUrl("http://{}".format(self.device.p['IPAddress'])))
+
 
     def updateMDI(self):
         if len(self.mdi.subWindowList()) == 1:
