@@ -12,9 +12,9 @@ from Util.mqtt import MqttClient
 from pprint import pprint
 T_NAME, T_VALUE = range(2)
 
-class DeviceTelemetryWidget(QDockWidget):
+class TelemetryWidget(QDockWidget):
     def __init__(self, fname, topic, tele_topic, stat_topic, *args, **kwargs):
-        super(DeviceTelemetryWidget, self).__init__(*args, **kwargs)
+        super(TelemetryWidget, self).__init__(*args, **kwargs)
         self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         self.setWindowTitle(fname)
 
@@ -179,4 +179,16 @@ class DeviceTelemetryWidget(QDockWidget):
     def closeEvent(self, e):
         self.mqtt.disconnectFromHost()
         e.accept()
-
+#
+# pte_payload = QPlainTextEdit()
+#         pte_payload.setFont(fnt_mono)
+#         pte_payload.setMinimumHeight(400)
+#         pte_payload.setReadOnly(True)
+#         if payload:
+#             payload = str(payload)
+#             if payload.startswith("{") or payload.startswith("["):
+#                 pte_payload.setPlainText(dumps(loads(payload), indent=2))
+#             else:
+#                 pte_payload.setPlainText(payload)
+#         else:
+#             pte_payload.setPlainText("(empty)")

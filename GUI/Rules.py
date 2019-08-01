@@ -9,11 +9,11 @@ from GUI import VLayout, HLayout, Toolbar, CheckableAction, GroupBoxV, GroupBoxH
 
 import re
 
-class DeviceRulesWidget(QWidget):
+class RulesWidget(QWidget):
     sendCommand = pyqtSignal(str, str)
 
     def __init__(self, device, *args, **kwargs):
-        super(DeviceRulesWidget, self).__init__(*args, **kwargs)
+        super(RulesWidget, self).__init__(*args, **kwargs)
         self.device = device
         self.setWindowTitle("Rules [{}]".format(self.device.p['FriendlyName'][0]))
 
@@ -206,7 +206,7 @@ class DeviceRulesWidget(QWidget):
         if ok:
             self.sendCommand.emit(self.device.cmnd_topic("ruletimer{}".format(self.rt+1)), str(new))
 
-    parseMessage = pyqtSlot(str, str)
+    @pyqtSlot(str, str)
     def parseMessage(self, topic, msg):
         if self.device.matches(topic):
             if self.device.reply == "RESULT":

@@ -7,6 +7,8 @@ from PyQt5.QtCore import QTimer, pyqtSlot, QSettings, QDir, QSize, Qt, QDateTime
 from PyQt5.QtGui import QIcon, QDesktopServices
 from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QFileDialog, QAction, QFrame
 
+from GUI.Timers import TimersDialog
+
 try:
     from PyQt5.QtWebEngineWidgets import QWebEngineView
 except ImportError:
@@ -15,10 +17,10 @@ except ImportError:
 from GUI import Toolbar, VLayout
 from GUI.BSSID import BSSIdDialog
 from GUI.Broker import BrokerDialog
-from GUI.DeviceConsole import DeviceConsoleWidget
-from GUI.DeviceRules import DeviceRulesWidget
-from GUI.DeviceTelemetry import DeviceTelemetryWidget
-from GUI.DevicesList import DevicesListWidget
+from GUI.Console import ConsoleWidget
+from GUI.Rules import RulesWidget
+from GUI.Telemetry import TelemetryWidget
+from GUI.Devices import ListWidget
 from GUI.Patterns import PatternsDialog
 from Util import TasmotaDevice, TasmotaEnvironment, parse_topic, lwt_patterns
 from Util.models import TasmotaDevicesModel
@@ -95,13 +97,15 @@ class MainWindow(QMainWindow):
         self.mqtt.messageSignal.connect(self.mqtt_message)
 
     def add_devices_tab(self):
-        self.devices_list = DevicesListWidget(self)
+        self.devices_list = ListWidget(self)
         sub = self.mdi.addSubWindow(self.devices_list)
         sub.setWindowState(Qt.WindowMaximized)
         self.devices_list.deviceSelected.connect(self.selectDevice)
         self.devices_list.openConsole.connect(self.openConsole)
         self.devices_list.openRulesEditor.connect(self.openRulesEditor)
         self.devices_list.openWebUI.connect(self.openWebUI)
+
+        self.devices_list.cfgTimers.connect(self.configureTimers)
 
     def load_window_state(self):
         wndGeometry = self.settings.value('window_geometry')
@@ -362,14 +366,14 @@ class MainWindow(QMainWindow):
             topic = self.device_model.topic(self.idx)
             tele_topic = self.device_model.teleTopic(self.idx)
             stat_topic = self.device_model.statTopic(self.idx)
-            tele_widget = DeviceTelemetryWidget(fname, topic, tele_topic, stat_topic)
+            tele_widget = TelemetryWidget(fname, topic, tele_topic, stat_topic)
             self.telemetry.connect(tele_widget.parse_telemetry)
             self.addDockWidget(Qt.RightDockWidgetArea, tele_widget)
 
     @pyqtSlot()
     def openConsole(self):
         if self.device:
-            console_widget = DeviceConsoleWidget(self.device)
+            console_widget = ConsoleWidget(self.device)
             self.mqtt.messageSignal.connect(console_widget.consoleAppend)
             console_widget.sendCommand.connect(self.mqtt.publish)
             self.addDockWidget(Qt.BottomDockWidgetArea, console_widget)
@@ -378,7 +382,7 @@ class MainWindow(QMainWindow):
     @pyqtSlot()
     def openRulesEditor(self):
         if self.device:
-            rules = DeviceRulesWidget(self.device)
+            rules = RulesWidget(self.device)
             self.mqtt.messageSignal.connect(rules.parseMessage)
             rules.sendCommand.connect(self.mqtt_publish)
             self.mdi.setViewMode(QMdiArea.TabbedView)
@@ -393,7 +397,7 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot()
     def openWebUI(self):
-        if self.device:
+        if self.device and self.device.p.get('IPAddress'):
             url = QUrl("http://{}".format(self.device.p['IPAddress']))
 
             try:
@@ -414,6 +418,15 @@ class MainWindow(QMainWindow):
             except NameError:
                 QDesktopServices.openUrl(QUrl("http://{}".format(self.device.p['IPAddress'])))
 
+    @pyqtSlot()
+    def configureTimers(self):
+        if self.device:
+            timers = TimersDialog(self.device)
+            self.mqtt.messageSignal.connect(timers.parseMessage)
+            timers.sendCommand.connect(self.mqtt_publish)
+            self.mqtt_queue.append((self.device.cmnd_topic("timers"), ""))
+            timers.exec_()
+
     def updateMDI(self):
         if len(self.mdi.subWindowList()) == 1:
             self.mdi.setViewMode(QMdiArea.SubWindowView)
@@ -427,6 +440,8 @@ class MainWindow(QMainWindow):
         self.settings.beginGroup("Devices")
         for d in self.env.devices:
             self.settings.setValue("{}/full_topic".format(d.p['Topic']), d.p['FullTopic'])
+            if d.p.get('Mac'):
+                self.settings.setValue("{}/Mac".format(d.p['Topic']), d.p['Mac'])
             self.settings.setValue("{}/friendly_name".format(d.p['Topic']), d.p['FriendlyName'][0])
             for i, h in enumerate(d.history):
                 self.settings.setValue("{}/history/{}".format(d.p['Topic'], i), h)

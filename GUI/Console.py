@@ -7,7 +7,7 @@ from GUI import VLayout, GroupBoxV
 from Util import commands
 
 
-class DeviceConsoleWidget(QDockWidget):
+class ConsoleWidget(QDockWidget):
 
     sendCommand = pyqtSignal(str, str)
 
