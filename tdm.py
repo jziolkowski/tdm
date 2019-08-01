@@ -5,7 +5,8 @@ from json import loads, JSONDecodeError
 
 from PyQt5.QtCore import QTimer, pyqtSlot, QSettings, QDir, QSize, Qt, QDateTime, QUrl
 from PyQt5.QtGui import QIcon, QDesktopServices
-from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QFileDialog, QAction, QFrame
+from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QFileDialog, QAction, QFrame, \
+    QInputDialog, QMessageBox
 
 from GUI.Timers import TimersDialog
 
@@ -109,6 +110,7 @@ class MainWindow(QMainWindow):
         self.devices_list.openWebUI.connect(self.openWebUI)
 
         self.devices_list.cfgTimers.connect(self.configureTimers)
+        self.devices_list.cfgModule.connect(self.configureModule)
 
     def load_window_state(self):
         wndGeometry = self.settings.value('window_geometry')
@@ -428,6 +430,29 @@ class MainWindow(QMainWindow):
             timers.sendCommand.connect(self.mqtt_publish)
             self.mqtt_queue.append((self.device.cmnd_topic("timers"), ""))
             timers.exec_()
+
+    @pyqtSlot()
+    def configureModule(self):
+        if self.device:
+            modules = self.device.modules()
+            curr_module = self.device.module()
+            idx = -1
+            for idx, module in enumerate(modules):
+                if curr_module in module:
+                    break
+
+            module, ok = QInputDialog.getItem(self, "Configure module [{}]".format(self.device.p['FriendlyName'][0]),
+                                              "Select device module", modules, idx, False)
+            if ok:
+                new_idx = modules.index(module)
+                if new_idx != idx:
+                    module_idx = module.split(" ")[0]
+                    self.mqtt.publish(self.device.cmnd_topic("module"), module_idx)
+                    QMessageBox.information(self, "Module changed",
+                                        "Device will restart. Please wait a few seconds.")
+                else:
+                    QMessageBox.information(self, "Module not changed",
+                                            "You have selected the current module.")
 
     def updateMDI(self):
         if len(self.mdi.subWindowList()) == 1:

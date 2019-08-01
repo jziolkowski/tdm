@@ -108,15 +108,17 @@ class TasmotaDevice(object):
         self.p[k] = v
 
     def module(self):
-        mdls = []
-        for v in self.m.values():
-            mdls += v
-
-        mdl = [m for m in mdls if m.startswith(str(self.p.get('Module')))]
+        mdl = [m for m in self.modules() if m.startswith(str(self.p.get('Module')))]
         if mdl:
             return mdl[0].split(" (")[1].rstrip(")")
         if self.p['LWT'] == 'Online':
             return "Fetching module name..."
+
+    def modules(self):
+        mdls = []
+        for v in self.m.values():
+            mdls += v
+        return mdls
 
     def matches(self, topic):
         parsed = parse_topic(self.p['FullTopic'], topic)

@@ -22,6 +22,7 @@ class ListWidget(QWidget):
     openWebUI = pyqtSignal()
 
     cfgTimers = pyqtSignal()
+    cfgModule = pyqtSignal()
 
     def __init__(self, parent, *args, **kwargs):
         super(ListWidget, self).__init__(*args, **kwargs)
@@ -42,7 +43,7 @@ class ListWidget(QWidget):
         base_view = ["FriendlyName"]
         self.views = {
             "Home":  base_view + ["Module", "Power", "LoadAvg", "LinkCount", "Uptime"],
-            "Health": base_view + ["Uptime", "BootCount", "RestartReason", "LoadAvg", "Sleep", "MqttCount", "LinkCount", "RSSI"],
+            "Health": base_view + ["Uptime", "BootCount", "RestartReason", "LoadAvg", "Sleep", "MqttCount", "LinkCount", "Downtime", "RSSI"],
             "Firmware": base_view + ["Version", "Core", "SDK",  "ProgramSize", "Free", "OtaUrl"],
             "Wifi":     base_view + ["Hostname", "Mac", "IPAddress", "Gateway", "SSId", "BSSId", "Channel", "RSSI", "LinkCount", "Downtime"],
             "MQTT":     base_view + ["Topic", "FullTopic", "CommandTopic", "StatTopic", "TeleTopic", "FallbackTopic", "GroupTopic"],
@@ -92,7 +93,7 @@ class ListWidget(QWidget):
     def create_actions(self):
         self.ctx_menu_cfg = QMenu("Configure")
         self.ctx_menu_cfg.setIcon(QIcon("GUI/icons/edit.png"))
-        # self.ctx_menu_cfg.addAction("Module", self.ctx_menu_teleperiod)
+        self.ctx_menu_cfg.addAction("Module", self.cfgModule.emit)
         # self.ctx_menu_cfg.addAction("GPIO", self.ctx_menu_teleperiod)
         # self.ctx_menu_cfg.addAction("Template", self.ctx_menu_teleperiod)
         # self.ctx_menu_cfg.addAction("Wifi", self.ctx_menu_teleperiod)

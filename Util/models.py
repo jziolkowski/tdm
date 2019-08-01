@@ -78,7 +78,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 elif col_name == "Version" and val:
                     return val.replace('(', ' (')
 
-                elif col_name == "Uptime" and val:
+                elif col_name in ("Uptime", "Downtime") and val:
                     if val.startswith("0T"):
                         val = val.replace('0T', '')
                     val = val.replace('T', 'd ')
