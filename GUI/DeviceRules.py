@@ -206,8 +206,8 @@ class DeviceRulesWidget(QWidget):
         if ok:
             self.sendCommand.emit(self.device.cmnd_topic("ruletimer{}".format(self.rt+1)), str(new))
 
-    parse_message = pyqtSlot(str, str)
-    def parse_message(self, topic, msg):
+    parseMessage = pyqtSlot(str, str)
+    def parseMessage(self, topic, msg):
         if self.device.matches(topic):
             if self.device.reply == "RESULT":
                 try:

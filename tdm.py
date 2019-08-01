@@ -379,7 +379,7 @@ class MainWindow(QMainWindow):
     def openRulesEditor(self):
         if self.device:
             rules = DeviceRulesWidget(self.device)
-            self.mqtt.messageSignal.connect(rules.parse_message)
+            self.mqtt.messageSignal.connect(rules.parseMessage)
             rules.sendCommand.connect(self.mqtt_publish)
             self.mdi.setViewMode(QMdiArea.TabbedView)
             self.mdi.addSubWindow(rules)
@@ -413,7 +413,6 @@ class MainWindow(QMainWindow):
 
             except NameError:
                 QDesktopServices.openUrl(QUrl("http://{}".format(self.device.p['IPAddress'])))
-
 
     def updateMDI(self):
         if len(self.mdi.subWindowList()) == 1:

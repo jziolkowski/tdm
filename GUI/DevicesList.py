@@ -1,10 +1,10 @@
 from json import dumps
 
 from PyQt5.QtCore import Qt, QSettings, QSortFilterProxyModel, QUrl, QDir, pyqtSignal, QSize
-from PyQt5.QtGui import QIcon, QDesktopServices
+from PyQt5.QtGui import QIcon
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
-from PyQt5.QtWidgets import QWidget, QMessageBox, QDialog, QMenu, QApplication, QToolButton, QInputDialog, QFileDialog, \
-    QAction, QActionGroup, QLabel, QShortcut, QSizePolicy, QComboBox, QLineEdit
+from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QApplication, QInputDialog, QFileDialog, \
+    QAction, QActionGroup, QLabel, QSizePolicy, QLineEdit
 
 from GUI import VLayout, Toolbar, TableView, HLayout
 from GUI.DeviceConfig import DevicesConfigWidget
@@ -90,7 +90,7 @@ class DevicesListWidget(QWidget):
 
     def create_actions(self):
         self.ctx_menu_cfg = QMenu("Configure")
-        self.ctx_menu_cfg.setIcon(QIcon("GUI/icons/settings.png"))
+        self.ctx_menu_cfg.setIcon(QIcon("GUI/icons/edit.png"))
         self.ctx_menu_cfg.addAction("Module", self.ctx_menu_teleperiod)
         self.ctx_menu_cfg.addAction("GPIO", self.ctx_menu_teleperiod)
         self.ctx_menu_cfg.addAction("Template", self.ctx_menu_teleperiod)
@@ -104,8 +104,8 @@ class DevicesListWidget(QWidget):
         self.ctx_menu_cfg.addAction("Timers", self.ctx_menu_teleperiod)
         self.ctx_menu_cfg.addAction("Logging", self.ctx_menu_teleperiod)
 
-        self.ctx_menu.addMenu(self.ctx_menu_cfg)
-        self.ctx_menu.addSeparator()
+        # self.ctx_menu.addMenu(self.ctx_menu_cfg)
+        # self.ctx_menu.addSeparator()
 
         self.ctx_menu.addAction(QIcon("GUI/icons/refresh.png"), "Refresh", self.ctx_menu_refresh)
 
@@ -120,19 +120,22 @@ class DevicesListWidget(QWidget):
         self.ctx_menu.addAction(QIcon("GUI/icons/delete.png"), "Delete")
 
         ##### Toolbar
-        add = self.tb.addAction(QIcon("GUI/icons/add.png"), "Add...")
+        add = self.tb.addAction(QIcon("GUI/icons/add.png"), "Add...", self.add_device)
         add.setShortcut("Ctrl+N")
 
-        console = self.tb.addAction(QIcon("GUI/icons/console.png"), "Console", lambda: self.openRulesEditor.emit())
+        self.tb.addSeparator()
+        console = self.tb.addAction(QIcon("GUI/icons/console.png"), "Console", lambda: self.openConsole.emit())
         console.setShortcut("Ctrl+E")
 
         rules = self.tb.addAction(QIcon("GUI/icons/rules.png"), "Rules", lambda: self.openRulesEditor.emit())
         rules.setShortcut("Ctrl+R")
 
-        telemetry = self.tb.addAction(QIcon("GUI/icons/telemetry.png"), "Telemetry", lambda: self.openConsole.emit())
+        telemetry = self.tb.addAction(QIcon("GUI/icons/telemetry.png"), "Telemetry", lambda: self.openTelemetry.emit())
         telemetry.setShortcut("Ctrl+T")
 
-        self.tb.addAction(QIcon("GUI/icons/web.png"), "WebUI", self.ctx_menu_webui)
+        webui = self.tb.addAction(QIcon("GUI/icons/web.png"), "WebUI", self.ctx_menu_webui)
+        webui.setShortcut("Ctrl+U")
+
         self.tb.addAction(QIcon(), "Multi Command", self.ctx_menu_webui)
 
         self.tb.addSeparator()
@@ -293,6 +296,25 @@ class DevicesListWidget(QWidget):
             if save_file:
                 with open(save_file, "wb") as f:
                     f.write(self.backup)
+
+    def add_device(self):
+        topic, ok = QInputDialog.getText(self, "Add device", "Device topic:", )
+        if ok:
+            for d in self.model.tasmota_env.devices:
+                if d.p['Topic'] == topic:
+                    QMessageBox.critical(self, "Can't add device", "Device with topic '{}' already present.".format(topic))
+                    break
+            else:
+                fulltopic, ok = QInputDialog.getText(self, "Add device", "Device FullTopic:", text="%prefix%/%topic%/")
+                if ok:
+                    if self.check_fulltopic(fulltopic):
+                        print('add', topic, fulltopic)
+                    else:
+                        QMessageBox.critical(self, "Can't add device", "FullTopic must contain %prefix% and %topic%.")
+
+    def check_fulltopic(self, fulltopic):
+        fulltopic += "/" if not fulltopic.endswith('/') else ''
+        return "%prefix%" in fulltopic and "%topic%" in fulltopic
 
     def closeEvent(self, event):
         event.ignore()

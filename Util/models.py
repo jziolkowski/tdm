@@ -1,7 +1,4 @@
-import re
-
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, QAbstractTableModel, QSettings, QSize, QRect, QDateTime, \
-    QDir, QRectF, QPoint
+from PyQt5.QtCore import QModelIndex, Qt, QAbstractTableModel, QSettings, QSize, QRect, QDir, QRectF, QPoint
 from PyQt5.QtGui import QIcon, QColor, QPixmap, QFont, QPen
 from PyQt5.QtWidgets import QStyledItemDelegate, QStyle
 
@@ -117,14 +114,11 @@ class TasmotaDevicesModel(QAbstractTableModel):
             elif role == Qt.TextAlignmentRole:
                 # Left-aligned columns
                 if col_name in ("FriendlyName", "Module", "RestartReason", "OtaUrl", "Hostname", "Version") or col_name.endswith("Topic"):
-                    return Qt.AlignLeft | Qt.AlignVCenter
+                    return Qt.AlignLeft | Qt.AlignVCenter | Qt.TextWordWrap
 
                 # Right-aligned columns
                 elif col_name in ("Uptime"):
                     return Qt.AlignRight | Qt.AlignVCenter
-
-                # elif col == DevMdl.RESTART_REASON:
-                #     return Qt.AlignLeft | Qt.AlignVCenter | Qt.TextWordWrap
 
                 else:
                     return Qt.AlignCenter
@@ -143,7 +137,6 @@ class TasmotaDevicesModel(QAbstractTableModel):
                         return QIcon("GUI/icons/status_high.png")
 
                 return QIcon("GUI/icons/status_offline.png")
-
 
             elif role == Qt.BackgroundColorRole and col_name == "RSSI":
                 rssi = int(d.p.get("RSSI", 0))
@@ -165,9 +158,6 @@ class TasmotaDevicesModel(QAbstractTableModel):
                     fn = d.p['FriendlyName']
                     if len(fn) > 1:
                         return "\n".join(fn)
-            #
-            #     elif col == DevMdl.POWER:
-            #         return "\n".join(["{} is {}".format(k, v) for k, v in self._devices[row][DevMdl.POWER].items()])
 
     def addDevice(self, device):
         self.beginInsertRows(QModelIndex(), 0, 0)
@@ -177,51 +167,6 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
     def columnIndex(self, column):
         return self.columns.index(column)
-
-# class ConsoleModel(QAbstractTableModel):
-#     def __init__(self, *args, **kwargs):
-#         super(ConsoleModel, self).__init__(*args, **kwargs)
-#         self._entries = []
-#
-#     def addEntry(self, topic, device, description, payload, known=True):
-#         self.beginInsertRows(QModelIndex(), 0, 0)
-#         self._entries.insert(0, [QDateTime.currentDateTime(), topic, device, description, payload, known])
-#         self.endInsertRows()
-#
-#     def columnCount(self, parent=None):
-#         return len(columns_console)
-#
-#     def rowCount(self, parent=None):
-#         return len(self._entries)
-#
-#     def headerData(self, col, orientation, role=Qt.DisplayRole):
-#         if orientation == Qt.Horizontal and role==Qt.DisplayRole:
-#             if col <= len(columns_console):
-#                 return columns_console[col][0]
-#             else:
-#                 return ''
-#
-#     def data(self, idx, role=Qt.DisplayRole):
-#         if idx.isValid():
-#             row = idx.row()
-#             col = idx.column()
-#
-#             if role == Qt.DisplayRole:
-#                 if col == CnsMdl.TIMESTAMP:
-#                     return self._entries[row][col].toString("yyyy-MM-dd hh:mm:ss")
-#
-#                 return self._entries[row][col]
-#
-#             elif role == Qt.BackgroundColorRole:
-#                 if not self._entries[row][CnsMdl.KNOWN]:
-#                     return QColor("yellow")
-#                 elif self._entries[row][CnsMdl.PAYLOAD] == "":
-#                     return QColor("red")
-#
-#
-#     def flags(self, idx):
-#         return Qt.ItemIsSelectable | Qt.ItemIsEnabled
-
 
 # class TasmotaDevicesTree(QAbstractItemModel):
 #     def __init__(self, root=Node(""), parent=None):
@@ -398,13 +343,6 @@ class TasmotaDevicesModel(QAbstractTableModel):
 class DeviceDelegate(QStyledItemDelegate):
     def __init__(self):
         super(DeviceDelegate, self).__init__()
-        self.icons = {
-            'online': QPixmap("./GUI/icons/online.png"),
-            'offline': QPixmap("./GUI/icons/offline.png"),
-            'undefined': QPixmap("./GUI/icons/undefined.png"),
-            'on': QPixmap("./GUI/icons/on.png"),
-            'off': QPixmap("./GUI/icons/off.png"),
-        }
 
     def sizeHint(self, option, index):
         col = index.column()
