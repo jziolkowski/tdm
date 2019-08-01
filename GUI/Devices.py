@@ -10,8 +10,11 @@ from GUI import VLayout, Toolbar, TableView
 from Util import TasmotaDevice
 from Util.models import DeviceDelegate
 
-class ListWidget(QWidget):
+# TODO: add device
+# TODO: edit topic of device and update registry
+# TODO: delete device
 
+class ListWidget(QWidget):
     deviceSelected = pyqtSignal(TasmotaDevice)
     openRulesEditor = pyqtSignal()
     openConsole = pyqtSignal()

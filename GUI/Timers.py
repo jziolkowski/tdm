@@ -5,6 +5,9 @@ from PyQt5.QtWidgets import QDialog, QMessageBox, QComboBox, QCheckBox, QButtonG
 
 from GUI import VLayout, GroupBoxV, HLayout, GroupBoxH
 
+# TODO: make time +/- default disabled
+# TODO: check disabling AM/PM suffix in time before/after
+# TODO: reset time above/after when switching away from 'Time'
 
 class TimersDialog(QDialog):
     sendCommand = pyqtSignal(str, str)

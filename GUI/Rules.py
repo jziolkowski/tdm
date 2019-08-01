@@ -9,6 +9,10 @@ from GUI import VLayout, HLayout, Toolbar, CheckableAction, GroupBoxV, GroupBoxH
 
 import re
 
+# TODO: triggers list
+# TODO: open/save rule from/to file
+# TODO: add check if device supports Var/Mem in a single dictionary
+
 class RulesWidget(QWidget):
     sendCommand = pyqtSignal(str, str)
 

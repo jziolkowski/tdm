@@ -26,6 +26,9 @@ from Util import TasmotaDevice, TasmotaEnvironment, parse_topic, lwt_patterns
 from Util.models import TasmotaDevicesModel
 from Util.mqtt import MqttClient
 
+# TODO: refactor topic subscriptions so they add custom patterns and device deletion
+# TODO: telemetry
+# TODO: rework device export
 
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
@@ -321,7 +324,6 @@ class MainWindow(QMainWindow):
                     with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
                         l.write("{}\t{}\t{}\t{}\n".format(QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss"), topic, msg, e.msg))
 
-    # todo: rework
     def export(self):
         fname, _ = QFileDialog.getSaveFileName(self, "Export device list as...", directory=QDir.homePath(), filter="CSV files (*.csv)")
         if fname:
