@@ -4,9 +4,10 @@ from PyQt5.QtCore import Qt, QSettings, QSortFilterProxyModel, QUrl, QDir, pyqtS
 from PyQt5.QtGui import QIcon
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QApplication, QInputDialog, QFileDialog, \
-    QAction, QActionGroup, QLabel, QSizePolicy, QLineEdit
+    QAction, QActionGroup, QLabel, QSizePolicy, QLineEdit, QDialog
 
 from GUI import VLayout, Toolbar, TableView
+from GUI.DeviceEdit import DeviceEditDialog
 from Util import TasmotaDevice
 from Util.models import DeviceDelegate
 
@@ -31,6 +32,7 @@ class ListWidget(QWidget):
         self.setLayout(VLayout(margin=0, spacing=0))
 
         self.mqtt = parent.mqtt
+        self.env = parent.env
 
         self.device = None
         self.idx = None
@@ -308,21 +310,11 @@ class ListWidget(QWidget):
                     f.write(self.backup)
 
     def add_device(self):
-        topic, ok = QInputDialog.getText(self, "Add device", "Device topic:", )
-        if ok:
-            for d in self.model.tasmota_env.devices:
-                if d.p['Topic'] == topic:
-                    QMessageBox.critical(self, "Can't add device", "Device with topic '{}' already present.".format(topic))
-                    break
-            else:
-                fulltopic, ok = QInputDialog.getText(self, "Add device", "Device FullTopic:", text="%prefix%/%topic%/")
-                if ok:
-                    if self.check_fulltopic(fulltopic):
-                        print('add', topic, fulltopic)
-                    else:
-                        QMessageBox.critical(self, "Can't add device", "FullTopic must contain %prefix% and %topic%.")
-
-
+        d = DeviceEditDialog(self.env)
+        if d.exec_() == QDialog.Accepted:
+            new_device = TasmotaDevice(d.topic.text(), d.full_topic.text())
+            self.env.devices.append(new_device)
+            self.model.addDevice(new_device)
 
     def check_fulltopic(self, fulltopic):
         fulltopic += "/" if not fulltopic.endswith('/') else ''

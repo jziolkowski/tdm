@@ -24,7 +24,8 @@ commands = [
     "Display", "DisplayAddress", "DisplayDimmer", "DisplayMode", "DisplayModel", "DisplayRefresh", "DisplaySize", "DisplayRotate", "DisplayText", "DisplayCols", "DisplayRows", "DisplayFont",
 ]
 
-lwt_patterns = [
+prefixes = ["tele", "stat", "cmnd"]
+default_patterns = [
     "%prefix%/%topic%/",  # = %prefix%/%topic% (Tasmota default)
     "%topic%/%prefix%/"  # = %topic%/%prefix% (Tasmota with SetOption19 enabled for HomeAssistant AutoDiscovery)
 ]
@@ -62,7 +63,7 @@ class TasmotaDevice(object):
             "LWT": "undefined",
             "Topic": topic,
             "FullTopic": fulltopic,
-            "FriendlyName": [friendlyname],
+            "FriendlyName": [friendlyname if friendlyname else topic],
             "Template": {},
         }
 
@@ -87,10 +88,12 @@ class TasmotaDevice(object):
         self.prefix = ""
 
     def build_topic(self, prefix):
-        return self.p['FullTopic'].replace("%prefix%", prefix).replace("%topic%", self.p['Topic'])
+        return self.p['FullTopic'].replace("%prefix%", prefix).replace("%topic%", self.p['Topic']).rstrip("/")
 
     def cmnd_topic(self, command=""):
-        return self.build_topic("cmnd") + command
+        if command:
+            return "{}/{}".format(self.build_topic("cmnd"), command)
+        return self.build_topic("cmnd")
 
     def stat_topic(self):
         return self.build_topic("stat")
@@ -121,6 +124,8 @@ class TasmotaDevice(object):
         return mdls
 
     def matches(self, topic):
+        if topic == self.p['Topic']:
+            return True
         parsed = parse_topic(self.p['FullTopic'], topic)
         self.reply = parsed.get('reply')
         self.prefix = parsed.get('prefix')

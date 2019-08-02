@@ -23,7 +23,7 @@ from GUI.Rules import RulesWidget
 from GUI.Telemetry import TelemetryWidget
 from GUI.Devices import ListWidget
 from GUI.Patterns import PatternsDialog
-from Util import TasmotaDevice, TasmotaEnvironment, parse_topic, lwt_patterns
+from Util import TasmotaDevice, TasmotaEnvironment, parse_topic, default_patterns, prefixes
 from Util.models import TasmotaDevicesModel
 from Util.mqtt import MqttClient
 
@@ -125,15 +125,7 @@ class MainWindow(QMainWindow):
         mSetup.addAction(QIcon(), "BSSId aliases", self.bssid)
         mSetup.addAction(QIcon(), "Autodiscovery patterns", self.patterns)
 
-        # mDevices = self.menuBar().addMenu("My devices")
-        # actAdd = mDevices.addAction(QIcon("GUI/icons/add.png"), "Add", self.export)
-        # actRemove = mDevices.addAction(QIcon("GUI/icons/delete.png"), "Remove", self.export)
-        # mDevices.addSeparator()
-        #
-        # mDevices.addSeparator()
         # mDevices.addAction(QIcon("GUI/icons/export.png"), "Export list", self.export)
-        #
-        # mDevices.setEnabled(False)
 
     def build_toolbars(self):
         main_toolbar = Toolbar(orientation=Qt.Horizontal, iconsize=24, label_position=Qt.ToolButtonTextBesideIcon)
@@ -225,21 +217,40 @@ class MainWindow(QMainWindow):
         self.mqtt_subscribe()
 
     def mqtt_subscribe(self):
-        # subscribe to default and SO19 topics
-        topics = ["+/stat/#", "+/tele/#", "stat/#", "tele/#", "+/cmnd/#", "cmnd/#"]
+        topics = []
 
-        # TODO: subscribe to custom discovery topics
+        # expand fulltopic patterns to subscribable topics
 
-        for d in self.env.devices:
-            # todo: verify
-            if not d.is_default():
-                # if a device has a non-standard FullTopic, subscribe to them as well
-                topics.append(d.stat_topic()+"#")
-                topics.append(d.tele_topic()+"#")
-                topics.append(d.cmnd_topic()+"#")
+        for pat in default_patterns:                                                        # tasmota default and SO19
+            for prefix in prefixes:
+                topic = pat.replace("%prefix%", prefix).replace("%topic%", "+")  + "#"      # expand prefix and topic
+                topic = topic.replace("+/#", "#")                                           # simplify wildcards
+                topics.append(topic)
 
-        for t in topics:
-            self.mqtt.subscribe(t)
+
+
+        # custom_topics = []
+        #
+        # # subscribe to custom FullTopics that are not matched by the subscriptions above
+        # self.settings.beginGroup("Patterns")
+        # for k in self.settings.childKeys():
+        #     custom_topic = self.settings.value(k)
+        #     custom_topics.append(custom_topic)
+        #     topics.append(custom_topic.replace("%prefix%", "+").replace("%topic%", "").replace("//", "/")+"#")
+        # self.settings.endGroup()
+        #
+        # for d in self.env.devices:
+        #     if not d.is_default() and d.p['FullTopic'] not in custom_topics:
+        #         print(d, "has non default topic")
+        #         # if a device has a non-standard FullTopic, subscribe to them as well
+        #         topics.append(d.stat_topic())
+        #         topics.append(d.tele_topic())
+        #         topics.append(d.cmnd_topic())
+
+        # print(topics)
+        # passing a list of tuples as recommended by paho
+        self.mqtt.subscribe([(topic, 0) for topic in topics])
+
 
     @pyqtSlot(str, str)
     def mqtt_publish(self, t, p):
@@ -294,7 +305,7 @@ class MainWindow(QMainWindow):
                     custom_patterns.append(self.settings.value(k))
                 self.settings.endGroup()
 
-                for p in lwt_patterns + custom_patterns:
+                for p in default_patterns + custom_patterns:
                     # for all the patterns, match the LWT topic (it follows the device's FullTopic syntax
                     match = re.fullmatch(p.replace("%topic%", "(?P<topic>.*?)").replace("%prefix%", "(?P<prefix>.*?)") + ".*$", topic)
                     if match:

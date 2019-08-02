@@ -88,11 +88,10 @@ class ConsoleWidget(QDockWidget):
         if len(cmd_input) > 0 and cmd_input != " ":
             split_cmd_input = cmd_input.split(' ')
             cmd = split_cmd_input[0]
-            topic = "{}{}".format(self.device.cmnd_topic(), cmd)
 
             payload = " ".join(split_cmd_input[1:])
             # self.consoleAppend(topic, payload)
-            self.sendCommand.emit(topic, payload)
+            self.sendCommand.emit(self.device.cmnd_topic(cmd), payload)
             self.command.clear()
 
             history = self.device.history

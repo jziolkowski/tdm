@@ -5,27 +5,28 @@ from GUI import VLayout, HLayout
 
 
 class DeviceEditDialog(QDialog):
-    def __init__(self, model, row, *args, **kwargs):
+    def __init__(self, env, device = None, *args, **kwargs):
         super(DeviceEditDialog, self).__init__(*args, **kwargs)
-        self.setMinimumWidth(400)
-        self.setWindowTitle("Edit device")
+        self.setMinimumWidth(300)
+        self.setWindowTitle("Edit '{}'".format(device.p['Topic']) if device else "Add device")
 
-        self.settings = QSettings()
-        self.settings.beginGroup("Devices")
-        self.mapper = QDataWidgetMapper()
-        self.mapper.setModel(model)
-        self.mapper.setSubmitPolicy(QDataWidgetMapper.ManualSubmit)
+        self.env = env
+        self.device = device
 
         vl = VLayout()
 
         gbTopic = QGroupBox("MQTT Topic")
         self.topic = QLineEdit()
         self.topic.setPlaceholderText("unique name of your device")
-        self.mapper.addMapping(self.topic, DevMdl.TOPIC)
+        if self.device:
+            self.topic.setText(self.device.p['Topic'])
 
         self.full_topic = QLineEdit()
         self.full_topic.setPlaceholderText("must contain %prefix% and %topic%")
-        self.mapper.addMapping(self.full_topic, DevMdl.FULL_TOPIC)
+        if self.device:
+            self.full_topic.setText(self.device.p['FullTopic'])
+        else:
+            self.full_topic.setText("%prefix%/%topic%/")
 
         tfl = QFormLayout()
         tfl.addRow("Topic", self.topic)
@@ -43,8 +44,6 @@ class DeviceEditDialog(QDialog):
         vl.addLayout(hl_btns)
         self.setLayout(vl)
 
-        self.mapper.setCurrentIndex(row)
-
         btnSave.clicked.connect(self.accept)
         btnCancel.clicked.connect(self.reject)
 
@@ -57,21 +56,15 @@ class DeviceEditDialog(QDialog):
         if not len(self.topic.text()) > 0:
             QMessageBox.critical(self, "Error", "Topic is required.")
 
-        elif not "%topic%" in full_topic:
-            QMessageBox.critical(self, "Error", "%topic% is required in FullTopic.")
+        elif "%prefix%" not in full_topic or "%topic%" not in full_topic:
+            QMessageBox.critical(self, "Error", "%prefix% and %topic% are required in FullTopic.")
 
-        elif not "%prefix%" in full_topic:
-            QMessageBox.critical(self, "Error", "%prefix% is required in FullTopic.")
-
-        elif self.topic.text() not in self.settings.childGroups():
-            self.mapper.submit()
+        elif self.device or not self.env.find_device(self.topic.text()):
             self.done(QDialog.Accepted)
 
         else:
             QMessageBox.critical(self, "Error", "Device '{}' already on the device list.".format(self.topic.text()))
 
-
     def reject(self):
-        self.mapper.revert()
         self.done(QDialog.Rejected)
 
