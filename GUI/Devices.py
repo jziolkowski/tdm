@@ -112,7 +112,8 @@ class ListWidget(QWidget):
         self.ctx_menu.addAction(QIcon("GUI/icons/refresh.png"), "Refresh", self.ctx_menu_refresh)
 
         self.ctx_menu.addSeparator()
-        self.ctx_menu.addAction(QIcon("GUI/icons/clear.png"), "Clear retained", self.ctx_menu_clean_retained)
+        self.ctx_menu.addAction(QIcon("GUI/icons/clear.png"), "Clear retained", self.ctx_menu_clear_retained)
+        self.ctx_menu.addAction("Clear Backlog", self.ctx_menu_clear_backlog)
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon("GUI/icons/copy.png"), "Copy", self.ctx_menu_copy)
         self.ctx_menu.addSeparator()
@@ -207,13 +208,18 @@ class ListWidget(QWidget):
         if self.idx:
             QApplication.clipboard().setText(dumps(self.model.data(self.idx)))
 
-    def ctx_menu_clean_retained(self):
+    def ctx_menu_clear_retained(self):
         if self.device:
             relays = self.device.power()
             if relays and len(relays.keys()) > 0:
                 for r in relays.keys():
                     self.mqtt.publish(self.device.cmnd_topic(r), retain=True)
                 QMessageBox.information(self, "Clear retained", "Cleared retained messages.")
+
+    def ctx_menu_clear_backlog(self):
+        if self.device:
+            self.mqtt.publish(self.device.cmnd_topic("backlog"), "")
+            QMessageBox.information(self, "Clear Backlog", "Backlog cleared.")
 
     def ctx_menu_restart(self):
         if self.device:
@@ -231,8 +237,8 @@ class ListWidget(QWidget):
 
     def ctx_menu_delete_device(self):
         if self.device:
-            if QMessageBox.question(self, "Confirm", "Do you want to remove the following device?\n'{}' ({})".format(self.device.p['FriendlyName'][0],
-                                                                                                                   self.device.p['Topic'])) == QMessageBox.Yes:
+            if QMessageBox.question(self, "Confirm", "Do you want to remove the following device?\n'{}' ({})"
+                    .format(self.device.p['FriendlyName'][0], self.device.p['Topic'])) == QMessageBox.Yes:
                 self.model.deleteDevice(self.idx)
 
     def ctx_menu_teleperiod(self):
