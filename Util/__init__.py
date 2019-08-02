@@ -26,9 +26,11 @@ commands = [
 
 prefixes = ["tele", "stat", "cmnd"]
 default_patterns = [
-    "%prefix%/%topic%/",  # = %prefix%/%topic% (Tasmota default)
-    "%topic%/%prefix%/"  # = %topic%/%prefix% (Tasmota with SetOption19 enabled for HomeAssistant AutoDiscovery)
+    "%prefix%/%topic%/",    # = %prefix%/%topic% (Tasmota default)
+    "%topic%/%prefix%/"     # = %topic%/%prefix% (Tasmota with SetOption19 enabled for HomeAssistant AutoDiscovery)
 ]
+
+custom_patterns = []
 
 DeviceRule = namedtuple("DeviceRule", ['enabled', 'once', 'stop_on_error', 'rules'])
 
@@ -44,6 +46,15 @@ def parse_topic(full_topic, topic):
     if match:
         return match.groupdict()
     return {}
+
+
+def expand_fulltopic(fulltopic):
+    fulltopics = []
+    for prefix in prefixes:
+        topic = fulltopic.replace("%prefix%", prefix).replace("%topic%", "+") + "#"  # expand prefix and topic
+        topic = topic.replace("+/#", "#")  # simplify wildcards
+        fulltopics.append(topic)
+    return fulltopics
 
 
 class TasmotaEnvironment(object):

@@ -53,7 +53,9 @@ class PatternsDialog(QDialog):
         self.idx = idx
 
     def add(self):
-        self.tw.insertRow(self.tw.rowCount())
+        row = self.tw.rowCount()
+        self.tw.insertRow(row)
+        self.tw.setItem(row, 0, QTableWidgetItem("%prefix%/%topic%/"))
 
     def delete(self):
         if self.idx:

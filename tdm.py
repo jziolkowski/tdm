@@ -23,7 +23,8 @@ from GUI.Rules import RulesWidget
 from GUI.Telemetry import TelemetryWidget
 from GUI.Devices import ListWidget
 from GUI.Patterns import PatternsDialog
-from Util import TasmotaDevice, TasmotaEnvironment, parse_topic, default_patterns, prefixes
+from Util import TasmotaDevice, TasmotaEnvironment, parse_topic, default_patterns, prefixes, custom_patterns, \
+    expand_fulltopic
 from Util.models import TasmotaDevicesModel
 from Util.mqtt import MqttClient
 
@@ -42,12 +43,14 @@ class MainWindow(QMainWindow):
         self.env = TasmotaEnvironment()
         self.device = None
 
+        self.topics = []
         self.mqtt_queue = []
         self.fulltopic_queue = []
 
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
         self.setMinimumSize(QSize(1000, 618))  # because golden ratio :)
 
+        # load devices from the settings file, create TasmotaDevices and add the to the envvironment
         self.settings.beginGroup("Devices")
         for d in self.settings.childGroups():
             self.settings.beginGroup(d)
@@ -55,12 +58,19 @@ class MainWindow(QMainWindow):
             device.env = self.env
             self.env.devices.append(device)
 
+            # load device command history
             self.settings.beginGroup("history")
             for k in self.settings.childKeys():
                 device.history.append(self.settings.value(k))
             self.settings.endGroup()
 
             self.settings.endGroup()
+        self.settings.endGroup()
+
+        # load custom autodiscovery patterns
+        self.settings.beginGroup("Patterns")
+        for k in self.settings.childKeys():
+            custom_patterns.append(self.settings.value(k))
         self.settings.endGroup()
 
         self.device_model = TasmotaDevicesModel(self.env)
@@ -90,7 +100,6 @@ class MainWindow(QMainWindow):
         self.mdi = QMdiArea()
         self.mdi.setActivationOrder(QMdiArea.ActivationHistoryOrder)
         self.mdi.setTabsClosable(True)
-
         self.setCentralWidget(self.mdi)
 
     def setup_mqtt(self):
@@ -217,39 +226,26 @@ class MainWindow(QMainWindow):
         self.mqtt_subscribe()
 
     def mqtt_subscribe(self):
-        topics = []
-
         # expand fulltopic patterns to subscribable topics
+        for pat in default_patterns:    # tasmota default and SO19
+            self.topics += expand_fulltopic(pat)
 
-        for pat in default_patterns:                                                        # tasmota default and SO19
-            for prefix in prefixes:
-                topic = pat.replace("%prefix%", prefix).replace("%topic%", "+")  + "#"      # expand prefix and topic
-                topic = topic.replace("+/#", "#")                                           # simplify wildcards
-                topics.append(topic)
+        for d in self.env.devices:
+            # if device has a non-standard pattern, check if the pattern is found in the custom patterns
+            if not d.is_default() and d.p['FullTopic'] not in custom_patterns:
+                # if pattern is not found then add the device topics to subscription list.
+                # if the pattern is found, it will be matched without implicit subscription
+                self.topics += expand_fulltopic(d.p['FullTopic'])
 
+        # check if custom patterns can be matched by default patterns
+        for pat in custom_patterns:
+            if pat.startswith("%prefix%") or pat.split('/')[1] == "%prefix%":
+                continue    # do nothing, default subcriptions will match this topic
+            else:
+                self.topics += expand_fulltopic(pat)
 
-
-        # custom_topics = []
-        #
-        # # subscribe to custom FullTopics that are not matched by the subscriptions above
-        # self.settings.beginGroup("Patterns")
-        # for k in self.settings.childKeys():
-        #     custom_topic = self.settings.value(k)
-        #     custom_topics.append(custom_topic)
-        #     topics.append(custom_topic.replace("%prefix%", "+").replace("%topic%", "").replace("//", "/")+"#")
-        # self.settings.endGroup()
-        #
-        # for d in self.env.devices:
-        #     if not d.is_default() and d.p['FullTopic'] not in custom_topics:
-        #         print(d, "has non default topic")
-        #         # if a device has a non-standard FullTopic, subscribe to them as well
-        #         topics.append(d.stat_topic())
-        #         topics.append(d.tele_topic())
-        #         topics.append(d.cmnd_topic())
-
-        # print(topics)
         # passing a list of tuples as recommended by paho
-        self.mqtt.subscribe([(topic, 0) for topic in topics])
+        self.mqtt.subscribe([(topic, 0) for topic in self.topics])
 
 
     @pyqtSlot(str, str)
@@ -299,11 +295,6 @@ class MainWindow(QMainWindow):
                 # received LWT from an unknown device
                 # first part of Tasmota Autodiscovery algorithm
                 # begin by loading default and user-provided FullTopic patterns
-                custom_patterns = []
-                self.settings.beginGroup("Patterns")
-                for k in self.settings.childKeys():
-                    custom_patterns.append(self.settings.value(k))
-                self.settings.endGroup()
 
                 for p in default_patterns + custom_patterns:
                     # for all the patterns, match the LWT topic (it follows the device's FullTopic syntax
