@@ -31,6 +31,7 @@ from Util.mqtt import MqttClient
 # TODO: telemetry
 # TODO: rework device export
 
+
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)

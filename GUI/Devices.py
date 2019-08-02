@@ -119,7 +119,7 @@ class ListWidget(QWidget):
         self.ctx_menu.addAction(QIcon("GUI/icons/restart.png"), "Restart", self.ctx_menu_restart)
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon("GUI/icons/edit.png"), "Edit")
-        self.ctx_menu.addAction(QIcon("GUI/icons/delete.png"), "Delete")
+        self.ctx_menu.addAction(QIcon("GUI/icons/delete.png"), "Delete", self.ctx_menu_delete_device)
 
         ##### Toolbar
         add = self.tb.addAction(QIcon("GUI/icons/add.png"), "Add...", self.add_device)
@@ -205,7 +205,7 @@ class ListWidget(QWidget):
 
     def ctx_menu_copy(self):
         if self.idx:
-            QApplication.clipboard().setText(dumps(self.model.data(self.sorted_device_model.mapToSource(self.idx))))
+            QApplication.clipboard().setText(dumps(self.model.data(self.idx)))
 
     def ctx_menu_clean_retained(self):
         if self.device:
@@ -228,6 +228,12 @@ class ListWidget(QWidget):
             self.mqtt.publish(status, "0")
             self.mqtt.publish(tpl)
             self.mqtt.publish(modules)
+
+    def ctx_menu_delete_device(self):
+        if self.device:
+            if QMessageBox.question(self, "Confirm", "Do you want to remove the following device?\n'{}' ({})".format(self.device.p['FriendlyName'][0],
+                                                                                                                   self.device.p['Topic'])) == QMessageBox.Yes:
+                self.model.deleteDevice(self.idx)
 
     def ctx_menu_teleperiod(self):
         if self.device:
@@ -260,8 +266,8 @@ class ListWidget(QWidget):
         self.ctx_menu.popup(self.device_list.viewport().mapToGlobal(at))
 
     def select_device(self, idx):
-        self.idx = idx
-        self.device = self.model.deviceAtRow(self.sorted_device_model.mapToSource(idx).row())
+        self.idx = self.sorted_device_model.mapToSource(idx)
+        self.device = self.model.deviceAtRow(self.idx.row())
         self.deviceSelected.emit(self.device)
 
         relays = self.device.power()
@@ -309,6 +315,8 @@ class ListWidget(QWidget):
                         print('add', topic, fulltopic)
                     else:
                         QMessageBox.critical(self, "Can't add device", "FullTopic must contain %prefix% and %topic%.")
+
+
 
     def check_fulltopic(self, fulltopic):
         fulltopic += "/" if not fulltopic.endswith('/') else ''

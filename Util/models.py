@@ -165,6 +165,31 @@ class TasmotaDevicesModel(QAbstractTableModel):
         device.module_changed = self.module_change
         self.endInsertRows()
 
+    def removeRows(self, pos, rows, parent=QModelIndex()):
+        if pos + rows <= self.rowCount():
+            self.beginRemoveRows(parent, pos, pos + rows - 1)
+            device = self.deviceAtRow(pos)
+            self.tasmota_env.devices.pop(self.tasmota_env.devices.index(device))
+
+            topic = device.p['Topic']
+            self.settings.beginGroup("Devices")
+            if topic in self.settings.childGroups():
+                self.settings.remove(topic)
+            self.settings.endGroup()
+            # for r in range(rows):
+            #     d = self._devices[pos][DevMdl.TOPIC]
+            #     self.settings.beginGroup("Devices")
+            #     if d in self.settings.childGroups():
+            #         self.settings.remove(d)
+            #     self.settings.endGroup()
+            #     self._devices.pop(pos + r)
+            self.endRemoveRows()
+            return True
+        return False
+
+    def deleteDevice(self, idx):
+        self.removeRows(idx.row(), 1)
+
     def columnIndex(self, column):
         return self.columns.index(column)
 
