@@ -6,8 +6,9 @@ from json import loads, JSONDecodeError
 from PyQt5.QtCore import QTimer, pyqtSlot, QSettings, QDir, QSize, Qt, QDateTime, QUrl
 from PyQt5.QtGui import QIcon, QDesktopServices
 from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QFileDialog, QAction, QFrame, \
-    QInputDialog, QMessageBox
+    QInputDialog, QMessageBox, QPushButton
 
+from GUI.GPIO import GPIODialog
 from GUI.Timers import TimersDialog
 
 try:
@@ -82,6 +83,11 @@ class MainWindow(QMainWindow):
         self.build_toolbars()
         self.setStatusBar(QStatusBar())
 
+        pbSubs = QPushButton("Show subscriptions")
+        pbSubs.setFlat(True)
+        pbSubs.clicked.connect(self.showSubs)
+        self.statusBar().addPermanentWidget(pbSubs)
+
         self.queue_timer = QTimer()
         self.queue_timer.timeout.connect(self.mqtt_publish_queue)
         self.queue_timer.start(250)
@@ -119,8 +125,9 @@ class MainWindow(QMainWindow):
         self.devices_list.openRulesEditor.connect(self.openRulesEditor)
         self.devices_list.openWebUI.connect(self.openWebUI)
 
-        self.devices_list.cfgTimers.connect(self.configureTimers)
         self.devices_list.cfgModule.connect(self.configureModule)
+        self.devices_list.cfgGPIO.connect(self.configureGPIO)
+        self.devices_list.cfgTimers.connect(self.configureTimers)
 
     def load_window_state(self):
         wndGeometry = self.settings.value('window_geometry')
@@ -155,11 +162,15 @@ class MainWindow(QMainWindow):
         status = device.cmnd_topic("status")
         tpl = device.cmnd_topic("template")
         modules = device.cmnd_topic("modules")
+        gpio = device.cmnd_topic("gpio")
+        gpios = device.cmnd_topic("gpios")
 
         if queued:
             self.mqtt_queue.append([status, 0])
             self.mqtt_queue.append([tpl, ""])
             self.mqtt_queue.append([modules, ""])
+            self.mqtt_queue.append([gpio, ""])
+            self.mqtt_queue.append([gpios, ""])
         else:
             self.mqtt.publish(status, 0, 1)
             self.mqtt.publish(tpl, "", 1)
@@ -246,7 +257,6 @@ class MainWindow(QMainWindow):
 
         # passing a list of tuples as recommended by paho
         self.mqtt.subscribe([(topic, 0) for topic in self.topics])
-
 
     @pyqtSlot(str, str)
     def mqtt_publish(self, t, p):
@@ -362,6 +372,9 @@ class MainWindow(QMainWindow):
     def patterns(self):
         PatternsDialog().exec_()
 
+    def showSubs(self):
+        QMessageBox.information(self, "Subscriptions", "\n".join(sorted(self.topics)))
+
     @pyqtSlot(TasmotaDevice)
     def selectDevice(self, d):
         self.device = d
@@ -398,9 +411,8 @@ class MainWindow(QMainWindow):
             rules.destroyed.connect(self.updateMDI)
             self.mqtt_queue.append((self.device.cmnd_topic("ruletimer"), ""))
             self.mqtt_queue.append((self.device.cmnd_topic("rule1"), ""))
-            for i in range(1, 6):
-                self.mqtt_queue.append((self.device.cmnd_topic("Var{}".format(i)), ""))
-                self.mqtt_queue.append((self.device.cmnd_topic("Mem{}".format(i)), ""))
+            self.mqtt_queue.append((self.device.cmnd_topic("Var"), ""))
+            self.mqtt_queue.append((self.device.cmnd_topic("Mem"), ""))
 
     @pyqtSlot()
     def openWebUI(self):
@@ -426,15 +438,6 @@ class MainWindow(QMainWindow):
                 QDesktopServices.openUrl(QUrl("http://{}".format(self.device.p['IPAddress'])))
 
     @pyqtSlot()
-    def configureTimers(self):
-        if self.device:
-            timers = TimersDialog(self.device)
-            self.mqtt.messageSignal.connect(timers.parseMessage)
-            timers.sendCommand.connect(self.mqtt_publish)
-            self.mqtt_queue.append((self.device.cmnd_topic("timers"), ""))
-            timers.exec_()
-
-    @pyqtSlot()
     def configureModule(self):
         if self.device:
             modules = self.device.modules()
@@ -452,10 +455,28 @@ class MainWindow(QMainWindow):
                     module_idx = module.split(" ")[0]
                     self.mqtt.publish(self.device.cmnd_topic("module"), module_idx)
                     QMessageBox.information(self, "Module changed",
-                                        "Device will restart. Please wait a few seconds.")
+                                            "Device will restart. Please wait a few seconds.")
                 else:
                     QMessageBox.information(self, "Module not changed",
                                             "You have selected the current module.")
+
+    @pyqtSlot()
+    def configureGPIO(self):
+        if self.device:
+            dlg = GPIODialog(self.device)
+            dlg.sendCommand.connect(self.mqtt_publish)
+            dlg.exec_()
+
+    @pyqtSlot()
+    def configureTimers(self):
+        if self.device:
+            timers = TimersDialog(self.device)
+            self.mqtt.messageSignal.connect(timers.parseMessage)
+            timers.sendCommand.connect(self.mqtt_publish)
+            self.mqtt_queue.append((self.device.cmnd_topic("timers"), ""))
+            timers.exec_()
+
+
 
     def updateMDI(self):
         if len(self.mdi.subWindowList()) == 1:

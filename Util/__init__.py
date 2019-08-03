@@ -80,20 +80,17 @@ class TasmotaDevice(object):
 
         self.env = None
         self.history = []
-        self.rules = []
 
-        # property changed callback pointer
-        self.property_changed = None
+        self.property_changed = None    # property changed callback pointer
 
         self.t = None
-        # telemetry changed callback pointer
-        self.telemetry_changed = None
+        self.telemetry_changed = None   # telemetry changed callback pointer
 
-        self.m = {}
-        # module changed callback pointer
-        self.module_changed = None
+        self.m = {}                     # supported modules
+        self.module_changed = None      # module changed callback pointer
 
-        self.g = {}
+        self.g = {}                     # supported GPIOs
+        self.gpio = {}                  # gpio config
 
         self.reply = ""
         self.prefix = ""
@@ -133,6 +130,12 @@ class TasmotaDevice(object):
         for v in self.m.values():
             mdls += v
         return mdls
+
+    def gpios(self):
+        gps = []
+        for v in self.g.values():
+            gps += v
+        return gps
 
     def matches(self, topic):
         if topic == self.p['Topic']:
@@ -176,11 +179,18 @@ class TasmotaDevice(object):
                     self.update_property(self.reply, msg)
 
                 elif self.reply == 'RESULT':
+                    # print(payload)
                     for k, v in payload.items():
 
                         if k.startswith("Modules"):
                             self.m[k] = v
                             self.module_changed(self)
+
+                        elif k.startswith("GPIOs"):
+                            self.g[k] = v
+
+                        elif k.startswith("GPIO"):
+                            self.gpio = payload
 
                         elif k == 'NAME':
                             self.p['Template'] = payload

@@ -22,6 +22,10 @@ class VLayout(QVBoxLayout):
         for w in widgets:
             self.addWidget(w)
 
+    def addSpacer(self):
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.addWidget(spacer)
 
 class HLayout(QHBoxLayout):
     def __init__(self, margin=3, spacing=3, label='', *args, **kwargs):
@@ -39,6 +43,10 @@ class HLayout(QHBoxLayout):
         for w in widgets:
             self.addWidget(w)
 
+    def addSpacer(self):
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.addWidget(spacer)
 
 class GroupBoxV(QGroupBox):
     def __init__(self, title, margin=3, spacing=3, *args, **kwargs):

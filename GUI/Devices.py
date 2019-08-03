@@ -22,8 +22,9 @@ class ListWidget(QWidget):
     openTelemetry = pyqtSignal()
     openWebUI = pyqtSignal()
 
-    cfgTimers = pyqtSignal()
     cfgModule = pyqtSignal()
+    cfgGPIO = pyqtSignal()
+    cfgTimers = pyqtSignal()
 
     def __init__(self, parent, *args, **kwargs):
         super(ListWidget, self).__init__(*args, **kwargs)
@@ -94,9 +95,9 @@ class ListWidget(QWidget):
 
     def create_actions(self):
         self.ctx_menu_cfg = QMenu("Configure")
-        self.ctx_menu_cfg.setIcon(QIcon("GUI/icons/edit.png"))
+        self.ctx_menu_cfg.setIcon(QIcon("GUI/icons/settings.png"))
         self.ctx_menu_cfg.addAction("Module", self.cfgModule.emit)
-        # self.ctx_menu_cfg.addAction("GPIO", self.ctx_menu_teleperiod)
+        self.ctx_menu_cfg.addAction("GPIO", self.cfgGPIO.emit)
         # self.ctx_menu_cfg.addAction("Template", self.ctx_menu_teleperiod)
         # self.ctx_menu_cfg.addAction("Wifi", self.ctx_menu_teleperiod)
         # self.ctx_menu_cfg.addAction("Time", self.ctx_menu_teleperiod)
@@ -121,14 +122,13 @@ class ListWidget(QWidget):
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon("GUI/icons/restart.png"), "Restart", self.ctx_menu_restart)
         self.ctx_menu.addSeparator()
-        self.ctx_menu.addAction(QIcon("GUI/icons/edit.png"), "Edit")
         self.ctx_menu.addAction(QIcon("GUI/icons/delete.png"), "Delete", self.ctx_menu_delete_device)
 
         ##### Toolbar
-        add = self.tb.addAction(QIcon("GUI/icons/add.png"), "Add...", self.add_device)
-        add.setShortcut("Ctrl+N")
-
-        self.tb.addSeparator()
+        # add = self.tb.addAction(QIcon("GUI/icons/add.png"), "Add...", self.add_device)
+        # add.setShortcut("Ctrl+N")
+        #
+        # self.tb.addSeparator()
         console = self.tb.addAction(QIcon("GUI/icons/console.png"), "Console", self.openConsole.emit)
         console.setShortcut("Ctrl+E")
 
