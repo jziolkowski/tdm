@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdi
     QInputDialog, QMessageBox, QPushButton
 
 from GUI.GPIO import GPIODialog
+from GUI.Templates import TemplateDialog
 from GUI.Timers import TimersDialog
 
 try:
@@ -128,6 +129,7 @@ class MainWindow(QMainWindow):
         self.devices_list.cfgModule.connect(self.configureModule)
         self.devices_list.cfgGPIO.connect(self.configureGPIO)
         self.devices_list.cfgTimers.connect(self.configureTimers)
+        self.devices_list.cfgTpl.connect(self.configureTemplate)
 
     def load_window_state(self):
         wndGeometry = self.settings.value('window_geometry')
@@ -468,6 +470,13 @@ class MainWindow(QMainWindow):
             dlg.exec_()
 
     @pyqtSlot()
+    def configureTemplate(self):
+        if self.device:
+            dlg = TemplateDialog(self.device)
+            dlg.sendCommand.connect(self.mqtt_publish)
+            dlg.exec_()
+
+    @pyqtSlot()
     def configureTimers(self):
         if self.device:
             timers = TimersDialog(self.device)
@@ -475,8 +484,6 @@ class MainWindow(QMainWindow):
             timers.sendCommand.connect(self.mqtt_publish)
             self.mqtt_queue.append((self.device.cmnd_topic("timers"), ""))
             timers.exec_()
-
-
 
     def updateMDI(self):
         if len(self.mdi.subWindowList()) == 1:

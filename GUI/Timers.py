@@ -1,7 +1,8 @@
 from json import loads, JSONDecodeError, dumps
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, Qt, QTime
-from PyQt5.QtWidgets import QDialog, QMessageBox, QComboBox, QCheckBox, QButtonGroup, QRadioButton, QTimeEdit, QLabel, QSizePolicy, QPushButton
+from PyQt5.QtWidgets import QDialog, QMessageBox, QComboBox, QCheckBox, QButtonGroup, QRadioButton, QTimeEdit, QLabel, \
+    QSizePolicy, QPushButton, QDialogButtonBox
 
 from GUI import VLayout, GroupBoxV, HLayout, GroupBoxH
 
@@ -87,13 +88,13 @@ class TimersDialog(QDialog):
         self.lbTimerDesc.setAlignment(Qt.AlignCenter)
         self.lbTimerDesc.setWordWrap(True)
         gbTimerDesc.layout().addWidget(self.lbTimerDesc)
-        hl_tmr_btns = HLayout(0)
-
-        btnTimerSave = QPushButton("Save")
-        hl_tmr_btns.addWidget(btnTimerSave)
-        hl_tmr_btns.insertStretch(0)
-
-        btnTimerSave.clicked.connect(self.saveTimer)
+        # hl_tmr_btns = HLayout(0)
+        #
+        # btnTimerSave = QPushButton("Save")
+        # hl_tmr_btns.addWidget(btnTimerSave)
+        # hl_tmr_btns.insertStretch(0)
+        #
+        # btnTimerSave.clicked.connect(self.saveTimer)
 
         hl_tmr_time.addWidgets([self.cbxTimerPM, self.teTimerTime, lbWnd, self.cbxTimerWnd])
 
@@ -103,16 +104,24 @@ class TimersDialog(QDialog):
         self.gbTimers.layout().addWidget(gbTimerMode)
         self.gbTimers.layout().addLayout(hl_tmr_time)
         self.gbTimers.layout().addLayout(hl_tmr_days)
-        self.gbTimers.layout().addWidget(gbTimerDesc)
-        self.gbTimers.layout().addLayout(hl_tmr_btns)
+        # self.gbTimers.layout().addWidget(gbTimerDesc)
+        # self.gbTimers.layout().addLayout(hl_tmr_btns)
 
-        vl.addWidget(self.gbTimers)
+        btns = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Close)
+        btns.addButton("Reload", QDialogButtonBox.ResetRole)
+
+        # btns.accepted.connect(self.accept)
+        # btns.rejected.connect(self.reject)
+
+        vl.addWidgets([self.gbTimers, gbTimerDesc, btns])
         self.setLayout(vl)
 
     def toggleTimers(self, state):
         self.sendCommand.emit(self.device.cmnd_topic('timers'), "ON" if state else "OFF")
 
-    def loadTimer(self, timer):
+    def loadTimer(self, timer=""):
+        if not timer:
+            timer = self.cbTimer.currentText()
         payload = self.timers[timer]
 
         if payload:

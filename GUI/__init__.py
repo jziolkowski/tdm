@@ -27,6 +27,7 @@ class VLayout(QVBoxLayout):
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.addWidget(spacer)
 
+
 class HLayout(QHBoxLayout):
     def __init__(self, margin=3, spacing=3, label='', *args, **kwargs):
         super(HLayout, self).__init__(*args, **kwargs)
@@ -47,6 +48,7 @@ class HLayout(QHBoxLayout):
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.addWidget(spacer)
+
 
 class GroupBoxV(QGroupBox):
     def __init__(self, title, margin=3, spacing=3, *args, **kwargs):
@@ -179,47 +181,6 @@ class Toolbar(QToolBar):
         self.addWidget(spacer)
 
 
-class RuleEditor(QPlainTextEdit):
-    def __init__(self, *args, **kwargs):
-        super(RuleEditor, self).__init__(*args, **kwargs)
-
-        fnt_mono = QFont("Monospace")
-        fnt_mono.setStyleHint(QFont.TypeWriter)
-        self.setFont(fnt_mono)
-
-        self.completer = None
-
-    # def setCompleter(self, c):
-    #     if self.completer:
-
-
-class RuleGroupBox(GroupBoxV):
-    def __init__(self, parent, title, *args, **kwargs):
-        super(RuleGroupBox, self).__init__(title, parent=parent, *args, **kwargs)
-
-        self.cbRule = QComboBox()
-        self.cbRule.addItems(["Rule{}".format(nr + 1) for nr in range(3)])
-
-        self.cbEnabled = QCheckBox("Enabled")
-        self.cbOnce = QCheckBox("Once")
-        self.cbStopOnError = QCheckBox("Stop on error")
-        counter = QLabel("511 left")
-        counter.setAlignment(Qt.AlignCenter)
-        pbClear = QPushButton("Clear")
-        self.pbSave = QPushButton("Save")
-
-        hl_func = HLayout(0)
-        hl_func.addWidgets([self.cbRule, self.cbEnabled, self.cbOnce, self.cbStopOnError, pbClear, self.pbSave, counter])
-
-        self.layout().addLayout(hl_func)
-
-        self.text = RuleEditor()
-        self.layout().addWidget(self.text)
-
-        pbClear.clicked.connect(lambda: self.text.clear())
-        self.text.textChanged.connect(lambda: counter.setText("{} left".format(511-len(self.text.toPlainText()))))
-
-
 class DetailLE(QLineEdit):
     def __init__(self, detail, *args, **kwargs):
         super(DetailLE, self).__init__(detail, *args, **kwargs)
@@ -301,4 +262,5 @@ class CounterItem(TelemetryDevice):
                 self.items[k] = item
                 self.addChild(item)
             item.setData(1, Qt.DisplayRole, values[k])
+
 

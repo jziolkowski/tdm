@@ -152,7 +152,6 @@ class TasmotaDevice(object):
                 payload = loads(msg)
 
                 if self.reply == 'STATUS':
-
                     payload = payload['Status']
                     for k, v in payload.items():
                         self.update_property(k, v)
@@ -173,13 +172,10 @@ class TasmotaDevice(object):
                         else:
                             self.update_property(k, v)
 
-                        # self.parse_power(payload)
-
                 elif self.reply.startswith("POWER"):
                     self.update_property(self.reply, msg)
 
                 elif self.reply == 'RESULT':
-                    # print(payload)
                     for k, v in payload.items():
 
                         if k.startswith("Modules"):

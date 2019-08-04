@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QWidget, QTabWidget, QLineEdit, QTabBar, QLabel, QCo
     QButtonGroup, QTimeEdit, QLabel, \
     QListWidget, QListWidgetItem, QApplication, QDockWidget, QTreeWidget
 
-from GUI import VLayout, HLayout, RuleGroupBox, GroupBoxH, SpinBox, DetailLE, GroupBoxV, DeviceParam, DoubleSpinBox, \
+from GUI import VLayout, HLayout, GroupBoxH, SpinBox, DetailLE, GroupBoxV, DeviceParam, DoubleSpinBox, \
     TimeItem, CounterItem
 from Util.mqtt import MqttClient
 from pprint import pprint

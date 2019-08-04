@@ -30,7 +30,7 @@ class GPIODialog(QDialog):
                 fl.addWidget(QLabel("No configurable GPIOs"))
         gbxGPIO.setLayout(fl)
 
-        btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        btns = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Close)
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
 
