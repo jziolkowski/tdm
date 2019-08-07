@@ -6,6 +6,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
     def __init__(self, tasmota_env):
         super().__init__()
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
+        self.devices = QSettings("{}/TDM/devices.cfg".format(QDir.homePath()), QSettings.IniFormat)
         self.tasmota_env = tasmota_env
         self.columns = []
 
@@ -124,7 +125,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
                     return Qt.AlignCenter
 
             elif role == Qt.DecorationRole and col_name == "FriendlyName":
-                if d.p['LWT'] == "online":
+                if d.p['LWT'] == "Online":
                     rssi = int(d.p.get("RSSI", 0))
 
                     if rssi > 0 and rssi < 50:
@@ -188,7 +189,11 @@ class TasmotaDevicesModel(QAbstractTableModel):
         return False
 
     def deleteDevice(self, idx):
-        self.removeRows(idx.row(), 1)
+        row = idx.row()
+        mac = self.deviceAtRow(row).p['Mac'].replace(":", "-")
+        self.devices.remove(mac)
+        self.devices.sync()
+        self.removeRows(row, 1)
 
     def columnIndex(self, column):
         return self.columns.index(column)

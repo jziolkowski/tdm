@@ -113,10 +113,10 @@ class TasmotaDevice(object):
         return self.p['FullTopic'] in ["%prefix%/%topic%/", "%topic%/%prefix%/"]
 
     def update_property(self, k, v):
-        old = self.p.get('k')
-        if self.property_changed and (not old or old != v):
-            self.property_changed(self, k)
-        self.p[k] = v
+        old = self.p.get('k')   # safely get the old value
+        if self.property_changed and (not old or old != v):     # If property_changed callback is set then check previous value presence and
+            self.property_changed(self, k)                      # compare with new value. Trigger the callback if value has changed
+        self.p[k] = v                                           # store the new value
 
     def module(self):
         mdl = [m for m in self.modules() if m.startswith(str(self.p.get('Module')))]

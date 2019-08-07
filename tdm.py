@@ -42,6 +42,7 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
+        self.unknown = []
         self.env = TasmotaEnvironment()
         self.device = None
 
@@ -50,24 +51,23 @@ class MainWindow(QMainWindow):
         self.fulltopic_queue = []
 
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
+        self.devices = QSettings("{}/TDM/devices.cfg".format(QDir.homePath()), QSettings.IniFormat)
         self.setMinimumSize(QSize(1000, 618))  # because golden ratio :)
 
-        # load devices from the settings file, create TasmotaDevices and add the to the envvironment
-        self.settings.beginGroup("Devices")
-        for d in self.settings.childGroups():
-            self.settings.beginGroup(d)
-            device = TasmotaDevice(d, self.settings.value("full_topic"), self.settings.value("friendly_name"))
+        # load devices from the devices file, create TasmotaDevices and add the to the envvironment
+        for mac in self.devices.childGroups():
+            self.devices.beginGroup(mac)
+            device = TasmotaDevice(self.devices.value("topic"), self.devices.value("full_topic"), self.devices.value("friendly_name"))
             device.env = self.env
             self.env.devices.append(device)
 
             # load device command history
-            self.settings.beginGroup("history")
-            for k in self.settings.childKeys():
-                device.history.append(self.settings.value(k))
-            self.settings.endGroup()
-
-            self.settings.endGroup()
-        self.settings.endGroup()
+            self.devices.beginGroup("history")
+            for k in self.devices.childKeys():
+                device.history.append(self.devices.value(k))
+            self.devices.endGroup()
+            
+            self.devices.endGroup()
 
         # load custom autodiscovery patterns
         self.settings.beginGroup("Patterns")
@@ -290,26 +290,26 @@ class MainWindow(QMainWindow):
         # try to find a device by matching known FullTopics against the MQTT topic of the message
         device = self.env.find_device(topic)
         if device:
-            # forward the message for processing
-            device.parse_message(topic, msg)
-
-        if topic.endswith("LWT"):
-            if not msg:
-                msg = "offline"
-
-            if device:
+            if topic.endswith("LWT"):
+                if not msg:
+                    msg = "Offline"
                 device.update_property("LWT", msg)
+
                 if msg == 'Online':
-                    device.update_property("LWT", "online")
+                    # known device came online, query initial state
                     self.initial_query(device, True)
 
-            elif msg == "Online":
-                # received LWT from an unknown device
-                # first part of Tasmota Autodiscovery algorithm
-                # begin by loading default and user-provided FullTopic patterns
+            else:
+                # forward the message for processing
+                device.parse_message(topic, msg)
+
+        else:            # unknown device, start autodiscovery process
+            if topic.endswith("LWT"):
+                # STAGE 1
+                # load default and user-provided FullTopic patterns and for all the patterns,
+                # try matching the LWT topic (it follows the device's FullTopic syntax
 
                 for p in default_patterns + custom_patterns:
-                    # for all the patterns, match the LWT topic (it follows the device's FullTopic syntax
                     match = re.fullmatch(p.replace("%topic%", "(?P<topic>.*?)").replace("%prefix%", "(?P<prefix>.*?)") + ".*$", topic)
                     if match:
                         # assume that the matched topic is the one configured in device settings
@@ -319,10 +319,8 @@ class MainWindow(QMainWindow):
                             # query the assumed device for its FullTopic. False positives won't reply.
                             self.mqtt_queue.append([p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic) + "FullTopic", ""])
 
-        elif topic.endswith("RESULT"):
-            # we have a reply from an unknown device
-            if not device:
-                # second part of Tasmota Autodiscovery algorithm
+            elif topic.endswith("RESULT"):      # reply from an unknown device
+                # STAGE 2
                 try:
                     full_topic = loads(msg).get('FullTopic')
                     if full_topic:
@@ -330,12 +328,18 @@ class MainWindow(QMainWindow):
                         # here the Topic is extracted using the returned FullTopic, identifying the device
                         parsed = parse_topic(full_topic, topic)
                         if parsed:
-                            # the topic matches, we can add the device to our environment and Device List
-                            d = TasmotaDevice(parsed['topic'], full_topic)
-                            d.update_property("LWT", "online")
-                            self.env.devices.append(d)
-                            self.device_model.addDevice(d)
-                            self.initial_query(d, True)
+                            # got a match, we query the device's MAC address in case it's a known device that had its topic changed
+
+                            d = self.env.find_device(topic=parsed['topic'])
+                            if d:
+                                d.update_property("FullTopic", full_topic)
+                            else:
+                                print("DISCOVERED", parsed['topic'])
+                                d = TasmotaDevice(parsed['topic'], full_topic)
+                                self.env.devices.append(d)
+                                self.device_model.addDevice(d)
+                                self.initial_query(d, True)
+                            d.update_property("LWT", "Online")
 
                 except JSONDecodeError as e:
                     with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
@@ -493,19 +497,43 @@ class MainWindow(QMainWindow):
     def closeEvent(self, e):
         self.settings.setValue("version", self._version)
         self.settings.setValue("window_geometry", self.saveGeometry())
+        self.settings.sync()
 
         # save devices
-        self.settings.beginGroup("Devices")
-        for d in self.env.devices:
-            self.settings.setValue("{}/full_topic".format(d.p['Topic']), d.p['FullTopic'])
-            if d.p.get('Mac'):
-                self.settings.setValue("{}/Mac".format(d.p['Topic']), d.p['Mac'])
-            self.settings.setValue("{}/friendly_name".format(d.p['Topic']), d.p['FriendlyName'][0])
-            for i, h in enumerate(d.history):
-                self.settings.setValue("{}/history/{}".format(d.p['Topic'], i), h)
-        self.settings.endGroup()
+        # self.settings.beginGroup("Devices")
+        # for d in self.env.devices:
+        #     mac = d.p.get('Mac')
+        #     topic = d.p['Topic']
+        #     full_topic = d.p['FullTopic']
+        #     friendly_name = d.p['FriendlyName'][0]
+        #
+        #     self.settings.setValue("{}/full_topic".format(topic), full_topic)
+        #     if mac:
+        #         self.settings.setValue("{}/Mac".format(topic), mac)
+        #     self.settings.setValue("{}/friendly_name".format(topic), friendly_name)
+        #     for i, h in enumerate(d.history):
+        #         self.settings.setValue("{}/history/{}".format(topic, i), h)
+        #
+        # self.settings.endGroup()
+        #####
 
-        self.settings.sync()
+        for d in self.env.devices:
+            mac = d.p.get('Mac')
+            topic = d.p['Topic']
+            full_topic = d.p['FullTopic']
+            friendly_name = d.p['FriendlyName'][0]
+
+            if mac:
+                self.devices.beginGroup(mac.replace(":", "-"))
+                self.devices.setValue("topic", topic)
+                self.devices.setValue("full_topic", full_topic)
+                self.devices.setValue("friendly_name", friendly_name)
+
+                for i, h in enumerate(d.history):
+                    self.devices.setValue("history/{}".format(i), h)
+                self.devices.endGroup()
+        self.devices.sync()
+
         e.accept()
 
 
