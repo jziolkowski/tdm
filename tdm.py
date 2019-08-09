@@ -124,6 +124,7 @@ class MainWindow(QMainWindow):
         self.devices_list.deviceSelected.connect(self.selectDevice)
         self.devices_list.openConsole.connect(self.openConsole)
         self.devices_list.openRulesEditor.connect(self.openRulesEditor)
+        self.devices_list.openTelemetry.connect(self.openTelemetry)
         self.devices_list.openWebUI.connect(self.openWebUI)
 
         self.devices_list.cfgModule.connect(self.configureModule)
@@ -184,6 +185,9 @@ class MainWindow(QMainWindow):
 
     def toggle_autoupdate(self, state):
         if state == True:
+            if self.mqtt.state == self.mqtt.Connected:
+                for d in self.env.devices:
+                    self.mqtt.publish(d.cmnd_topic('STATUS'), payload=8)
             self.auto_timer.setInterval(5000)
             self.auto_timer.start()
         else:
@@ -208,7 +212,7 @@ class MainWindow(QMainWindow):
     def auto_telemetry(self):
         if self.mqtt.state == self.mqtt.Connected:
             for d in self.env.devices:
-                self.mqtt.publish("{}STATUS".format(d.cmnd_topic()), payload=8)
+                self.mqtt.publish(d.cmnd_topic('STATUS'), payload=8)
 
     def mqtt_connect(self):
         self.broker_hostname = self.settings.value('hostname', 'localhost')
@@ -387,13 +391,8 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot()
     def openTelemetry(self):
-        if self.idx:
-            fname = self.device_model.friendly_name(self.idx)
-            topic = self.device_model.topic(self.idx)
-            tele_topic = self.device_model.teleTopic(self.idx)
-            stat_topic = self.device_model.statTopic(self.idx)
-            tele_widget = TelemetryWidget(fname, topic, tele_topic, stat_topic)
-            self.telemetry.connect(tele_widget.parse_telemetry)
+        if self.device:
+            tele_widget = TelemetryWidget(self.device)
             self.addDockWidget(Qt.RightDockWidgetArea, tele_widget)
 
     @pyqtSlot()

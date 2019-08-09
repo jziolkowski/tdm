@@ -15,14 +15,12 @@ class TemplateDialog(QDialog):
         self.device = device
 
         self.gb = {}
-        gpios = self.device.gpios()
-
+        gpios = ["0 (None)", "255 (USER)"] + self.device.gpios()
 
         gbxTmpl = QGroupBox("Configure template")
         fl = QFormLayout()
         if self.device.p['Template']:
             tpl = self.device.p['Template']
-            print(tpl)
             self.leName = QLineEdit()
             self.leName.setText(tpl['NAME'])
             fl.addRow("Name", self.leName)
@@ -31,6 +29,18 @@ class TemplateDialog(QDialog):
             self.gbxBase.addItems(self.device.modules())
             fl.addRow("Base", self.gbxBase)
 
+            for i, g in enumerate([0, 1, 2, 3, 4, 5, 9, 10, 12, 13, 14, 15, 16]):
+                current_item = None
+                gbx = QComboBox()
+                for itm in gpios:
+                    gbx.addItem(itm)
+                    itm_split = itm.split(" ")[0]
+                    if itm_split == tpl['GPIO'][i]:
+                        current_item = i
+                gbx.setCurrentIndex(current_item)
+
+                fl.addRow("<font color='{}'>GPIO{}</font>".format('red' if g in [9, 10] else 'black', i), gbx)
+                self.gb[i] = gbx
 
         else:
             fl.addWidget(QLabel("Templates not supported.\nUpgrade firmware to versions above 6.5"))

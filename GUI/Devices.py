@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QApplication, QInputDia
 
 from GUI import VLayout, Toolbar, TableView
 from GUI.DeviceEdit import DeviceEditDialog
-from Util import TasmotaDevice
+from Util import TasmotaDevice, resets
 from Util.models import DeviceDelegate
 
 # TODO: add device
@@ -25,6 +25,7 @@ class ListWidget(QWidget):
     cfgModule = pyqtSignal()
     cfgGPIO = pyqtSignal()
     cfgTpl = pyqtSignal()
+    cfgTime = pyqtSignal()
     cfgTimers = pyqtSignal()
 
     def __init__(self, parent, *args, **kwargs):
@@ -99,9 +100,9 @@ class ListWidget(QWidget):
         self.ctx_menu_cfg.setIcon(QIcon("GUI/icons/settings.png"))
         self.ctx_menu_cfg.addAction("Module", self.cfgModule.emit)
         self.ctx_menu_cfg.addAction("GPIO", self.cfgGPIO.emit)
-        self.ctx_menu_cfg.addAction("Template", self.cfgTpl.emit)
+        # self.ctx_menu_cfg.addAction("Template", self.cfgTpl.emit)
         # self.ctx_menu_cfg.addAction("Wifi", self.ctx_menu_teleperiod)
-        # self.ctx_menu_cfg.addAction("Time", self.ctx_menu_teleperiod)
+        # self.ctx_menu_cfg.addAction("Time", self.cfgTime.emit)
         # self.ctx_menu_cfg.addAction("MQTT", self.ctx_menu_teleperiod)
         # self.ctx_menu_cfg.addAction("Firmware and OTA", self.ctx_menu_teleperiod)
         # self.ctx_menu_cfg.addAction("Relays", self.ctx_menu_teleperiod)
@@ -122,6 +123,7 @@ class ListWidget(QWidget):
         self.ctx_menu.addAction(QIcon("GUI/icons/copy.png"), "Copy", self.ctx_menu_copy)
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon("GUI/icons/restart.png"), "Restart", self.ctx_menu_restart)
+        self.ctx_menu.addAction(QIcon(), "Reset", self.ctx_menu_reset)
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon("GUI/icons/delete.png"), "Delete", self.ctx_menu_delete_device)
 
@@ -228,6 +230,12 @@ class ListWidget(QWidget):
         if self.device:
             self.mqtt.publish(self.device.cmnd_topic("restart"), payload="1")
 
+    def ctx_menu_reset(self):
+        if self.device:
+            reset, ok = QInputDialog.getItem(self, "Reset device and restart", "Select reset mode", resets, editable=False)
+            if ok:
+                self.mqtt.publish(self.device.cmnd_topic("reset"), payload=reset.split(":")[0])
+
     def ctx_menu_refresh(self):
         if self.device:
             status = self.device.cmnd_topic("status")
@@ -309,13 +317,6 @@ class ListWidget(QWidget):
             if save_file:
                 with open(save_file, "wb") as f:
                     f.write(self.backup)
-
-    def add_device(self):
-        d = DeviceEditDialog(self.env)
-        if d.exec_() == QDialog.Accepted:
-            new_device = TasmotaDevice(d.topic.text(), d.full_topic.text())
-            self.env.devices.append(new_device)
-            self.model.addDevice(new_device)
 
     def check_fulltopic(self, fulltopic):
         fulltopic += "/" if not fulltopic.endswith('/') else ''

@@ -228,10 +228,34 @@ class RulesWidget(QWidget):
                         self.actOnce.setChecked(payload['Once'] == 'ON')
                         self.actStopOnError.setChecked(payload['StopOnError'] == 'ON')
 
+                    elif first == 'Var1':
+                        if len(payload) == 1:   # old firmware, doesn't return all Vars in a dict
+                            self.lwVars.item(0).setText("VAR1: {}".format(payload[first]))
+                            self.vars[0] = payload[first]
+                            for var in range(2, 6):
+                                self.sendCommand.emit(self.device.cmnd_topic("var{}".format(var)), "")
+                        else:
+                            for k, v in payload.items():
+                                row = int(k.replace("Var", "")) - 1
+                                self.lwVars.item(row).setText("VAR{}: {}".format(row + 1, v))
+                                self.vars[row] = v
+
                     elif first.startswith('Var'):
                         row = int(first.replace("Var", ""))-1
                         self.lwVars.item(row).setText("VAR{}: {}".format(row+1, payload[first]))
                         self.vars[row] = payload[first]
+
+                    elif first == 'Mem1':
+                        if len(payload) == 1:   # old firmware, doesn't return all Mems in a dict
+                            self.lwMems.item(0).setText("MEM1: {}".format(payload[first]))
+                            self.mems[0] = payload[first]
+                            for mem in range(2, 6):
+                                self.sendCommand.emit(self.device.cmnd_topic("mem{}".format(mem)), "")
+                        else:
+                            for k, v in payload.items():
+                                row = int(k.replace("Mem", "")) - 1
+                                self.lwMems.item(row).setText("MEM{}: {}".format(row + 1, v))
+                                self.mems[row] = v
 
                     elif first.startswith('Mem'):
                         row = int(first.replace("Mem", ""))-1

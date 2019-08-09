@@ -2,7 +2,7 @@ import re
 from collections import namedtuple
 from json import loads, JSONDecodeError
 
-from PyQt5.QtCore import QDir, QDateTime
+from PyQt5.QtCore import QDir, QDateTime, pyqtSignal, QObject
 
 commands = [
     "Backlog", "BlinkCount", "BlinkTime", "ButtonDebounce", "FanSpeed", "Interlock", "LedMask", "LedPower", "LedPower", "LedState", "Power", "PowerOnState", "PulseTime", "SwitchDebounce", "SwitchMode",
@@ -32,8 +32,14 @@ default_patterns = [
 
 custom_patterns = []
 
-DeviceRule = namedtuple("DeviceRule", ['enabled', 'once', 'stop_on_error', 'rules'])
-
+resets = [
+    "1: reset device settings to firmware defaults",
+    "2: erase flash, reset device settings to firmware defaults",
+    "3: erase flash SDK parameters",
+    "4: reset device settings to firmware defaults, keep Wi-Fi credentials",
+    "5: erase flash, reset parameters to firmware defaults, keep Wi-Fi settings",
+    "6: erase flash, reset parameters to firmware defaults, keep Wi-Fi and MQTT settings"
+]
 
 def parse_topic(full_topic, topic):
     """
@@ -68,8 +74,10 @@ class TasmotaEnvironment(object):
         return None
 
 
-class TasmotaDevice(object):
+class TasmotaDevice(QObject):
+    update_telemetry = pyqtSignal()
     def __init__(self, topic, fulltopic, friendlyname=""):
+        super(TasmotaDevice, self).__init__()
         self.p = {
             "LWT": "undefined",
             "Topic": topic,
@@ -84,7 +92,6 @@ class TasmotaDevice(object):
         self.property_changed = None    # property changed callback pointer
 
         self.t = None
-        self.telemetry_changed = None   # telemetry changed callback pointer
 
         self.m = {}                     # supported modules
         self.module_changed = None      # module changed callback pointer
@@ -171,6 +178,13 @@ class TasmotaDevice(object):
                                 self.update_property(kk, vv)
                         else:
                             self.update_property(k, v)
+
+                elif self.reply in ('SENSOR', 'STATUS8'):
+                    if self.reply == 'STATUS8':
+                        payload = payload['StatusSNS']
+
+                    self.t = payload
+                    self.update_telemetry.emit()
 
                 elif self.reply.startswith("POWER"):
                     self.update_property(self.reply, msg)
