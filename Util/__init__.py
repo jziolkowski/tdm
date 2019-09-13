@@ -96,7 +96,7 @@ class TasmotaDevice(QObject):
         self.m = {}                     # supported modules
         self.module_changed = None      # module changed callback pointer
 
-        self.g = {}                     # supported GPIOs
+        self.gpios = {}                     # supported GPIOs
         self.gpio = {}                  # gpio config
 
         self.reply = ""
@@ -126,9 +126,10 @@ class TasmotaDevice(QObject):
         self.p[k] = v                                           # store the new value
 
     def module(self):
-        mdl = [m for m in self.modules() if m.startswith(str(self.p.get('Module')))]
+        mdl = self.p.get('Module')
         if mdl:
-            return mdl[0].split(" (")[1].rstrip(")")
+            return self.m.get(str(mdl))
+
         if self.p['LWT'] == 'Online':
             return "Fetching module name..."
 
@@ -137,12 +138,6 @@ class TasmotaDevice(QObject):
         for v in self.m.values():
             mdls += v
         return mdls
-
-    def gpios(self):
-        gps = []
-        for v in self.g.values():
-            gps += v
-        return gps
 
     def matches(self, topic):
         if topic == self.p['Topic']:
@@ -155,6 +150,10 @@ class TasmotaDevice(QObject):
     def parse_message(self, topic, msg):
         parse_statuses = ["STATUS{}".format(s) for s in [1, 2, 3, 4, 5, 6, 7]]
         if self.prefix in ("stat", "tele"):
+
+            if self.reply.startswith("POWER"):
+                self.update_property(self.reply, msg)
+
             try:
                 payload = loads(msg)
 
@@ -179,37 +178,47 @@ class TasmotaDevice(QObject):
                         else:
                             self.update_property(k, v)
 
-                elif self.reply in ('SENSOR', 'STATUS8'):
-                    if self.reply == 'STATUS8':
+                elif self.reply in ('SENSOR', 'STATUS8', 'STATUS10'):
+                    if self.reply in ('STATUS8', 'STATUS10'):
                         payload = payload['StatusSNS']
 
                     self.t = payload
                     self.update_telemetry.emit()
 
-                elif self.reply.startswith("POWER"):
-                    self.update_property(self.reply, msg)
-
                 elif self.reply == 'RESULT':
                     for k, v in payload.items():
 
                         if k.startswith("Modules"):
-                            self.m[k] = v
+                            if isinstance(v, list):
+                                for mdl in v:
+                                    mdl_id, mdl_name = mdl.split(" (")
+                                    self.m[mdl_id] = mdl_name.rstrip(")")
+                            elif isinstance(v, dict):
+                                self.m.update(v)
                             self.module_changed(self)
 
                         elif k.startswith("GPIOs"):
-                            self.g[k] = v
+                            if isinstance(v, list):
+                                for gp in v:
+                                    gp_id, gp_name = gp.split(" (")
+                                    self.gpios[gp_id] = gp_name.rstrip(")")
+                            elif isinstance(v, dict):
+                                self.gpios.update(v)
 
                         elif k.startswith("GPIO"):
-                            self.gpio = payload
+                            for gp, gp_val in payload.items():
+                                if not gp == "GPIO":
+                                    if isinstance(gp_val, str):
+                                        gp_id = gp_val.split(" (")[0]
+                                        self.gpio[gp] = gp_id
+                                    elif isinstance(gp_val, dict):
+                                        self.gpio[gp] = list(gp_val.keys())[0]
 
                         elif k == 'NAME':
                             self.p['Template'] = payload
                             if self.module_changed:
                                 self.module_changed(self)
                             break
-
-                        elif k.startswith('POWER'):
-                            self.update_property(k, v)
 
                         else:
                             self.update_property(k, v)

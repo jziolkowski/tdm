@@ -15,31 +15,34 @@ class GPIODialog(QDialog):
         self.device = device
 
         self.gb = {}
-        gpios = self.device.gpios()
+
+        btns = QDialogButtonBox(QDialogButtonBox.Close)
+        btns.rejected.connect(self.reject)
 
         gbxGPIO = QGroupBox("Select GPIO")
         fl = QFormLayout()
-        for k, v in self.device.gpio.items():
-            if v != "Not supported":
-                gb = QComboBox()
-                gb.addItems(gpios)
-                gb.setCurrentText(v)
-                self.gb[k] = gb
-                fl.addRow(k, gb)
-            else:
-                fl.addWidget(QLabel("No configurable GPIOs"))
-        gbxGPIO.setLayout(fl)
+        if self.device.gpio:
+            btns.addButton(QDialogButtonBox.Save)
+            btns.accepted.connect(self.accept)
 
-        btns = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Close)
-        btns.accepted.connect(self.accept)
-        btns.rejected.connect(self.reject)
+            for gp_name, gp_id in self.device.gpio.items():
+                gb = QComboBox()
+                for gps_id, gps_name in self.device.gpios.items():
+                    gb.addItem(gps_name, gps_id)
+                    if gp_id == gps_id:
+                        gb.setCurrentText(gps_name)
+                self.gb[gp_name] = gb
+                fl.addRow(gp_name, gb)
+        else:
+            fl.addWidget(QLabel("No configurable GPIOs"))
+        gbxGPIO.setLayout(fl)
 
         vl = VLayout()
         vl.addWidgets([gbxGPIO, btns])
         self.setLayout(vl)
 
     def accept(self):
-        payload = ["{} {}".format(k, gb.currentText().split(" ")[0]) for k, gb in self.gb.items()]
+        payload = ["{} {}".format(k, gb.currentData()) for k, gb in self.gb.items()]
         self.sendCommand.emit(self.device.cmnd_topic("backlog"), "; ".join(payload))
         QMessageBox.information(self, "GPIO saved", "Device will restart.")
         self.done(QDialog.Accepted)

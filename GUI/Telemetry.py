@@ -28,6 +28,7 @@ class TelemetryWidget(QDockWidget):
         device.update_telemetry.connect(self.update_telemetry)
 
         self.device = device
+        self.tree.resizeColumnToContents(0)
 
     def get_top_item(self, name):
         item = self.tree_items.get(name)
@@ -65,6 +66,7 @@ class TelemetryWidget(QDockWidget):
     @pyqtSlot()
     def update_telemetry(self):
         t = self.device.t
+
         time = t.pop('Time')
 
         time_item = self.get_top_item("Time")
@@ -81,7 +83,7 @@ class TelemetryWidget(QDockWidget):
                 item.setText(1, str(v))
 
         self.tree.resizeColumnToContents(0)
-        self.tree.resizeColumnToContents(1)
+        # self.tree.resizeColumnToContents(1)
 
 
         # device = self.telemetry_model.devices.get(self.device_model.topic(index))

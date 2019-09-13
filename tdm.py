@@ -394,6 +394,7 @@ class MainWindow(QMainWindow):
         if self.device:
             tele_widget = TelemetryWidget(self.device)
             self.addDockWidget(Qt.RightDockWidgetArea, tele_widget)
+            self.mqtt_publish(self.device.cmnd_topic('STATUS'), "8")
 
     @pyqtSlot()
     def openConsole(self):
