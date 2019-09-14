@@ -54,6 +54,13 @@ def parse_topic(full_topic, topic):
     return {}
 
 
+def parse_payload(payload):
+    match = re.match("(\d+) \((.*)\)", payload)
+    if match:
+        return dict([match.groups()])
+    return {}
+
+
 def expand_fulltopic(fulltopic):
     fulltopics = []
     for prefix in prefixes:
@@ -154,58 +161,64 @@ class TasmotaDevice(QObject):
             if self.reply.startswith("POWER"):
                 self.update_property(self.reply, msg)
 
-            try:
-                payload = loads(msg)
+            else:
+                try:
+                    payload = loads(msg)
 
-                if self.reply == 'STATUS':
-                    payload = payload['Status']
-                    for k, v in payload.items():
-                        self.update_property(k, v)
-
-                elif self.reply in parse_statuses:
-                    payload = payload[list(payload.keys())[0]]
-                    for k, v in payload.items():
-                        self.update_property(k, v)
-
-                elif self.reply in ('STATE', 'STATUS11'):
-                    if self.reply == 'STATUS11':
-                        payload = payload['StatusSTS']
-
-                    for k, v in payload.items():
-                        if isinstance(v, dict):
-                            for kk, vv in v.items():
-                                self.update_property(kk, vv)
-                        else:
+                    if self.reply == 'STATUS':
+                        payload = payload['Status']
+                        for k, v in payload.items():
                             self.update_property(k, v)
 
-                elif self.reply in ('SENSOR', 'STATUS8', 'STATUS10'):
-                    if self.reply in ('STATUS8', 'STATUS10'):
-                        payload = payload['StatusSNS']
+                    elif self.reply in parse_statuses:
+                        payload = payload[list(payload.keys())[0]]
+                        for k, v in payload.items():
+                            self.update_property(k, v)
 
-                    self.t = payload
-                    self.update_telemetry.emit()
+                    elif self.reply in ('STATE', 'STATUS11'):
+                        if self.reply == 'STATUS11':
+                            payload = payload['StatusSTS']
 
-                elif self.reply == 'RESULT':
-                    for k, v in payload.items():
+                        for k, v in payload.items():
+                            if isinstance(v, dict):
+                                for kk, vv in v.items():
+                                    self.update_property(kk, vv)
+                            else:
+                                self.update_property(k, v)
 
-                        if k.startswith("Modules"):
-                            if isinstance(v, list):
-                                for mdl in v:
-                                    mdl_id, mdl_name = mdl.split(" (")
-                                    self.m[mdl_id] = mdl_name.rstrip(")")
-                            elif isinstance(v, dict):
-                                self.m.update(v)
-                            self.module_changed(self)
+                    elif self.reply in ('SENSOR', 'STATUS8', 'STATUS10'):
+                        if self.reply in ('STATUS8', 'STATUS10'):
+                            payload = payload['StatusSNS']
 
-                        elif k.startswith("GPIOs"):
-                            if isinstance(v, list):
-                                for gp in v:
-                                    gp_id, gp_name = gp.split(" (")
-                                    self.gpios[gp_id] = gp_name.rstrip(")")
-                            elif isinstance(v, dict):
-                                self.gpios.update(v)
+                        self.t = payload
+                        self.update_telemetry.emit()
 
-                        elif k.startswith("GPIO"):
+                    elif self.reply == 'RESULT':
+                        fk = list(payload.keys())[0]
+
+                        if fk.startswith("Modules"):
+                            for k, v in payload.items():
+                                if isinstance(v, list):
+                                    for mdl in v:
+                                        self.m.update(parse_payload(mdl))
+                                elif isinstance(v, dict):
+                                    self.m.update(v)
+                                self.module_changed(self)
+
+                        elif fk == 'NAME':
+                            self.p['Template'] = payload
+                            if self.module_changed:
+                                self.module_changed(self)
+
+                        elif fk.startswith("GPIOs"):
+                            for k, v in payload.items():
+                                if isinstance(v, list):
+                                    for gp in v:
+                                        self.gpios.update(parse_payload(gp))
+                                elif isinstance(v, dict):
+                                    self.gpios.update(v)
+
+                        elif fk.startswith("GPIO"):
                             for gp, gp_val in payload.items():
                                 if not gp == "GPIO":
                                     if isinstance(gp_val, str):
@@ -214,20 +227,15 @@ class TasmotaDevice(QObject):
                                     elif isinstance(gp_val, dict):
                                         self.gpio[gp] = list(gp_val.keys())[0]
 
-                        elif k == 'NAME':
-                            self.p['Template'] = payload
-                            if self.module_changed:
-                                self.module_changed(self)
-                            break
+                        elif not fk.startswith("POWER"):
+                            for k, v in payload.items():
+                                self.update_property(k, v)
 
-                        else:
-                            self.update_property(k, v)
-
-            except JSONDecodeError as e:
-                with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
-                    l.write("{}\t{}\t{}\t{}\n"
-                            .format(QDateTime.currentDateTime()
-                                    .toString("yyyy-MM-dd hh:mm:ss"), topic, msg, e.msg))
+                except JSONDecodeError as e:
+                    with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
+                        l.write("{}\t{}\t{}\t{}\n"
+                                .format(QDateTime.currentDateTime()
+                                        .toString("yyyy-MM-dd hh:mm:ss"), topic, msg, e.msg))
 
     def power(self):
         return {k: v for k, v in self.p.items() if k.startswith('POWER')}
