@@ -100,7 +100,7 @@ class ListWidget(QWidget):
         self.ctx_menu_cfg.setIcon(QIcon("GUI/icons/settings.png"))
         self.ctx_menu_cfg.addAction("Module", self.cfgModule.emit)
         self.ctx_menu_cfg.addAction("GPIO", self.cfgGPIO.emit)
-        # self.ctx_menu_cfg.addAction("Template", self.cfgTpl.emit)
+        self.ctx_menu_cfg.addAction("Template", self.cfgTpl.emit)
         # self.ctx_menu_cfg.addAction("Wifi", self.ctx_menu_teleperiod)
         # self.ctx_menu_cfg.addAction("Time", self.cfgTime.emit)
         # self.ctx_menu_cfg.addAction("MQTT", self.ctx_menu_teleperiod)

@@ -65,10 +65,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 val = d.p.get(col_name, "")
 
                 if col_name == "FriendlyName":
-                    if val:
-                        val = val[0]
-                    else:
-                        d.p['Topic']
+                    val = d.p.get("FriendlyName1", d.p['Topic'])
 
                 elif col_name == "Module":
                     if val == 0:
@@ -77,7 +74,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
                         return d.module()
 
                 elif col_name == "Version" and val:
-                    return val.replace('(', ' (')
+                    return val[0:val.index("(")]
 
                 elif col_name in ("Uptime", "Downtime") and val:
                     if val.startswith("0T"):
@@ -114,7 +111,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
             elif role == Qt.TextAlignmentRole:
                 # Left-aligned columns
-                if col_name in ("FriendlyName", "Module", "RestartReason", "OtaUrl", "Hostname", "Version") or col_name.endswith("Topic"):
+                if col_name in ("FriendlyName", "Module", "RestartReason", "OtaUrl", "Hostname") or col_name.endswith("Topic"):
                     return Qt.AlignLeft | Qt.AlignVCenter | Qt.TextWordWrap
 
                 # Right-aligned columns
@@ -149,16 +146,23 @@ class TasmotaDevicesModel(QAbstractTableModel):
                     return QColor("#fcdd0f")
 
             elif role == Qt.ToolTipRole:
-                if col_name == "Firmware":
-                    return d.p.get('FriendlyName')
+                if col_name == "Version":
+                    val = d.p.get('Version')
+                    if val:
+                        return val[val.index("(")+1:val.index(")")]
+                    return ""
 
                 elif col_name == "BSSId":
                     return d.p.get('BSSId')
 
                 elif col_name == "FriendlyName":
-                    fn = d.p['FriendlyName']
-                    if len(fn) > 1:
-                        return "\n".join(fn)
+                    fns = [d.p['FriendlyName1']]
+
+                    for i in range(2, 5):
+                        fn = d.p.get("FriendlyName{}".format(i))
+                        if fn:
+                            fns.append(fn)
+                    return "\n".join(fns)
 
     def addDevice(self, device):
         self.beginInsertRows(QModelIndex(), 0, 0)

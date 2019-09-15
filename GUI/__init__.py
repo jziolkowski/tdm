@@ -181,6 +181,13 @@ class Toolbar(QToolBar):
         self.addWidget(spacer)
 
 
+class DictComboBox(QComboBox):
+    def __init__(self, items_dict):
+        super().__init__()
+
+        for k, v in items_dict.items():
+            self.addItem(v, k)
+
 class DetailLE(QLineEdit):
     def __init__(self, detail, *args, **kwargs):
         super(DetailLE, self).__init__(detail, *args, **kwargs)

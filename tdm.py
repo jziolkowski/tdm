@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdi
     QInputDialog, QMessageBox, QPushButton
 
 from GUI.GPIO import GPIODialog
+from GUI.Modules import ModuleDialog
 from GUI.Templates import TemplateDialog
 from GUI.Timers import TimersDialog
 
@@ -173,7 +174,7 @@ class MainWindow(QMainWindow):
             self.mqtt_queue.append([tpl, ""])
             self.mqtt_queue.append([modules, ""])
             self.mqtt_queue.append([gpio, ""])
-            self.mqtt_queue.append([gpios, ""])
+            self.mqtt_queue.append([gpios, "255"])
         else:
             self.mqtt.publish(status, 0, 1)
             self.mqtt.publish(tpl, "", 1)
@@ -430,7 +431,7 @@ class MainWindow(QMainWindow):
                 webui.load(url)
 
                 frm_webui = QFrame()
-                frm_webui.setWindowTitle("WebUI [{}]".format(self.device.p['FriendlyName'][0]))
+                frm_webui.setWindowTitle("WebUI [{}]".format(self.device.p['FriendlyName1']))
                 frm_webui.setFrameShape(QFrame.StyledPanel)
                 frm_webui.setLayout(VLayout(0))
                 frm_webui.layout().addWidget(webui)
@@ -446,25 +447,28 @@ class MainWindow(QMainWindow):
     @pyqtSlot()
     def configureModule(self):
         if self.device:
-            modules = self.device.modules()
-            curr_module = self.device.module()
-            idx = -1
-            for idx, module in enumerate(modules):
-                if curr_module in module:
-                    break
-
-            module, ok = QInputDialog.getItem(self, "Configure module [{}]".format(self.device.p['FriendlyName'][0]),
-                                              "Select device module", modules, idx, False)
-            if ok:
-                new_idx = modules.index(module)
-                if new_idx != idx:
-                    module_idx = module.split(" ")[0]
-                    self.mqtt.publish(self.device.cmnd_topic("module"), module_idx)
-                    QMessageBox.information(self, "Module changed",
-                                            "Device will restart. Please wait a few seconds.")
-                else:
-                    QMessageBox.information(self, "Module not changed",
-                                            "You have selected the current module.")
+            dlg = ModuleDialog(self.device)
+            dlg.sendCommand.connect(self.mqtt_publish)
+            dlg.exec_()
+            # modules = self.device.modules()
+            # curr_module = self.device.module()
+            # idx = -1
+            # for idx, module in enumerate(modules):
+            #     if curr_module in module:
+            #         break
+            #
+            # module, ok = QInputDialog.getItem(self, "Configure module [{}]".format(self.device.p['FriendlyName1']),
+            #                                   "Select device module", modules, idx, False)
+            # if ok:
+            #     new_idx = modules.index(module)
+            #     if new_idx != idx:
+            #         module_idx = module.split(" ")[0]
+            #         self.mqtt.publish(self.device.cmnd_topic("module"), module_idx)
+            #         QMessageBox.information(self, "Module changed",
+            #                                 "Device will restart. Please wait a few seconds.")
+            #     else:
+            #         QMessageBox.information(self, "Module not changed",
+            #                                 "You have selected the current module.")
 
     @pyqtSlot()
     def configureGPIO(self):
@@ -521,7 +525,7 @@ class MainWindow(QMainWindow):
             mac = d.p.get('Mac')
             topic = d.p['Topic']
             full_topic = d.p['FullTopic']
-            friendly_name = d.p['FriendlyName'][0]
+            friendly_name = d.p['FriendlyName1']
 
             if mac:
                 self.devices.beginGroup(mac.replace(":", "-"))

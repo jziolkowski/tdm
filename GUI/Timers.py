@@ -17,7 +17,7 @@ class TimersDialog(QDialog):
         super(TimersDialog, self).__init__(*args, **kwargs)
         self.device = device
         self.timers = {}
-        self.setWindowTitle("Timers [{}]".format(self.device.p['FriendlyName'][0]))
+        self.setWindowTitle("Timers [{}]".format(self.device.p['FriendlyName1']))
 
         vl = VLayout()
 

@@ -41,6 +41,16 @@ resets = [
     "6: erase flash, reset parameters to firmware defaults, keep Wi-Fi and MQTT settings"
 ]
 
+template_adc = {
+    "0": "None",
+    "15": "User",
+    "1": "Analog",
+    "2": "Temperature",
+    "3": "Light",
+    "4": "Button",
+    "5": "Buttoni"
+}
+
 def parse_topic(full_topic, topic):
     """
     :param full_topic: FullTopic to match against
@@ -89,7 +99,7 @@ class TasmotaDevice(QObject):
             "LWT": "undefined",
             "Topic": topic,
             "FullTopic": fulltopic,
-            "FriendlyName": [friendlyname if friendlyname else topic],
+            "FriendlyName1": friendlyname if friendlyname else topic,
             "Template": {},
         }
 
@@ -100,7 +110,7 @@ class TasmotaDevice(QObject):
 
         self.t = None
 
-        self.m = {}                     # supported modules
+        self.modules = {}                     # supported modules
         self.module_changed = None      # module changed callback pointer
 
         self.gpios = {}                     # supported GPIOs
@@ -135,16 +145,16 @@ class TasmotaDevice(QObject):
     def module(self):
         mdl = self.p.get('Module')
         if mdl:
-            return self.m.get(str(mdl))
+            return self.modules.get(str(mdl))
 
         if self.p['LWT'] == 'Online':
             return "Fetching module name..."
 
-    def modules(self):
-        mdls = []
-        for v in self.m.values():
-            mdls += v
-        return mdls
+    # def modules(self):
+    #     mdls = []
+    #     for v in self.m.values():
+    #         mdls += v
+    #     return mdls
 
     def matches(self, topic):
         if topic == self.p['Topic']:
@@ -168,7 +178,11 @@ class TasmotaDevice(QObject):
                     if self.reply == 'STATUS':
                         payload = payload['Status']
                         for k, v in payload.items():
-                            self.update_property(k, v)
+                            if k == "FriendlyName":
+                                for fnk, fnv in enumerate(v, start=1):
+                                    self.update_property("FriendlyName{}".format(fnk), fnv)
+                            else:
+                                self.update_property(k, v)
 
                     elif self.reply in parse_statuses:
                         payload = payload[list(payload.keys())[0]]
@@ -200,9 +214,9 @@ class TasmotaDevice(QObject):
                             for k, v in payload.items():
                                 if isinstance(v, list):
                                     for mdl in v:
-                                        self.m.update(parse_payload(mdl))
+                                        self.modules.update(parse_payload(mdl))
                                 elif isinstance(v, dict):
-                                    self.m.update(v)
+                                    self.modules.update(v)
                                 self.module_changed(self)
 
                         elif fk == 'NAME':

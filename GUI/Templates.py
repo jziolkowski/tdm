@@ -1,8 +1,11 @@
+from json import dumps
+
 from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5.QtWidgets import QDialog, QMessageBox, QComboBox, QPushButton, QFormLayout, QLabel, QGroupBox, QWidget, \
     QDialogButtonBox, QLineEdit
 
-from GUI import HLayout, VLayout
+from GUI import HLayout, VLayout, DictComboBox
+from Util import template_adc
 
 
 class TemplateDialog(QDialog):
@@ -10,63 +13,62 @@ class TemplateDialog(QDialog):
 
     def __init__(self, device, *args, **kwargs):
         super(TemplateDialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle("Template [{}]".format(device.p['FriendlyName'][0]))
+        self.setWindowTitle("Template [{}]".format(device.p['FriendlyName1']))
         self.setMinimumWidth(300)
         self.device = device
 
         self.gb = {}
-        gpios = ["0 (None)", "255 (USER)"] + self.device.gpios()
+        gpios = {"255": "User"}
+        gpios.update(self.device.gpios)
+
+        btns = QDialogButtonBox(QDialogButtonBox.Cancel)
+        btns.rejected.connect(self.reject)
 
         gbxTmpl = QGroupBox("Configure template")
         fl = QFormLayout()
         if self.device.p['Template']:
+            btns.addButton(QDialogButtonBox.Save)
+            btns.accepted.connect(self.accept)
+
             tpl = self.device.p['Template']
+            print(tpl)
             self.leName = QLineEdit()
+            self.leName.setMaxLength(14)
             self.leName.setText(tpl['NAME'])
             fl.addRow("Name", self.leName)
 
-            self.gbxBase = QComboBox()
-            self.gbxBase.addItems(self.device.modules())
-            fl.addRow("Base", self.gbxBase)
+            self.gbxBase = DictComboBox(self.device.modules)
+            self.gbxBase.setCurrentText(self.device.modules[str(tpl['BASE'])])
+            fl.addRow("Based on", self.gbxBase)
 
             for i, g in enumerate([0, 1, 2, 3, 4, 5, 9, 10, 12, 13, 14, 15, 16]):
-                current_item = None
-                gbx = QComboBox()
-                for itm in gpios:
-                    gbx.addItem(itm)
-                    itm_split = itm.split(" ")[0]
-                    if itm_split == tpl['GPIO'][i]:
-                        current_item = i
-                gbx.setCurrentIndex(current_item)
+                gbx = DictComboBox(gpios)
+                gbx.setCurrentText(gpios.get(str(tpl['GPIO'][i])))
 
                 fl.addRow("<font color='{}'>GPIO{}</font>".format('red' if g in [9, 10] else 'black', i), gbx)
                 self.gb[i] = gbx
 
+            self.gbxADC = DictComboBox(template_adc)
+            fl.addRow("ADC0", self.gbxADC)
+
         else:
             fl.addWidget(QLabel("Templates not supported.\nUpgrade firmware to versions above 6.5"))
 
-
-        # for k, v in self.device.gpio.items():
-        #     if v != "Not supported":
-        #         gb = QComboBox()
-        #         gb.addItems(gpios)
-        #         gb.setCurrentText(v)
-        #         self.gb[k] = gb
-        #         fl.addRow(k, gb)
-        #     else:
-        #         fl.addWidget(QLabel("No configurable GPIOs"))
         gbxTmpl.setLayout(fl)
-
-        btns = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
-        btns.accepted.connect(self.accept)
-        btns.rejected.connect(self.reject)
 
         vl = VLayout()
         vl.addWidgets([gbxTmpl, btns])
         self.setLayout(vl)
 
     def accept(self):
-        # payload = ["{} {}".format(k, gb.currentText().split(" ")[0]) for k, gb in self.gb.items()]
-        # self.sendCommand.emit(self.device.cmnd_topic("backlog"), "; ".join(payload))
-        QMessageBox.information(self, "Template saved", "Device will restart.")
+        payload = {
+            "NAME": self.leName.text(),
+            "GPIO": [int(gpio.currentData()) for gpio in self.gb.values()],
+            "FLAG": int(self.gbxADC.currentData()),
+            "BASE": int(self.gbxBase.currentData()),
+        }
+
+        self.sendCommand.emit(self.device.cmnd_topic("template"), dumps(payload))
+        self.sendCommand.emit(self.device.cmnd_topic("modules"), "")
+        QMessageBox.information(self, "Template saved", "Template configuration saved.")
         self.done(QDialog.Accepted)

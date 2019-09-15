@@ -14,7 +14,7 @@ class ConsoleWidget(QDockWidget):
     def __init__(self, device, *args, **kwargs):
         super().__init__()
         self.setAllowedAreas(Qt.BottomDockWidgetArea)
-        self.setWindowTitle("Console [{}]".format(device.p["FriendlyName"][0]))
+        self.setWindowTitle("Console [{}]".format(device.p["FriendlyName1"]))
         self.device = device
 
         w = QWidget()
@@ -175,7 +175,7 @@ class DeviceConsoleHistory(QDialog):
 
         gbxDevice = GroupBoxV("Commands history for:")
         gbDevice = QComboBox()
-        gbDevice.addItems([d.p['FriendlyName'][0] for d in devices])
+        gbDevice.addItems([d.p['FriendlyName1'] for d in devices])
         gbxDevice.addWidget(gbDevice)
 
         self.lwCommands = QListWidget()

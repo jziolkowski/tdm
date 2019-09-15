@@ -1,8 +1,7 @@
-from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtWidgets import QDialog, QMessageBox, QComboBox, QPushButton, QFormLayout, QLabel, QGroupBox, QWidget, \
-    QDialogButtonBox
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import QDialog, QMessageBox, QFormLayout, QLabel, QGroupBox, QDialogButtonBox
 
-from GUI import HLayout, VLayout
+from GUI import VLayout, DictComboBox
 
 
 class GPIODialog(QDialog):
@@ -10,7 +9,7 @@ class GPIODialog(QDialog):
 
     def __init__(self, device, *args, **kwargs):
         super(GPIODialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle("GPIO [{}]".format(device.p['FriendlyName'][0]))
+        self.setWindowTitle("GPIO [{}]".format(device.p['FriendlyName1']))
         self.setMinimumWidth(300)
         self.device = device
 
@@ -26,11 +25,8 @@ class GPIODialog(QDialog):
             btns.accepted.connect(self.accept)
 
             for gp_name, gp_id in self.device.gpio.items():
-                gb = QComboBox()
-                for gps_id, gps_name in self.device.gpios.items():
-                    gb.addItem(gps_name, gps_id)
-                    if gp_id == gps_id:
-                        gb.setCurrentText(gps_name)
+                gb = DictComboBox(self.device.gpios)
+                gb.setCurrentText(self.device.gpios[gp_id])
                 self.gb[gp_name] = gb
                 fl.addRow(gp_name, gb)
         else:

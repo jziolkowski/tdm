@@ -16,7 +16,7 @@ class TelemetryWidget(QDockWidget):
     def __init__(self, device, *args, **kwargs):
         super(TelemetryWidget, self).__init__(*args, **kwargs)
         self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-        self.setWindowTitle(device.p['FriendlyName'][0])
+        self.setWindowTitle(device.p['FriendlyName1'])
 
         self.tree_items = {}
 
