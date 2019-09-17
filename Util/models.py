@@ -1,3 +1,5 @@
+import re
+
 from PyQt5.QtCore import QModelIndex, Qt, QAbstractTableModel, QSettings, QSize, QRect, QDir, QRectF, QPoint
 from PyQt5.QtGui import QIcon, QColor, QPixmap, QFont, QPen
 from PyQt5.QtWidgets import QStyledItemDelegate, QStyle
@@ -61,6 +63,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
             col = idx.column()
             col_name = self.columns[col]
             d = self.tasmota_env.devices[row]
+
             if role in [Qt.DisplayRole, Qt.EditRole]:
                 val = d.p.get(col_name, "")
 
@@ -136,14 +139,15 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
                 return QIcon("GUI/icons/status_offline.png")
 
-            elif role == Qt.BackgroundColorRole and col_name == "RSSI":
-                rssi = int(d.p.get("RSSI", 0))
-                if rssi > 0 and rssi < 50:
-                    return QColor("#ef4522")
-                elif rssi > 75:
-                    return QColor("#7eca27")
-                elif rssi > 0:
-                    return QColor("#fcdd0f")
+            elif role == Qt.BackgroundColorRole:
+                if col_name == "RSSI":
+                    rssi = int(d.p.get("RSSI", 0))
+                    if rssi > 0 and rssi < 50:
+                        return QColor("#ef4522")
+                    elif rssi > 75:
+                        return QColor("#7eca27")
+                    elif rssi > 0:
+                        return QColor("#fcdd0f")
 
             elif role == Qt.ToolTipRole:
                 if col_name == "Version":
@@ -382,25 +386,14 @@ class DeviceDelegate(QStyledItemDelegate):
         col = index.column()
         col_name = index.model().sourceModel().columns[col]
         if col_name == "LWT":
-            return QSize(16,1)
+            return QSize(16, 28)
 
         elif col_name == "Power":
-            if isinstance(index.data(), dict):
-                num = len(index.data().keys())
-
-                if num == 1:
-                    w = 46
-
-                elif num == 2:
-                    w = 22
-
-                elif num == 3:
-                    w = 14
-
-                else:
-                    w = 10
-
-                return QSize(20+num*(w+2), 1)
+            num = len(index.data().keys())
+            if num <= 4:
+                return QSize(24 * len(index.data().keys()), 28)
+            else:
+                return QSize(24 * 4, 48)
 
         return QStyledItemDelegate.sizeHint(self, option, index)
 
@@ -420,10 +413,6 @@ class DeviceDelegate(QStyledItemDelegate):
             p.drawPixmap(QRect(x, y, px.rect().width(), px.rect().height()), px)
 
         elif col_name == "Power":
-            p.save()
-            f = QFont(p.font())
-            f.setPixelSize(6)
-            p.setFont(f)
 
             if option.state & QStyle.State_Selected:
                 p.fillRect(option.rect, option.palette.highlight())
@@ -431,53 +420,52 @@ class DeviceDelegate(QStyledItemDelegate):
             if isinstance(index.data(), dict):
                 num = len(index.data().keys())
 
-                r = option.rect.adjusted(2,2,-2,0)
-                r.setHeight(24)
+                if num <= 4:
+                    for i, k in enumerate(index.data().keys()):
+                        x = option.rect.x() + i * 24 + (option.rect.width() - num * 24) / 2
+                        y = option.rect.y() + (option.rect.height() - 24) / 2
 
-                if num == 1:
-                    w = 46
+                        if num == 1:
+                            p.drawPixmap(x, y, 24, 24, QPixmap("./GUI/icons/P_{}".format(index.data()[k])))
 
-                elif num == 2:
-                    w = 22
-
-                elif num == 3:
-                    w = 14
+                        else:
+                            p.drawPixmap(x, y, 24, 24, QPixmap("./GUI/icons/P{}_{}".format(i + 1, index.data()[k])))
 
                 else:
-                    w = 10
+                    i = 0
+                    for row in range(2):
+                        for col in range(4):
+                            x = col * 24 + option.rect.x()
+                            y = option.rect.y() + row * 24
 
-                for i,k in enumerate(index.data().keys()):
-                    x = r.x() + (r.width() - (num * (w+2))) / 2 + 1
-                    dip = QRectF(x + i*(w+2), r.y(), w, r.height())
-                    p.fillRect(dip, QColor("white"))
-                    p.setPen(QPen(QColor("darkgray")))
-                    p.drawLine(dip.bottomLeft(), dip.bottomRight())
-                    p.drawLine(dip.topRight(), dip.bottomRight())
+                            if i < num:
+                                p.drawPixmap(x, y, 24, 24, QPixmap("./GUI/icons/P{}_{}".format(i + 1, list(index.data().values())[i])))
+                            i += 1
 
-                    p.setPen(QPen(QColor("black")))
-                    p.drawLine(dip.topLeft(), dip.bottomLeft())
-                    p.drawLine(dip.topLeft(), dip.topRight())
+        elif col_name == "Color":
+            if option.state & QStyle.State_Selected:
+                p.fillRect(option.rect, option.palette.highlight())
 
-                    bar = QRect(QPoint(dip.center().x()-1, dip.center().y()-8), QPoint(dip.center().x()+1, dip.center().y()+8))
-                    p.fillRect(bar, QColor("lightgrey").lighter(110))
-                    p.drawRect(bar)
+            x = option.rect.x() + (option.rect.width() - 32) / 2
+            y = option.rect.y() + (option.rect.height() - 16) / 2
+            rect = QRect(x, y, 32, 16)
 
-                    state = dip.adjusted(2, 2, 0, 0)
-                    state.setHeight(8)
-                    state.setWidth(w-4)
+            if index.data():
+                p.save()
+                pen = QPen(p.pen())
+                pen.setColor(QColor("#cccccc"))
+                p.setPen(pen)
 
-                    if index.data()[k] == "OFF":
-                        state.moveTop(dip.y() + 14)
-                        p.fillRect(state, QColor("lightgrey"))
-                        p.drawText(state, Qt.AlignCenter, "OFF" if w > 15 else 'o')
+                d = index.data()
+                if len(d) > 6:
+                    d = d[:6]
+                p.fillRect(rect, QColor("#{}".format(d)))
+                p.drawRect(rect)
 
-                    else:
-                        p.fillRect(state, QColor("lightgreen"))
-                        p.drawText(state, Qt.AlignCenter, "ON" if w > 15 else 'I')
+                p.restore()
 
-                    p.drawRect(state)
 
-            p.restore()
+
 
         else:
             QStyledItemDelegate.paint(self, p, option, index)

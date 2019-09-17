@@ -4,16 +4,11 @@ from PyQt5.QtCore import Qt, QSettings, QSortFilterProxyModel, QUrl, QDir, pyqtS
 from PyQt5.QtGui import QIcon
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QApplication, QInputDialog, QFileDialog, \
-    QAction, QActionGroup, QLabel, QSizePolicy, QLineEdit, QDialog
+    QAction, QActionGroup, QLabel, QSizePolicy, QLineEdit, QHeaderView
 
-from GUI import VLayout, Toolbar, TableView
-from GUI.DeviceEdit import DeviceEditDialog
+from GUI import VLayout, Toolbar, TableView, PWMSlider
 from Util import TasmotaDevice, resets
 from Util.models import DeviceDelegate
-
-# TODO: add device
-# TODO: edit topic of device and update registry
-# TODO: delete device
 
 class ListWidget(QWidget):
     deviceSelected = pyqtSignal(TasmotaDevice)
@@ -47,7 +42,7 @@ class ListWidget(QWidget):
 
         base_view = ["FriendlyName"]
         self.views = {
-            "Home":  base_view + ["Module", "Power", "LoadAvg", "LinkCount", "Uptime"],
+            "Home":  base_view + ["Module", "Power", "Color", "LoadAvg", "LinkCount", "Uptime"],
             "Health": base_view + ["Uptime", "BootCount", "RestartReason", "LoadAvg", "Sleep", "MqttCount", "LinkCount", "Downtime", "RSSI"],
             "Firmware": base_view + ["Version", "Core", "SDK",  "ProgramSize", "Free", "OtaUrl"],
             "Wifi":     base_view + ["Hostname", "Mac", "IPAddress", "Gateway", "SSId", "BSSId", "Channel", "RSSI", "LinkCount", "Downtime"],
@@ -58,6 +53,8 @@ class ListWidget(QWidget):
         self.tb_relays = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonIconOnly)
         self.tb_filter = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonTextBesideIcon)
         self.tb_views = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonTextBesideIcon)
+
+        self.pwm_sliders = []
 
         self.layout().addWidget(self.tb)
         self.layout().addWidget(self.tb_filter)
@@ -79,6 +76,7 @@ class ListWidget(QWidget):
         self.device_list.setItemDelegate(DeviceDelegate())
         self.device_list.sortByColumn(self.model.columnIndex("FriendlyName"), Qt.AscendingOrder)
         self.device_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.device_list.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.layout().addWidget(self.device_list)
 
         self.layout().addWidget(self.tb_views)
@@ -168,6 +166,13 @@ class ListWidget(QWidget):
         self.agRelays.triggered.connect(self.toggle_power)
         self.tb.addActions(self.agRelays.actions())
 
+        for pwm in range(5):
+            s = PWMSlider()
+            s.setEnabled(False)
+            s.sliderReleased.connect(self.setPWM)
+            self.pwm_sliders.append(s)
+            self.tb.addWidget(s)
+
     def create_view_buttons(self):
         self.tb_views.addWidget(QLabel("View mode: "))
         ag_views = QActionGroup(self)
@@ -229,6 +234,8 @@ class ListWidget(QWidget):
     def ctx_menu_restart(self):
         if self.device:
             self.mqtt.publish(self.device.cmnd_topic("restart"), payload="1")
+            for k in list(self.device.power().keys()):
+                self.device.p.pop(k)
 
     def ctx_menu_reset(self):
         if self.device:
@@ -249,7 +256,7 @@ class ListWidget(QWidget):
     def ctx_menu_delete_device(self):
         if self.device:
             if QMessageBox.question(self, "Confirm", "Do you want to remove the following device?\n'{}' ({})"
-                    .format(self.device.p['FriendlyName'][0], self.device.p['Topic'])) == QMessageBox.Yes:
+                    .format(self.device.p['FriendlyName1'], self.device.p['Topic'])) == QMessageBox.Yes:
                 self.model.deleteDevice(self.idx)
 
     def ctx_menu_teleperiod(self):
@@ -294,6 +301,21 @@ class ListWidget(QWidget):
         for i, a in enumerate(self.agRelays.actions()):
             a.setVisible(i < len(relays))
 
+        for i, pwm in enumerate(self.pwm_sliders):
+            pwm.setEnabled(i < len(list(self.device.pwm().keys())))
+
+            k = self.device.pwm().get("Channel{}".format(i+1))  # Get value for Channel (SO15=1)
+            if k:
+                pwm.setMaximum(100)
+                pwm.setValue(k)
+            else:
+                k = self.device.pwm().get("Pwm{}".format(i + 1))    # If no Channel, try value for PWM1 (SO15=0)
+                if k:
+                    pwm.setMaximum(1023)
+                    pwm.setValue(k)
+                else:   # Channel not configured
+                    pass
+
     def toggle_power(self, action):
         if self.device:
             idx = self.agRelays.actions().index(action)
@@ -305,6 +327,12 @@ class ListWidget(QWidget):
             idx = self.agAllPower.actions().index(action)
             for r in self.device.power().keys():
                 self.mqtt.publish(self.device.cmnd_topic(r), str(not bool(idx)))
+
+    def setPWM(self):
+        if self.device:
+            idx = self.pwm_sliders.index(self.sender())
+            pwm = self.pwm_sliders[idx]
+            self.mqtt.publish(self.device.cmnd_topic("Channel{}".format(idx+1)), str(pwm.value()))
 
     def get_dump(self):
         self.backup += self.dl.readAll()

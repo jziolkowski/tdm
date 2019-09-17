@@ -59,6 +59,7 @@ class MainWindow(QMainWindow):
         for mac in self.devices.childGroups():
             self.devices.beginGroup(mac)
             device = TasmotaDevice(self.devices.value("topic"), self.devices.value("full_topic"), self.devices.value("friendly_name"))
+            device.p['Mac'] = mac.replace("-", ":")
             device.env = self.env
             self.env.devices.append(device)
 
@@ -82,7 +83,7 @@ class MainWindow(QMainWindow):
         self.setup_main_layout()
         self.add_devices_tab()
         self.build_mainmenu()
-        self.build_toolbars()
+        # self.build_toolbars()
         self.setStatusBar(QStatusBar())
 
         pbSubs = QPushButton("Show subscriptions")
@@ -139,28 +140,42 @@ class MainWindow(QMainWindow):
             self.restoreGeometry(wndGeometry)
 
     def build_mainmenu(self):
-        mSetup = self.menuBar().addMenu("Options")
-        mSetup.addAction(QIcon(), "MQTT Broker", self.setup_broker)
-        mSetup.addAction(QIcon(), "Auto telemetry period", lambda: print('asd'))
-        mSetup.addAction(QIcon(), "BSSId aliases", self.bssid)
-        mSetup.addAction(QIcon(), "Autodiscovery patterns", self.patterns)
+        mMQTT  = self.menuBar().addMenu("MQTT")
+        self.actToggleConnect = QAction(QIcon("./GUI/icons/disconnect.png"), "Connect")
+        self.actToggleConnect.setCheckable(True)
+        self.actToggleConnect.toggled.connect(self.toggle_connect)
+        mMQTT.addAction(self.actToggleConnect)
+
+        mMQTT.addAction(QIcon(), "Broker", self.setup_broker)
+        mMQTT.addAction(QIcon(), "Autodiscovery patterns", self.patterns)
+
+        mMQTT.addSeparator()
+        mMQTT.addAction(QIcon(), "Auto telemetry period", self.auto_telemetry_period)
+
+        self.actToggleAutoUpdate = QAction(QIcon("./GUI/icons/auto_telemetry.png"), "Auto telemetry")
+        self.actToggleAutoUpdate.setCheckable(True)
+        self.actToggleAutoUpdate.toggled.connect(self.toggle_autoupdate)
+        mMQTT.addAction(self.actToggleAutoUpdate)
+
+        mSettings = self.menuBar().addMenu("Settings")
+        mSettings.addAction(QIcon(), "BSSId aliases", self.bssid)
 
         # mDevices.addAction(QIcon("GUI/icons/export.png"), "Export list", self.export)
 
     def build_toolbars(self):
         main_toolbar = Toolbar(orientation=Qt.Horizontal, iconsize=24, label_position=Qt.ToolButtonTextBesideIcon)
         main_toolbar.setObjectName("main_toolbar")
-        self.addToolBar(main_toolbar)
+        # self.addToolBar(main_toolbar)
 
-        self.actToggleConnect = QAction(QIcon("./GUI/icons/disconnect.png"), "Connect")
-        self.actToggleConnect.setCheckable(True)
-        self.actToggleConnect.toggled.connect(self.toggle_connect)
-        main_toolbar.addAction(self.actToggleConnect)
-
-        self.actToggleAutoUpdate = QAction(QIcon("./GUI/icons/auto_telemetry.png"), "Auto telemetry")
-        self.actToggleAutoUpdate.setCheckable(True)
-        self.actToggleAutoUpdate.toggled.connect(self.toggle_autoupdate)
-        main_toolbar.addAction(self.actToggleAutoUpdate)
+        # self.actToggleConnect = QAction(QIcon("./GUI/icons/disconnect.png"), "Connect")
+        # self.actToggleConnect.setCheckable(True)
+        # self.actToggleConnect.toggled.connect(self.toggle_connect)
+        # main_toolbar.addAction(self.actToggleConnect)
+        #
+        # self.actToggleAutoUpdate = QAction(QIcon("./GUI/icons/auto_telemetry.png"), "Auto telemetry")
+        # self.actToggleAutoUpdate.setCheckable(True)
+        # self.actToggleAutoUpdate.toggled.connect(self.toggle_autoupdate)
+        # main_toolbar.addAction(self.actToggleAutoUpdate)
 
     def initial_query(self, device, queued=False):
         status = device.cmnd_topic("status")
@@ -189,7 +204,7 @@ class MainWindow(QMainWindow):
             if self.mqtt.state == self.mqtt.Connected:
                 for d in self.env.devices:
                     self.mqtt.publish(d.cmnd_topic('STATUS'), payload=8)
-            self.auto_timer.setInterval(5000)
+            self.auto_timer.setInterval(self.settings.value("autotelemetry", 5000, int))
             self.auto_timer.start()
         else:
             self.auto_timer.stop()
@@ -386,6 +401,13 @@ class MainWindow(QMainWindow):
     def showSubs(self):
         QMessageBox.information(self, "Subscriptions", "\n".join(sorted(self.topics)))
 
+    def auto_telemetry_period(self):
+        curr_val = self.settings.value("autotelemetry", 5000, int)
+        period, ok = QInputDialog.getInt(self, "Set AutoTelemetry period", "Values under 5000ms may cause increased ESP LoadAvg", curr_val, 1000)
+        if ok:
+            self.settings.setValue("autotelemetry", period)
+            self.settings.sync()
+
     @pyqtSlot(TasmotaDevice)
     def selectDevice(self, d):
         self.device = d
@@ -502,24 +524,6 @@ class MainWindow(QMainWindow):
         self.settings.setValue("version", self._version)
         self.settings.setValue("window_geometry", self.saveGeometry())
         self.settings.sync()
-
-        # save devices
-        # self.settings.beginGroup("Devices")
-        # for d in self.env.devices:
-        #     mac = d.p.get('Mac')
-        #     topic = d.p['Topic']
-        #     full_topic = d.p['FullTopic']
-        #     friendly_name = d.p['FriendlyName'][0]
-        #
-        #     self.settings.setValue("{}/full_topic".format(topic), full_topic)
-        #     if mac:
-        #         self.settings.setValue("{}/Mac".format(topic), mac)
-        #     self.settings.setValue("{}/friendly_name".format(topic), friendly_name)
-        #     for i, h in enumerate(d.history):
-        #         self.settings.setValue("{}/history/{}".format(topic, i), h)
-        #
-        # self.settings.endGroup()
-        #####
 
         for d in self.env.devices:
             mac = d.p.get('Mac')

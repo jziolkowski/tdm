@@ -150,12 +150,6 @@ class TasmotaDevice(QObject):
         if self.p['LWT'] == 'Online':
             return "Fetching module name..."
 
-    # def modules(self):
-    #     mdls = []
-    #     for v in self.m.values():
-    #         mdls += v
-    #     return mdls
-
     def matches(self, topic):
         if topic == self.p['Topic']:
             return True
@@ -168,84 +162,85 @@ class TasmotaDevice(QObject):
         parse_statuses = ["STATUS{}".format(s) for s in [1, 2, 3, 4, 5, 6, 7]]
         if self.prefix in ("stat", "tele"):
 
-            if self.reply.startswith("POWER"):
-                self.update_property(self.reply, msg)
+            # if self.reply.startswith("POWER"):
+            #     self.update_property(self.reply, msg)
 
-            else:
-                try:
-                    payload = loads(msg)
+            # else:
+            try:
+                payload = loads(msg)
 
-                    if self.reply == 'STATUS':
-                        payload = payload['Status']
+                if self.reply == 'STATUS':
+                    payload = payload['Status']
+                    for k, v in payload.items():
+                        if k == "FriendlyName":
+                            for fnk, fnv in enumerate(v, start=1):
+                                self.update_property("FriendlyName{}".format(fnk), fnv)
+                        else:
+                            self.update_property(k, v)
+
+                elif self.reply in parse_statuses:
+                    payload = payload[list(payload.keys())[0]]
+                    for k, v in payload.items():
+                        self.update_property(k, v)
+
+                elif self.reply in ('STATE', 'STATUS11'):
+                    if self.reply == 'STATUS11':
+                        payload = payload['StatusSTS']
+
+                    for k, v in payload.items():
+                        if isinstance(v, dict):
+                            for kk, vv in v.items():
+                                self.update_property(kk, vv)
+                        else:
+                            self.update_property(k, v)
+
+                elif self.reply in ('SENSOR', 'STATUS8', 'STATUS10'):
+                    if self.reply in ('STATUS8', 'STATUS10'):
+                        payload = payload['StatusSNS']
+
+                    self.t = payload
+                    self.update_telemetry.emit()
+
+                elif self.reply == 'RESULT':
+                    keys = list(payload.keys())
+                    fk = keys[0]
+
+                    if fk.startswith("Modules"):
                         for k, v in payload.items():
-                            if k == "FriendlyName":
-                                for fnk, fnv in enumerate(v, start=1):
-                                    self.update_property("FriendlyName{}".format(fnk), fnv)
-                            else:
-                                self.update_property(k, v)
+                            if isinstance(v, list):
+                                for mdl in v:
+                                    self.modules.update(parse_payload(mdl))
+                            elif isinstance(v, dict):
+                                self.modules.update(v)
+                            self.module_changed(self)
 
-                    elif self.reply in parse_statuses:
-                        payload = payload[list(payload.keys())[0]]
+                    elif fk == 'NAME':
+                        self.p['Template'] = payload
+                        if self.module_changed:
+                            self.module_changed(self)
+
+                    elif fk.startswith("GPIOs"):
+                        for k, v in payload.items():
+                            if isinstance(v, list):
+                                for gp in v:
+                                    self.gpios.update(parse_payload(gp))
+                            elif isinstance(v, dict):
+                                self.gpios.update(v)
+
+                    elif fk.startswith("GPIO"):
+                        for gp, gp_val in payload.items():
+                            if not gp == "GPIO":
+                                if isinstance(gp_val, str):
+                                    gp_id = gp_val.split(" (")[0]
+                                    self.gpio[gp] = gp_id
+                                elif isinstance(gp_val, dict):
+                                    self.gpio[gp] = list(gp_val.keys())[0]
+
+                    else:
                         for k, v in payload.items():
                             self.update_property(k, v)
 
-                    elif self.reply in ('STATE', 'STATUS11'):
-                        if self.reply == 'STATUS11':
-                            payload = payload['StatusSTS']
-
-                        for k, v in payload.items():
-                            if isinstance(v, dict):
-                                for kk, vv in v.items():
-                                    self.update_property(kk, vv)
-                            else:
-                                self.update_property(k, v)
-
-                    elif self.reply in ('SENSOR', 'STATUS8', 'STATUS10'):
-                        if self.reply in ('STATUS8', 'STATUS10'):
-                            payload = payload['StatusSNS']
-
-                        self.t = payload
-                        self.update_telemetry.emit()
-
-                    elif self.reply == 'RESULT':
-                        fk = list(payload.keys())[0]
-
-                        if fk.startswith("Modules"):
-                            for k, v in payload.items():
-                                if isinstance(v, list):
-                                    for mdl in v:
-                                        self.modules.update(parse_payload(mdl))
-                                elif isinstance(v, dict):
-                                    self.modules.update(v)
-                                self.module_changed(self)
-
-                        elif fk == 'NAME':
-                            self.p['Template'] = payload
-                            if self.module_changed:
-                                self.module_changed(self)
-
-                        elif fk.startswith("GPIOs"):
-                            for k, v in payload.items():
-                                if isinstance(v, list):
-                                    for gp in v:
-                                        self.gpios.update(parse_payload(gp))
-                                elif isinstance(v, dict):
-                                    self.gpios.update(v)
-
-                        elif fk.startswith("GPIO"):
-                            for gp, gp_val in payload.items():
-                                if not gp == "GPIO":
-                                    if isinstance(gp_val, str):
-                                        gp_id = gp_val.split(" (")[0]
-                                        self.gpio[gp] = gp_id
-                                    elif isinstance(gp_val, dict):
-                                        self.gpio[gp] = list(gp_val.keys())[0]
-
-                        elif not fk.startswith("POWER"):
-                            for k, v in payload.items():
-                                self.update_property(k, v)
-
-                except JSONDecodeError as e:
+            except JSONDecodeError as e:
                     with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
                         l.write("{}\t{}\t{}\t{}\n"
                                 .format(QDateTime.currentDateTime()
@@ -253,6 +248,12 @@ class TasmotaDevice(QObject):
 
     def power(self):
         return {k: v for k, v in self.p.items() if k.startswith('POWER')}
+
+    def pwm(self):
+        return {k: v for k, v in self.p.items() if k.startswith('PWM') or (k != "Channel" and k.startswith("Channel"))}
+
+    def setoptions(self):
+        pass
 
     def __repr__(self):
         fname = self.p.get('FriendlyName')

@@ -2,7 +2,7 @@ from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableView, QSpinBox, QAction, QToolBar, \
     QHeaderView, QCheckBox, QPushButton, QPlainTextEdit, QLineEdit, QComboBox, QFrame, QDoubleSpinBox, QTreeWidgetItem, \
-    QWidget, QSizePolicy
+    QWidget, QSizePolicy, QSlider
 
 
 class VLayout(QVBoxLayout):
@@ -181,12 +181,20 @@ class Toolbar(QToolBar):
         self.addWidget(spacer)
 
 
+class PWMSlider(QSlider):
+    def __init__(self):
+        super().__init__()
+        self.setOrientation(Qt.Horizontal)
+        self.setMaximumWidth(50)
+
+
 class DictComboBox(QComboBox):
     def __init__(self, items_dict):
         super().__init__()
 
         for k, v in items_dict.items():
             self.addItem(v, k)
+
 
 class DetailLE(QLineEdit):
     def __init__(self, detail, *args, **kwargs):
