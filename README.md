@@ -3,6 +3,14 @@ GUI application to discover and monitor devices flashed with [Tasmota firmware](
 
 ![image.png](../assets/image.png)
 
+# Discord Server
+
+Join the TDM's Official Discord Server at https://discord.gg/eAhVDXM
+
+# 0.2 development version
+
+All users are recommended to use the development branch of TDM before the release of 0.2
+
 # Features
 
  - autodetection of devices following the default topic template for Tasmota (%prefix%/%topic%/) and for HomeAssistant Auto Discovery protocol (%topic%/%prefix%/)
