@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdi
 
 from GUI.GPIO import GPIODialog
 from GUI.Modules import ModuleDialog
+from GUI.SetOptions import SetOptionsDialog
 from GUI.Templates import TemplateDialog
 from GUI.Timers import TimersDialog
 
@@ -31,8 +32,6 @@ from Util import TasmotaDevice, TasmotaEnvironment, parse_topic, default_pattern
 from Util.models import TasmotaDevicesModel
 from Util.mqtt import MqttClient
 
-# TODO: refactor topic subscriptions so they add custom patterns and device deletion
-# TODO: telemetry
 # TODO: rework device export
 
 
@@ -129,11 +128,6 @@ class MainWindow(QMainWindow):
         self.devices_list.openTelemetry.connect(self.openTelemetry)
         self.devices_list.openWebUI.connect(self.openWebUI)
 
-        self.devices_list.cfgModule.connect(self.configureModule)
-        self.devices_list.cfgGPIO.connect(self.configureGPIO)
-        self.devices_list.cfgTimers.connect(self.configureTimers)
-        self.devices_list.cfgTpl.connect(self.configureTemplate)
-
     def load_window_state(self):
         wndGeometry = self.settings.value('window_geometry')
         if wndGeometry:
@@ -183,6 +177,7 @@ class MainWindow(QMainWindow):
         modules = device.cmnd_topic("modules")
         gpio = device.cmnd_topic("gpio")
         gpios = device.cmnd_topic("gpios")
+        timers = device.cmnd_topic("timers")
 
         if queued:
             self.mqtt_queue.append([status, 0])
@@ -190,9 +185,12 @@ class MainWindow(QMainWindow):
             self.mqtt_queue.append([modules, ""])
             self.mqtt_queue.append([gpio, ""])
             self.mqtt_queue.append([gpios, "255"])
+            self.mqtt_queue.append([timers, ""])
         else:
             self.mqtt.publish(status, 0, 1)
             self.mqtt.publish(tpl, "", 1)
+            self.mqtt.publish(timers, "", 1)
+
 
     def setup_broker(self):
         brokers_dlg = BrokerDialog()
@@ -465,55 +463,6 @@ class MainWindow(QMainWindow):
 
             except NameError:
                 QDesktopServices.openUrl(QUrl("http://{}".format(self.device.p['IPAddress'])))
-
-    @pyqtSlot()
-    def configureModule(self):
-        if self.device:
-            dlg = ModuleDialog(self.device)
-            dlg.sendCommand.connect(self.mqtt_publish)
-            dlg.exec_()
-            # modules = self.device.modules()
-            # curr_module = self.device.module()
-            # idx = -1
-            # for idx, module in enumerate(modules):
-            #     if curr_module in module:
-            #         break
-            #
-            # module, ok = QInputDialog.getItem(self, "Configure module [{}]".format(self.device.p['FriendlyName1']),
-            #                                   "Select device module", modules, idx, False)
-            # if ok:
-            #     new_idx = modules.index(module)
-            #     if new_idx != idx:
-            #         module_idx = module.split(" ")[0]
-            #         self.mqtt.publish(self.device.cmnd_topic("module"), module_idx)
-            #         QMessageBox.information(self, "Module changed",
-            #                                 "Device will restart. Please wait a few seconds.")
-            #     else:
-            #         QMessageBox.information(self, "Module not changed",
-            #                                 "You have selected the current module.")
-
-    @pyqtSlot()
-    def configureGPIO(self):
-        if self.device:
-            dlg = GPIODialog(self.device)
-            dlg.sendCommand.connect(self.mqtt_publish)
-            dlg.exec_()
-
-    @pyqtSlot()
-    def configureTemplate(self):
-        if self.device:
-            dlg = TemplateDialog(self.device)
-            dlg.sendCommand.connect(self.mqtt_publish)
-            dlg.exec_()
-
-    @pyqtSlot()
-    def configureTimers(self):
-        if self.device:
-            timers = TimersDialog(self.device)
-            self.mqtt.messageSignal.connect(timers.parseMessage)
-            timers.sendCommand.connect(self.mqtt_publish)
-            self.mqtt_queue.append((self.device.cmnd_topic("timers"), ""))
-            timers.exec_()
 
     def updateMDI(self):
         if len(self.mdi.subWindowList()) == 1:

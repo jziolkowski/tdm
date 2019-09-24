@@ -51,6 +51,21 @@ template_adc = {
     "5": "Buttoni"
 }
 
+setoptions = {
+    0: {
+        "description": "Save power state and use after restart (=SaveState)",
+        "parameters": {
+            0: "Disable", 1: "Enable*"
+        }
+    },
+    1: {
+        "description": "Button multipress mode",
+        "parameters": {
+            0: "allow all button actions*", 1: "restrict to single, double and hold actions"
+        }
+    },
+}
+
 def parse_topic(full_topic, topic):
     """
     :param full_topic: FullTopic to match against
@@ -252,11 +267,40 @@ class TasmotaDevice(QObject):
     def pwm(self):
         return {k: v for k, v in self.p.items() if k.startswith('PWM') or (k != "Channel" and k.startswith("Channel"))}
 
-    def setoptions(self):
-        pass
+    def color(self):
+        color = {k: self.p[k] for k in ["Color", "Dimmer", "HSBColor"] if k in self.p.keys()}
+        color.update({
+            17: self.setoption(17),
+            68: self.setoption(68)
+        })
+        return color
+
+    def setoption(self, o):
+        if 0 <= o < 32:
+            reg = 0
+        elif 32 <= o < 50:
+            reg = 1
+        else:
+            reg = 2
+
+        state = -1
+        if reg in (0, 2):
+            so = self.p.get('SetOption')
+            if so:
+                options = int(so[reg], 16)
+                if reg == 2:
+                    o -= 50
+                state = int(options >> o & 1)
+
+        else:
+            o -= 32
+            split_register = [int(reg[opt * 2:opt * 2 + 2], 16) for opt in range(18)]
+            return split_register[o]
+
+        return state
 
     def __repr__(self):
-        fname = self.p.get('FriendlyName')
-        fname = fname[0] if fname else self.p['Topic']
+        fname = self.p.get('FriendlyName1')
+        fname = fname if fname else self.p['Topic']
 
         return "<TasmotaDevice {}: {}>".format(fname, self.p['Topic'])

@@ -67,7 +67,9 @@ class TelemetryWidget(QDockWidget):
     def update_telemetry(self):
         t = self.device.t
 
-        time = t.pop('Time')
+        time = t.get("Time")
+        if time:
+            t.pop('Time')
 
         time_item = self.get_top_item("Time")
         time_item.setText(1, time)
@@ -83,68 +85,3 @@ class TelemetryWidget(QDockWidget):
                 item.setText(1, str(v))
 
         self.tree.resizeColumnToContents(0)
-        # self.tree.resizeColumnToContents(1)
-
-
-        # device = self.telemetry_model.devices.get(self.device_model.topic(index))
-        # if device:
-        #     node = self.telemetry_model.getNode(device)
-        #     time = node.provides()['Time']
-        #     if 'Time' in payload:
-        #         self.telemetry_model.setData(time, )
-        #
-        #     temp_unit = "C"
-        #     pres_unit = "hPa"
-        #
-        #     if 'TempUnit' in payload:
-        #         temp_unit = payload.pop('TempUnit')
-        #
-        #     if 'PressureUnit' in payload:
-        #         pres_unit = payload.pop('PressureUnit')
-        #
-        #     for sensor in sorted(payload.keys()):
-        #         if sensor == 'DS18x20':
-        #             for sns_name in payload[sensor].keys():
-        #                 d = node.devices().get(sensor)
-        #                 if not d:
-        #                     d = self.telemetry_model.addDevice(DS18x20, payload[sensor][sns_name]['Type'], device)
-        #                 self.telemetry_model.getNode(d).setTempUnit(temp_unit)
-        #                 payload[sensor][sns_name]['Id'] = payload[sensor][sns_name].pop('Address')
-        #
-        #                 pr = self.telemetry_model.getNode(d).provides()
-        #                 for pk in pr.keys():
-        #                     self.telemetry_model.setData(pr[pk], payload[sensor][sns_name].get(pk))
-        #                 self.tview.expand(d)
-        #
-        #         elif sensor.startswith('DS18B20'):
-        #             d = node.devices().get(sensor)
-        #             if not d:
-        #                 d = self.telemetry_model.addDevice(DS18x20, sensor, device)
-        #             self.telemetry_model.getNode(d).setTempUnit(temp_unit)
-        #             pr = self.telemetry_model.getNode(d).provides()
-        #             for pk in pr.keys():
-        #                 self.telemetry_model.setData(pr[pk], payload[sensor].get(pk))
-        #             self.tview.expand(d)
-        #
-        #         if sensor == 'COUNTER':
-        #             d = node.devices().get(sensor)
-        #             if not d:
-        #                 d = self.telemetry_model.addDevice(CounterSns, "Counter", device)
-        #             pr = self.telemetry_model.getNode(d).provides()
-        #             for pk in pr.keys():
-        #                 self.telemetry_model.setData(pr[pk], payload[sensor].get(pk))
-        #             self.tview.expand(d)
-        #
-        #         else:
-        #             d = node.devices().get(sensor)
-        #             if not d:
-        #                 d = self.telemetry_model.addDevice(sensor_map.get(sensor, Node), sensor, device)
-        #             pr = self.telemetry_model.getNode(d).provides()
-        #             if 'Temperature' in pr:
-        #                 self.telemetry_model.getNode(d).setTempUnit(temp_unit)
-        #             if 'Pressure' in pr or 'SeaPressure' in pr:
-        #                 self.telemetry_model.getNode(d).setPresUnit(pres_unit)
-        #             for pk in pr.keys():
-        #                 self.telemetry_model.setData(pr[pk], payload[sensor].get(pk))
-        #             self.tview.expand(d)
-        # self.tview.resizeColumnToContents(0)

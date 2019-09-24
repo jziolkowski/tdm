@@ -4,6 +4,11 @@ from PyQt5.QtCore import QModelIndex, Qt, QAbstractTableModel, QSettings, QSize,
 from PyQt5.QtGui import QIcon, QColor, QPixmap, QFont, QPen
 from PyQt5.QtWidgets import QStyledItemDelegate, QStyle
 
+LWTRole = Qt.UserRole
+RestartReasonRole = Qt.UserRole + 1
+RSSIRole = Qt.UserRole + 2
+FirmwareRole = Qt.UserRole + 3
+
 class TasmotaDevicesModel(QAbstractTableModel):
     def __init__(self, tasmota_env):
         super().__init__()
@@ -93,6 +98,9 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 elif col_name == "Power":
                     return d.power()
 
+                elif col_name == "Color":
+                    return d.color()
+
                 elif col_name == "CommandTopic":
                     return d.cmnd_topic()
 
@@ -110,6 +118,22 @@ class TasmotaDevicesModel(QAbstractTableModel):
                     if alias:
                         return alias
 
+                return val
+
+            elif role == LWTRole:
+                val = d.p.get('LWT', 'Offline')
+                return val
+
+            elif role == RestartReasonRole:
+                val = d.p.get('RestartReason')
+                return val
+
+            elif role == RSSIRole:
+                val = d.p.get('RSSI', 0)
+                return val
+
+            elif role == FirmwareRole:
+                val = d.p.get('Version', "")
                 return val
 
             elif role == Qt.TextAlignmentRole:
@@ -138,16 +162,6 @@ class TasmotaDevicesModel(QAbstractTableModel):
                         return QIcon("GUI/icons/status_high.png")
 
                 return QIcon("GUI/icons/status_offline.png")
-
-            elif role == Qt.BackgroundColorRole:
-                if col_name == "RSSI":
-                    rssi = int(d.p.get("RSSI", 0))
-                    if rssi > 0 and rssi < 50:
-                        return QColor("#ef4522")
-                    elif rssi > 75:
-                        return QColor("#7eca27")
-                    elif rssi > 0:
-                        return QColor("#fcdd0f")
 
             elif role == Qt.ToolTipRole:
                 if col_name == "Version":
@@ -185,13 +199,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
             if topic in self.settings.childGroups():
                 self.settings.remove(topic)
             self.settings.endGroup()
-            # for r in range(rows):
-            #     d = self._devices[pos][DevMdl.TOPIC]
-            #     self.settings.beginGroup("Devices")
-            #     if d in self.settings.childGroups():
-            #         self.settings.remove(d)
-            #     self.settings.endGroup()
-            #     self._devices.pop(pos + r)
+
             self.endRemoveRows()
             return True
         return False
@@ -205,177 +213,6 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
     def columnIndex(self, column):
         return self.columns.index(column)
-
-# class TasmotaDevicesTree(QAbstractItemModel):
-#     def __init__(self, root=Node(""), parent=None):
-#         super(TasmotaDevicesTree, self).__init__(parent)
-#         self._rootNode = root
-#
-#         self.devices = {}
-#
-#         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
-#         self.settings.beginGroup("Devices")
-#
-#         for d in self.settings.childGroups():
-#             self.devices[d] = self.addDevice(TasmotaDevice, self.settings.value("{}/friendly_name".format(d), d))
-#
-#     def rowCount(self, parent=QModelIndex()):
-#         if not parent.isValid():
-#             parentNode = self._rootNode
-#         else:
-#             parentNode = parent.internalPointer()
-#
-#         return parentNode.childCount()
-#
-#     def columnCount(self, parent):
-#         return 2
-#
-#     def data(self, index, role):
-#
-#         if not index.isValid():
-#             return None
-#
-#         node = index.internalPointer()
-#
-#         if role == Qt.DisplayRole:
-#             if index.column() == 0:
-#                 return node.name()
-#             elif index.column() == 1:
-#                 return node.value()
-#
-#         elif role == Qt.DecorationRole:
-#             if index.column() == 0:
-#                 typeInfo = node.typeInfo()
-#
-#                 if typeInfo:
-#                     return QIcon("GUI/icons/{}.png".format(typeInfo))
-#
-#         elif role == Qt.TextAlignmentRole:
-#             if index.column() == 1:
-#                 return Qt.AlignVCenter | Qt.AlignRight
-#
-#     def get_device_by_topic(self, topic):
-#         for i in range(self._rootNode.childCount()):
-#             d = self._rootNode.child(i)
-#             if d.name() == topic:
-#                 return self.index(d.row(), 0, QModelIndex())
-#             return None
-#
-#     def setData(self, index, value, role=Qt.EditRole):
-#
-#         if index.isValid():
-#             if role == Qt.EditRole:
-#                 node = index.internalPointer()
-#                 node.setValue(value)
-#                 self.dataChanged.emit(index, index, [Qt.DisplayRole])
-#                 return True
-#         return False
-#
-#     def setDeviceFriendlyName(self, index, value, role=Qt.EditRole):
-#         if index.isValid():
-#             if role == Qt.EditRole:
-#                 node = index.internalPointer()
-#                 if value != node.friendlyName():
-#                     node.setFriendlyName(value)
-#                     self.dataChanged.emit(index, index, [Qt.DisplayRole])
-#                     return True
-#         return False
-#
-#     def setDeviceName(self, index, value, role=Qt.EditRole):
-#         if index.isValid():
-#             if role == Qt.EditRole:
-#                 node = index.internalPointer()
-#                 node.setName(value)
-#                 self.dataChanged.emit(index, index, [Qt.DisplayRole])
-#                 return True
-#         return False
-#
-#     def headerData(self, section, orientation, role):
-#         if role == Qt.DisplayRole:
-#             if section == 0:
-#                 return "Device"
-#             else:
-#                 return "Value"
-#
-#     def flags(self, index):
-#         return Qt.ItemIsEnabled | Qt.ItemIsSelectable
-#
-#     def parent(self, index):
-#
-#         node = self.getNode(index)
-#         parentNode = node.parent()
-#
-#         if parentNode == self._rootNode:
-#             return QModelIndex()
-#
-#         return self.createIndex(parentNode.row(), 0, parentNode)
-#
-#     def index(self, row, column, parent):
-#
-#         parentNode = self.getNode(parent)
-#
-#         childItem = parentNode.child(row)
-#
-#         if childItem:
-#             return self.createIndex(row, column, childItem)
-#         else:
-#             return QModelIndex()
-#
-#     def getNode(self, index):
-#         if index.isValid():
-#             node = index.internalPointer()
-#             if node:
-#                 return node
-#
-#         return self._rootNode
-#
-#     def insertRows(self, position, rows, parent=QModelIndex()):
-#
-#         parentNode = self.getNode(parent)
-#
-#         self.beginInsertRows(parent, position, position + rows - 1)
-#
-#         for row in range(rows):
-#             childCount = parentNode.childCount()
-#             childNode = Node("untitled" + str(childCount))
-#             success = parentNode.insertChild(childCount, childNode)
-#
-#         self.endInsertRows()
-#
-#         return success
-#
-#     def addDevice(self, device_type, name, parent=QModelIndex()):
-#         rc = self.rowCount(parent)
-#         parentNode = self.getNode(parent)
-#
-#         device = device_type(name)
-#         self.beginInsertRows(parent, rc, rc+1)
-#         parentNode.insertChild(rc, device)
-#         dev_idx = self.index(rc, 0, parent)
-#         self.endInsertRows()
-#
-#         parentNode.devices()[name] = dev_idx
-#
-#         self.beginInsertRows(dev_idx, 0, len(device.provides()))
-#         for p in device.provides().keys():
-#             cc = device.childCount()
-#             device.insertChild(cc, node_map[p](name=p))
-#             device.provides()[p] = self.index(cc, 1, dev_idx)
-#         self.endInsertRows()
-#
-#         return dev_idx
-#
-#     def removeRows(self, position, rows, parent=QModelIndex()):
-#
-#         parentNode = self.getNode(parent)
-#         self.beginRemoveRows(parent, position, position + rows - 1)
-#
-#         for row in range(rows):
-#             success = parentNode.removeChild(position)
-#
-#         self.endRemoveRows()
-#
-#         return success
 
 
 class DeviceDelegate(QStyledItemDelegate):
@@ -398,25 +235,76 @@ class DeviceDelegate(QStyledItemDelegate):
         return QStyledItemDelegate.sizeHint(self, option, index)
 
     def paint(self, p, option, index):
+        if option.state & QStyle.State_Selected:
+            p.fillRect(option.rect, option.palette.highlight())
+
         col = index.column()
         col_name = index.model().sourceModel().columns[col]
 
-        if col_name == "LWT":
-            if option.state & QStyle.State_Selected:
-                p.fillRect(option.rect, option.palette.highlight())
+        if col_name == "FriendlyName":
+            if index.data():
+                px = QPixmap("GUI/icons/status_offline.png")
+                if index.data(LWTRole) == "Online":
+                    rssi = int(index.data(RSSIRole))
 
-            px = self.icons.get(index.data().lower(), self.icons["undefined"])
+                    if rssi > 0 and rssi < 50:
+                        px = QPixmap("GUI/icons/status_low.png")
 
-            x = option.rect.center().x()+1 - px.rect().width() / 2
-            y = option.rect.center().y() - px.rect().height() / 2
+                    elif rssi < 75:
+                        px = QPixmap("GUI/icons/status_medium.png")
 
-            p.drawPixmap(QRect(x, y, px.rect().width(), px.rect().height()), px)
+                    elif rssi >= 75:
+                        px = QPixmap("GUI/icons/status_high.png")
+
+                px_y = (option.rect.height() - 24) / 2
+                p.drawPixmap(option.rect.x() + 2, option.rect.y() + px_y, px.scaled(24, 24))
+
+                p.drawText(option.rect.adjusted(28, 0, 0, 0), Qt.AlignVCenter | Qt.AlignLeft, index.data())
+
+                alerts = []
+                if index.data(RestartReasonRole) == "Exception":
+                    alerts.append("Exception")
+
+                if "minimal" in index.data(FirmwareRole).lower():
+                    alerts.append("Minimal")
+
+                if alerts:
+                    message = ", ".join(alerts)
+                    p.save()
+                    pen = QPen(p.pen())
+                    pen.setColor(QColor("red"))
+                    p.setPen(pen)
+                    text_width = p.boundingRect(option.rect, Qt.AlignCenter, message).width()
+                    exc_rect = option.rect.adjusted(option.rect.width() - text_width - 8, 4, -4, -4)
+                    p.drawText(exc_rect, Qt.AlignCenter, message)
+                    p.drawRect(exc_rect)
+                    p.restore()
+
+
+        elif col_name == "RSSI":
+            if index.data():
+                rect = option.rect.adjusted(4, 4, -4, -4)
+                rssi = index.data()
+                pen = QPen(p.pen())
+
+                p.save()
+                if rssi > 0 and rssi < 50:
+                    color = QColor("#ef4522")
+                elif rssi > 75:
+                    color = QColor("#7eca27")
+                elif rssi > 0:
+                    color = QColor("#fcdd0f")
+                p.fillRect(rect.adjusted(2, 2, -1, -1), color)
+
+                p.drawText(rect, Qt.AlignCenter, str(rssi))
+
+                pen.setColor(QColor("#cccccc"))
+                p.setPen(pen)
+                p.drawRect(rect)
+                p.restore()
+
 
         elif col_name == "Power":
-
-            if option.state & QStyle.State_Selected:
-                p.fillRect(option.rect, option.palette.highlight())
-
             if isinstance(index.data(), dict):
                 num = len(index.data().keys())
 
@@ -443,29 +331,32 @@ class DeviceDelegate(QStyledItemDelegate):
                             i += 1
 
         elif col_name == "Color":
-            if option.state & QStyle.State_Selected:
-                p.fillRect(option.rect, option.palette.highlight())
-
-            x = option.rect.x() + (option.rect.width() - 32) / 2
-            y = option.rect.y() + (option.rect.height() - 16) / 2
-            rect = QRect(x, y, 32, 16)
-
             if index.data():
-                p.save()
-                pen = QPen(p.pen())
-                pen.setColor(QColor("#cccccc"))
-                p.setPen(pen)
-
+                rect = option.rect.adjusted(4, 4, -4, -4)
                 d = index.data()
-                if len(d) > 6:
-                    d = d[:6]
-                p.fillRect(rect, QColor("#{}".format(d)))
-                p.drawRect(rect)
+                pen = QPen(p.pen())
 
-                p.restore()
+                color = d.get("Color")
+                so = d.get(68)
+                if color and not so:
+                    p.save()
+                    if len(color) > 6:
+                        color = color[:6]
+                    p.fillRect(rect.adjusted(2, 2, -1, -1), QColor("#{}".format(color)))
 
+                    dimmer = d.get("Dimmer")
+                    if dimmer:
+                        if dimmer >= 60:
+                            pen.setColor(QColor("black"))
+                        else:
+                            pen.setColor(QColor("white"))
+                        p.setPen(pen)
+                        p.drawText(rect, Qt.AlignCenter, "{}%".format(dimmer))
 
-
+                    pen.setColor(QColor("#cccccc"))
+                    p.setPen(pen)
+                    p.drawRect(rect)
+                    p.restore()
 
         else:
             QStyledItemDelegate.paint(self, p, option, index)
