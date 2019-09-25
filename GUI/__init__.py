@@ -1,12 +1,11 @@
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableView, QSpinBox, QAction, QToolBar, \
-    QHeaderView, QCheckBox, QPushButton, QPlainTextEdit, QLineEdit, QComboBox, QFrame, QDoubleSpinBox, QTreeWidgetItem, \
-    QWidget, QSizePolicy, QSlider
+    QHeaderView, QComboBox, QDoubleSpinBox, QWidget, QSizePolicy, QSlider, QWidgetAction, QPushButton, QToolButton
 
 
 class VLayout(QVBoxLayout):
-    def __init__(self, margin=3, spacing=3, label = '', *args, **kwargs):
+    def __init__(self, margin=3, spacing=3, label='', *args, **kwargs):
         super(VLayout, self).__init__(*args, **kwargs)
         if isinstance(margin, int):
             self.setContentsMargins(margin, margin, margin, margin)
@@ -148,6 +147,7 @@ class SpinBox(QSpinBox):
         self.setButtonSymbols(self.NoButtons)
         self.setMinimum(kwargs.get('minimum', 1))
         self.setMaximum(kwargs.get('maximum', 65535))
+        self.setSingleStep(kwargs.get('singleStep', 1))
         self.setAlignment(Qt.AlignCenter)
 
 
@@ -181,11 +181,16 @@ class Toolbar(QToolBar):
         self.addWidget(spacer)
 
 
-class PWMSlider(QSlider):
+class ChannelSlider(QSlider):
     def __init__(self):
         super().__init__()
         self.setOrientation(Qt.Horizontal)
-        self.setMaximumWidth(50)
+        self.setMinimum(0)
+        self.setMaximum(100)
+        self.setMaximumWidth(100)
+        self.setSingleStep(1)
+        self.setPageStep(10)
+        self.setTracking(False)
 
 
 class DictComboBox(QComboBox):
@@ -196,86 +201,20 @@ class DictComboBox(QComboBox):
             self.addItem(v, k)
 
 
-class DetailLE(QLineEdit):
-    def __init__(self, detail, *args, **kwargs):
-        super(DetailLE, self).__init__(detail, *args, **kwargs)
+class SliderAction(QWidgetAction):
+    def __init__(self, parent, label='', *args, **kwargs):
+        super(SliderAction, self).__init__(parent, *args, **kwargs)
 
-        # self.setText(detail)
-        self.setReadOnly(True)
-        self.setAlignment(Qt.AlignCenter)
+        w = QWidget()
+        hl = HLayout(5)
+        self.slider = ChannelSlider()
+        self.slider.setObjectName(label)
+        self.value = QLabel("0")
+        hl.addWidgets([QLabel(label), self.slider, self.value])
+        hl.setStretch(0, 1)
+        hl.setStretch(1, 2)
+        hl.setStretch(2, 1)
+        w.setLayout(hl)
+        self.setDefaultWidget(w)
 
-
-class DeviceParam(QFrame):
-    def __init__(self, title, input, btns, funcs):
-        super(DeviceParam, self).__init__()
-        hl = HLayout(0)
-        self.input = input
-        hl.addWidgets([QLabel(title), self.input])
-
-        for b, f in zip(btns, funcs):
-            pb = QPushButton(b)
-            pb.clicked.connect(f)
-            hl.addWidget(pb)
-
-        for i in range(hl.count()):
-            hl.setStretch(i, 2 if i == 1 else 1)
-
-        self.setLayout(hl)
-
-
-class TelemetryDevice(QTreeWidgetItem):
-    def __init__(self, name=""):
-        super().__init__()
-        self.unit = ""
-        self.icon = ""
-        self.setData(0, Qt.DisplayRole, name)
-        self.setData(1, Qt.DisplayRole, "")
-
-    def setIcon(self, icon):
-        self.icon = icon
-
-    def setValue(self, value):
-        self.setData(1, Qt.DisplayRole, value)
-
-    def setUnit(self, unit):
-        self.unit = unit
-
-    def data(self, col, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole:
-            if col == 1:
-                return "{} {}".format(QTreeWidgetItem.data(self, 1, Qt.DisplayRole), self.unit)
-
-        if role == Qt.DecorationRole and col == 0:
-            return QIcon("GUI/icons/{}.png".format(self.icon))
-
-        return QTreeWidgetItem.data(self, col, role)
-
-
-class TimeItem(TelemetryDevice):
-    def __init__(self):
-        super().__init__("Time")
-        self.setIcon("time")
-
-
-class TextItem(TelemetryDevice):
-    def __init__(self):
-        super().__init__()
-
-
-class CounterItem(TelemetryDevice):
-    def __init__(self):
-        super().__init__("Counter")
-        self.setIcon("counter")
-        self.items = {}
-
-    def setValues(self, values):
-        for k in values.keys():
-            item = self.items.get(k)
-            if not item:
-                item = TextItem()
-                item.setData(0, Qt.DisplayRole, k)
-                self.items[k] = item
-                self.addChild(item)
-            item.setData(1, Qt.DisplayRole, values[k])
-
-
+        self.slider.valueChanged.connect(lambda x: self.value.setText(str(x)))

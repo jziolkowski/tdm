@@ -6,7 +6,7 @@ from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QApplication, QInputDialog, QFileDialog, \
     QAction, QActionGroup, QLabel, QSizePolicy, QLineEdit, QHeaderView, QToolButton, QPushButton, QColorDialog
 
-from GUI import VLayout, Toolbar, TableView, PWMSlider
+from GUI import VLayout, Toolbar, TableView, SliderAction
 from GUI.GPIO import GPIODialog
 from GUI.Modules import ModuleDialog
 from GUI.SetOptions import SetOptionsDialog
@@ -149,7 +149,7 @@ class ListWidget(QWidget):
 
         # self.tb.addAction(QIcon(), "Multi Command", self.ctx_menu_webui)
 
-        self.tb_relays.addWidget(QLabel("Power:"))
+        # self.tb_relays.addWidget(QLabel("Power:"))
 
         self.agAllPower = QActionGroup(self)
         self.agAllPower.addAction(QIcon("GUI/icons/P_ON.png"), "All ON")
@@ -171,16 +171,16 @@ class ListWidget(QWidget):
         self.agRelays.triggered.connect(self.toggle_power)
         self.tb_relays.addActions(self.agRelays.actions())
 
+        self.tb_relays.addSeparator()
         self.actColor = self.tb_relays.addAction(QIcon("GUI/icons/color.png"), "Color", self.set_color)
         self.actColor.setEnabled(False)
 
+        self.actChannels = self.tb_relays.addAction(QIcon("GUI/icons/sliders.png"), "Channels")
+        self.actChannels.setEnabled(False)
+        self.mChannels = QMenu()
+        self.actChannels.setMenu(self.mChannels)
+        self.tb_relays.widgetForAction(self.actChannels).setPopupMode(QToolButton.InstantPopup)
 
-        # for pwm in range(5):
-        #     s = PWMSlider()
-        #     s.setEnabled(False)
-        #     s.sliderReleased.connect(self.setPWM)
-        #     self.pwm_sliders.append(s)
-        #     self.tb_relays.addWidget(s)
 
     def create_view_buttons(self):
         self.tb_views.addWidget(QLabel("View mode: "))
@@ -315,22 +315,31 @@ class ListWidget(QWidget):
             a.setVisible(len(relays) > 1 and i < len(relays))
 
         color = self.device.color().get("Color", False)
-        self.actColor.setEnabled(bool(color) and not self.device.setoption(68))
+        has_color = bool(color)
+        self.actColor.setEnabled(has_color and not self.device.setoption(68))
 
-        # for i, pwm in enumerate(self.pwm_sliders):
-        #     print(self.device.color().get("Color", False) and i < len(list(self.device.pwm().keys())))
-        #     pwm.setVisible(self.device.color().get("Color", False) and i < len(list(self.device.pwm().keys())))
-        #
-        #     if self.device.setoption(15):
-        #         k = self.device.pwm().get("Channel{}".format(i+1))  # Get value for Channel (SO15=1)
-        #         if k:
-        #             pwm.setMaximum(100)
-        #             pwm.setValue(k)
-        #     else:
-        #         k = self.device.pwm().get("Pwm{}".format(i + 1))    # If no Channel, try value for PWM1 (SO15=0)
-        #         if k:
-        #             pwm.setMaximum(1023)
-        #             pwm.setValue(k)
+        self.actChannels.setEnabled(has_color)
+
+        if has_color:
+            self.actChannels.menu().clear()
+
+            max_val = 100
+            if self.device.setoption(15) == 0:
+                max_val = 1023
+
+            for k, v in self.device.pwm().items():
+                channel = SliderAction(self, k)
+                channel.slider.setMaximum(max_val)
+                channel.slider.setValue(int(v))
+                self.mChannels.addAction(channel)
+                channel.slider.valueChanged.connect(self.set_channel)
+
+            dimmer = self.device.color().get("Dimmer")
+            if dimmer:
+                saDimmer = SliderAction(self, "Dimmer")
+                saDimmer.slider.setValue(int(dimmer))
+                self.mChannels.addAction(saDimmer)
+                saDimmer.slider.valueChanged.connect(self.set_channel)
 
     def toggle_power(self, action):
         if self.device:
@@ -355,11 +364,11 @@ class ListWidget(QWidget):
                     if new_color != color:
                         self.mqtt.publish(self.device.cmnd_topic("color"), new_color)
 
-    def setPWM(self):
+    def set_channel(self, value=0):
+        cmd = self.sender().objectName()
+
         if self.device:
-            idx = self.pwm_sliders.index(self.sender())
-            pwm = self.pwm_sliders[idx]
-            self.mqtt.publish(self.device.cmnd_topic("Channel{}".format(idx+1)), str(pwm.value()))
+            self.mqtt.publish(self.device.cmnd_topic(cmd), str(value))
 
     def configureSO(self):
         if self.device:

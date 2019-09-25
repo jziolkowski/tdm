@@ -1,15 +1,6 @@
-from json import loads, JSONDecodeError
+from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5.QtWidgets import QDockWidget, QTreeWidget, QTreeWidgetItem
 
-from PyQt5.QtCore import Qt, QSettings, QTimer, QDir, QTime, QTime, QSize, QDateTime, pyqtSlot
-from PyQt5.QtWidgets import QWidget, QTabWidget, QLineEdit, QTabBar, QLabel, QComboBox, QPushButton, QFrame, \
-    QTableWidget, QHeaderView, QSizePolicy, QGroupBox, QFormLayout, QSpacerItem, QTreeView, QCheckBox, QRadioButton, \
-    QButtonGroup, QTimeEdit, QLabel, \
-    QListWidget, QListWidgetItem, QApplication, QDockWidget, QTreeWidget, QTreeWidgetItem
-
-from GUI import VLayout, HLayout, GroupBoxH, SpinBox, DetailLE, GroupBoxV, DeviceParam, DoubleSpinBox, \
-    TimeItem, CounterItem
-
-from pprint import pprint
 T_NAME, T_VALUE = range(2)
 
 class TelemetryWidget(QDockWidget):

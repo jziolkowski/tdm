@@ -177,10 +177,6 @@ class TasmotaDevice(QObject):
         parse_statuses = ["STATUS{}".format(s) for s in [1, 2, 3, 4, 5, 6, 7]]
         if self.prefix in ("stat", "tele"):
 
-            # if self.reply.startswith("POWER"):
-            #     self.update_property(self.reply, msg)
-
-            # else:
             try:
                 payload = loads(msg)
 
