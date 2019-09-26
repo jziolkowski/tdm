@@ -279,21 +279,20 @@ class TasmotaDevice(QObject):
         else:
             reg = 2
 
-        state = -1
-        if reg in (0, 2):
-            so = self.p.get('SetOption')
-            if so:
+        so = self.p.get('SetOption')
+        if so:
+            if reg in (0, 2):
                 options = int(so[reg], 16)
                 if reg == 2:
                     o -= 50
                 state = int(options >> o & 1)
 
-        else:
-            o -= 32
-            split_register = [int(reg[opt * 2:opt * 2 + 2], 16) for opt in range(18)]
-            return split_register[o]
-
-        return state
+            else:
+                o -= 32
+                split_register = [int(so[reg][opt * 2:opt * 2 + 2], 16) for opt in range(18)]
+                return split_register[o]
+            return state
+        return -1
 
     def __repr__(self):
         fname = self.p.get('FriendlyName1')

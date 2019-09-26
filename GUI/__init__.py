@@ -169,7 +169,7 @@ class CheckableAction(QAction):
 
 class Toolbar(QToolBar):
     def __init__(self, orientation = Qt.Horizontal, iconsize=32, label_position=Qt.ToolButtonTextUnderIcon, *args, **kwargs):
-        super(QToolBar, self).__init__(*args, **kwargs)
+        super(Toolbar, self).__init__(*args, **kwargs)
         self.setMovable(False)
         self.setIconSize(QSize(iconsize,iconsize))
         self.setOrientation(orientation)
@@ -179,6 +179,23 @@ class Toolbar(QToolBar):
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.addWidget(spacer)
+
+
+class SetOption(QWidget):
+    def __init__(self, index, tooltip, *args, **kwargs):
+        super(SetOption, self).__init__(*args, **kwargs)
+        hl = HLayout()
+        if 0 <= index < 32 or 51 <= index <= 80:
+            self.editor = QComboBox()
+            self.editor.addItems(["0", "1"])
+        else:
+            self.editor = SpinBox()
+        self.editor.setToolTip(tooltip)
+
+        hl.addWidgets([QLabel("SetOption{}".format(index)), self.editor])
+        hl.setStretch(0, 3)
+        hl.setStretch(1, 1)
+        self.setLayout(hl)
 
 
 class ChannelSlider(QSlider):

@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QApplication, QInputDia
     QAction, QActionGroup, QLabel, QSizePolicy, QLineEdit, QHeaderView, QToolButton, QPushButton, QColorDialog
 
 from GUI import VLayout, Toolbar, TableView, SliderAction
+from GUI.Buttons import ButtonsDialog
 from GUI.GPIO import GPIODialog
 from GUI.Modules import ModuleDialog
 from GUI.SetOptions import SetOptionsDialog
@@ -144,6 +145,17 @@ class ListWidget(QWidget):
         webui = self.tb.addAction(QIcon("GUI/icons/web.png"), "WebUI", self.openWebUI.emit)
         webui.setShortcut("Ctrl+U")
 
+        self.tb.addSeparator()
+
+        buttons = self.tb.addAction(QIcon("GUI/icons/buttons.png"), "Buttons", self.configureButtons)
+        buttons.setShortcut("Ctrl+B")
+
+        switches = self.tb.addAction(QIcon("GUI/icons/switches.png"), "Switches", self.openWebUI.emit)
+        switches.setShortcut("Ctrl+S")
+
+        power = self.tb.addAction(QIcon("GUI/icons/power.png"), "Power", self.openWebUI.emit)
+        power.setShortcut("Ctrl+P")
+
         # setopts = self.tb.addAction(QIcon("GUI/icons/setoptions.png"), "SetOptions", self.configureSO)
         # setopts.setShortcut("Ctrl+S")
 
@@ -180,7 +192,6 @@ class ListWidget(QWidget):
         self.mChannels = QMenu()
         self.actChannels.setMenu(self.mChannels)
         self.tb_relays.widgetForAction(self.actChannels).setPopupMode(QToolButton.InstantPopup)
-
 
     def create_view_buttons(self):
         self.tb_views.addWidget(QLabel("View mode: "))
@@ -400,6 +411,12 @@ class ListWidget(QWidget):
             self.mqtt.messageSignal.connect(timers.parseMessage)
             timers.sendCommand.connect(self.mqtt.publish)
             timers.exec_()
+
+    def configureButtons(self):
+        if self.device:
+            buttons = ButtonsDialog(self.device)
+            buttons.sendCommand.connect(self.mqtt.publish)
+            buttons.exec_()
 
     def get_dump(self):
         self.backup += self.dl.readAll()
