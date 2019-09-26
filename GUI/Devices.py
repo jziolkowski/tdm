@@ -41,15 +41,14 @@ class ListWidget(QWidget):
         self.backup = bytes()
 
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
+        views_order = self.settings.value("views_order", [])
 
         self.views = {}
         self.settings.beginGroup("Views")
         views = self.settings.childKeys()
-        if views:
-            for view in views:
-                view_list = self.settings.value(view)
-                if isinstance(view_list, str):
-                    view_list = [view_list]
+        if views and views_order:
+            for view in views_order.split(";"):
+                view_list = self.settings.value(view).split(";")
                 self.views[view] = base_view + view_list
         else:
             self.views = default_views

@@ -472,10 +472,11 @@ class MainWindow(QMainWindow):
     def closeEvent(self, e):
         self.settings.setValue("version", self._version)
         self.settings.setValue("window_geometry", self.saveGeometry())
+        self.settings.setValue("views_order", ";".join(self.devices_list.views.keys()))
 
         self.settings.beginGroup("Views")
         for view, items in self.devices_list.views.items():
-            self.settings.setValue(view, items[1:])
+            self.settings.setValue(view, ";".join(items[1:]))
         self.settings.endGroup()
 
         self.settings.sync()
