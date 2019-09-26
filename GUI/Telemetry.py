@@ -1,7 +1,25 @@
 from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QDockWidget, QTreeWidget, QTreeWidgetItem
 
-T_NAME, T_VALUE = range(2)
+# TODO: merge get_top_item() and get_nested_item() to a recursive generator
+
+item_icons = {
+    "Time": "time.png",
+}
+
+item_units = {
+    # ENERGY units
+    "Voltage": "V",
+    "Current": "A",
+    "Power": "W",
+    "ApparentPower": "VA",
+    "ReactivePower": "VAR",
+    "Frequency": "Hz",
+    "Total": "kWh",
+    "Yesterday": "kWh",
+    "Today": "kWh",
+}
 
 class TelemetryWidget(QDockWidget):
     def __init__(self, device, *args, **kwargs):
@@ -19,13 +37,13 @@ class TelemetryWidget(QDockWidget):
         device.update_telemetry.connect(self.update_telemetry)
 
         self.device = device
-        self.tree.resizeColumnToContents(0)
 
     def get_top_item(self, name):
         item = self.tree_items.get(name)
         if not item:
             item = QTreeWidgetItem()
             item.setText(0, name)
+            item.setIcon(0, QIcon("GUI/icons/{}".format(item_icons.get(name, ""))))
             self.tree.addTopLevelItem(item)
             self.tree_items[name] = item
         return item
@@ -38,6 +56,7 @@ class TelemetryWidget(QDockWidget):
             if not item:
                 item = QTreeWidgetItem()
                 item.setText(0, name)
+                item.setIcon(0, QIcon("GUI/icons/{}".format(item_icons.get(name, ""))))
                 _top_item.addChild(item)
                 nested_items[name] = item
             return item
@@ -63,16 +82,19 @@ class TelemetryWidget(QDockWidget):
             t.pop('Time')
 
         time_item = self.get_top_item("Time")
-        time_item.setText(1, time)
+        time_item.setText(1, time.replace("T", " "))
 
         for key in sorted(t.keys()):
             v = t[key]
             if isinstance(v, dict):
                 for nested_key, nested_v in v.items():
                     nested_item = self.get_nested_item(key, nested_key)
-                    nested_item.setText(1, str(nested_v))
+                    nested_item.setText(1, "{} {}".format(nested_v, item_units.get(nested_key, "")))
+
             else:
                 item = self.get_top_item(key)
-                item.setText(1, str(v))
+                item.setText(1, "{}".format(v))
 
+        self.tree.expandAll()
         self.tree.resizeColumnToContents(0)
+        self.tree.resizeColumnToContents(1)

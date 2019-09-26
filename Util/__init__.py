@@ -1,6 +1,6 @@
 import re
 from collections import namedtuple
-from json import loads, JSONDecodeError
+from json import loads, JSONDecodeError, load
 
 from PyQt5.QtCore import QDir, QDateTime, pyqtSignal, QObject
 
@@ -51,20 +51,13 @@ template_adc = {
     "5": "Buttoni"
 }
 
-setoptions = {
-    0: {
-        "description": "Save power state and use after restart (=SaveState)",
-        "parameters": {
-            0: "Disable", 1: "Enable*"
-        }
-    },
-    1: {
-        "description": "Button multipress mode",
-        "parameters": {
-            0: "allow all button actions*", 1: "restrict to single, double and hold actions"
-        }
-    },
-}
+with open("Util/setoptions.json") as so:
+    setoptions = load(so)
+
+# TODO: add all commands to the JSON file and get rid of the list above
+with open("Util/commands.json") as cm:
+    commands_json = load(cm)
+
 
 def parse_topic(full_topic, topic):
     """

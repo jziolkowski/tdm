@@ -6,7 +6,7 @@ from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QApplication, QInputDialog, QFileDialog, \
     QAction, QActionGroup, QLabel, QSizePolicy, QLineEdit, QHeaderView, QToolButton, QPushButton, QColorDialog
 
-from GUI import VLayout, Toolbar, TableView, SliderAction
+from GUI import VLayout, Toolbar, TableView, SliderAction, default_views, base_view
 from GUI.Buttons import ButtonsDialog
 from GUI.GPIO import GPIODialog
 from GUI.Modules import ModuleDialog
@@ -42,14 +42,18 @@ class ListWidget(QWidget):
 
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
 
-        base_view = ["FriendlyName"]
-        self.views = {
-            "Home":  base_view + ["Module", "Power", "Color", "LoadAvg", "LinkCount", "Uptime"],
-            "Health": base_view + ["Uptime", "BootCount", "RestartReason", "LoadAvg", "Sleep", "MqttCount", "LinkCount", "Downtime", "RSSI"],
-            "Firmware": base_view + ["Version", "Core", "SDK",  "ProgramSize", "Free", "OtaUrl"],
-            "Wifi":     base_view + ["Hostname", "Mac", "IPAddress", "Gateway", "SSId", "BSSId", "Channel", "RSSI", "LinkCount", "Downtime"],
-            "MQTT":     base_view + ["Topic", "FullTopic", "CommandTopic", "StatTopic", "TeleTopic", "FallbackTopic", "GroupTopic"],
-        }
+        self.views = {}
+        self.settings.beginGroup("Views")
+        views = self.settings.childKeys()
+        if views:
+            for view in views:
+                view_list = self.settings.value(view)
+                if isinstance(view_list, str):
+                    view_list = [view_list]
+                self.views[view] = base_view + view_list
+        else:
+            self.views = default_views
+        self.settings.endGroup()
 
         self.tb = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonTextBesideIcon)
         self.tb_relays = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonIconOnly)

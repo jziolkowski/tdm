@@ -1,7 +1,16 @@
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableView, QSpinBox, QAction, QToolBar, \
-    QHeaderView, QComboBox, QDoubleSpinBox, QWidget, QSizePolicy, QSlider, QWidgetAction, QPushButton, QToolButton
+    QHeaderView, QComboBox, QDoubleSpinBox, QWidget, QSizePolicy, QSlider, QWidgetAction, QPushButton, QToolButton, QFrame
+
+base_view = ["FriendlyName"]
+default_views = {
+    "Home": base_view + ["Module", "Power", "Color", "LoadAvg", "LinkCount", "Uptime"],
+    "Health": base_view + ["Uptime", "BootCount", "RestartReason", "LoadAvg", "Sleep", "MqttCount", "LinkCount", "Downtime", "RSSI"],
+    "Firmware": base_view + ["Version", "Core", "SDK", "ProgramSize", "Free", "OtaUrl"],
+    "Wifi": base_view + ["Hostname", "Mac", "IPAddress", "Gateway", "SSId", "BSSId", "Channel", "RSSI", "LinkCount", "Downtime"],
+    "MQTT": base_view + ["Topic", "FullTopic", "CommandTopic", "StatTopic", "TeleTopic", "FallbackTopic", "GroupTopic"],
+}
 
 
 class VLayout(QVBoxLayout):
@@ -181,23 +190,6 @@ class Toolbar(QToolBar):
         self.addWidget(spacer)
 
 
-class SetOption(QWidget):
-    def __init__(self, index, tooltip, *args, **kwargs):
-        super(SetOption, self).__init__(*args, **kwargs)
-        hl = HLayout()
-        if 0 <= index < 32 or 51 <= index <= 80:
-            self.editor = QComboBox()
-            self.editor.addItems(["0", "1"])
-        else:
-            self.editor = SpinBox()
-        self.editor.setToolTip(tooltip)
-
-        hl.addWidgets([QLabel("SetOption{}".format(index)), self.editor])
-        hl.setStretch(0, 3)
-        hl.setStretch(1, 1)
-        self.setLayout(hl)
-
-
 class ChannelSlider(QSlider):
     def __init__(self):
         super().__init__()
@@ -235,3 +227,64 @@ class SliderAction(QWidgetAction):
         self.setDefaultWidget(w)
 
         self.slider.valueChanged.connect(lambda x: self.value.setText(str(x)))
+
+class CmdWikiUrl(QLabel):
+    def __init__(self, cmd, title="", *args, **kwargs):
+        super(CmdWikiUrl, self).__init__(*args, **kwargs)
+        self.setTextFormat(Qt.RichText)
+        self.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        self.setOpenExternalLinks(True)
+        self.setText("<a href=https://github.com/arendst/Sonoff-Tasmota/wiki/Commands#{}>{}</a>".format(cmd, title if title else cmd))
+
+
+class HTMLLabel(QLabel):
+    def __init__(self, *args, **kwargs):
+        super(HTMLLabel, self).__init__(*args, **kwargs)
+        self.setTextFormat(Qt.RichText)
+        self.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        self.setOpenExternalLinks(True)
+        self.setWordWrap(True)
+
+
+class Command(QWidget):
+    def __init__(self, command, meta, value=None, *args, **kwargs):
+        super(Command, self).__init__(*args, **kwargs)
+        self.setMinimumWidth(250)
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum))
+
+        vl = VLayout()
+
+        hl = HLayout(0)
+        hl.addWidget(QLabel("<b>{}</b>".format(command)))
+        hl.addStretch(1)
+        hl.addWidget(CmdWikiUrl(command, "Wiki"))
+
+        hl_input = HLayout(0)
+
+        if meta['type'] == "select":
+            self.input = QComboBox()
+            for k, v in meta['parameters'].items():
+                self.input.addItem("{} {}".format(v['description'], "(default)" if v.get("default") else ""), k)
+
+            if meta.get('editable'):
+                self.input.setEditable(True)
+
+            if value:
+                self.input.setCurrentIndex(value)
+
+        elif meta['type'] == "value":
+            self.input = SpinBox(minimum=int(meta['parameters']['min']), maximum=int(meta['parameters']['max']))
+            self.input.setMinimumWidth(75)
+            if value:
+                self.input.setValue(value)
+            hl_input.addStretch(1)
+            hl_input.addWidget(QLabel("Default: {}".format(meta['parameters']['default'])))
+        hl_input.addWidget(self.input)
+
+        vl.addLayout(hl)
+        desc = QLabel(meta['description'])
+        desc.setWordWrap(True)
+        vl.addWidget(desc)
+        vl.addLayout(hl_input)
+
+        self.setLayout(vl)

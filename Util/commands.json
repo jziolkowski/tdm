@@ -1,0 +1,31 @@
+{
+  "ButtonDebounce": {
+        "description": "Button debounce timing [ms]",
+        "type": "value",
+        "parameters": {
+            "min": "40",
+            "max": "100",
+            "default": "40"
+        }
+    },
+
+  "ButtonRetain": {
+        "description": "Add MQTT retain flag on button press",
+        "type": "select",
+        "parameters": {
+            "0": {"description": "Disabled", "default": "True"},
+            "1": {"description": "Enabled"}
+        }
+    },
+
+  "ButtonTopic": {
+        "description": "MQTT button topic",
+        "type": "select",
+        "editable": "True",
+        "parameters": {
+            "0": {"description": "Disable use of ButtonTopic", "default": "True"},
+            "1": {"description": "Set ButtonTopic to device %topic%"},
+            "2": {"description": "Reset ButtonTopic to firmware default"}
+        }
+    }
+}
