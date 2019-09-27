@@ -27,5 +27,20 @@
             "1": {"description": "Set ButtonTopic to device %topic%"},
             "2": {"description": "Reset ButtonTopic to firmware default"}
         }
+    },
+
+  "SwitchMode": {
+        "description": "Configure the behavior of a physical input peripheral configured as a Switch<x>",
+        "type": "select",
+        "parameters": {
+            "0": {"description": "Toggle", "default": "True"},
+            "1": {"description": "Follow [0=Off, 1=On]"},
+            "2": {"description": "Inverted follow [0=On, 1=Off]"},
+            "3": {"description": "Pushbutton [Default 0, 1=Toggle]"},
+            "4": {"description": "Inverted pushbutton [Default 1, 0=Toggle]"},
+            "5": {"description": "Pushbutton with hold [Default 1, 0=Toggle, 2=Hold]"},
+            "6": {"description": "Inverted pushbutton with hold [Default 0, 1=Toggle, 2=Hold]"},
+            "7": {"description": "Pushbutton toggle [0=Toggle, 1=Toggle]"}
+        }
     }
 }

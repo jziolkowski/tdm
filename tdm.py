@@ -172,24 +172,24 @@ class MainWindow(QMainWindow):
         # main_toolbar.addAction(self.actToggleAutoUpdate)
 
     def initial_query(self, device, queued=False):
-        status = device.cmnd_topic("status")
-        tpl = device.cmnd_topic("template")
-        modules = device.cmnd_topic("modules")
-        gpio = device.cmnd_topic("gpio")
-        gpios = device.cmnd_topic("gpios")
-        timers = device.cmnd_topic("timers")
+        commands = [
+            ["status", 0],
+            ["template", ""],
+            ["modules", ""],
+            ["gpio", ""],
+            ["gpios", "255"],
+            ["timers", ""],
+            ["buttondebounce", ""]
+        ]
 
-        if queued:
-            self.mqtt_queue.append([status, 0])
-            self.mqtt_queue.append([tpl, ""])
-            self.mqtt_queue.append([modules, ""])
-            self.mqtt_queue.append([gpio, ""])
-            self.mqtt_queue.append([gpios, "255"])
-            self.mqtt_queue.append([timers, ""])
-        else:
-            self.mqtt.publish(status, 0, 1)
-            self.mqtt.publish(tpl, "", 1)
-            self.mqtt.publish(timers, "", 1)
+        for c in commands:
+            cmd, payload = c
+            cmd = device.cmnd_topic(cmd)
+
+            if queued:
+                self.mqtt_queue.append([cmd, payload])
+            else:
+                self.mqtt.publish(cmd, payload, 1)
 
 
     def setup_broker(self):

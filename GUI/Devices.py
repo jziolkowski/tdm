@@ -269,6 +269,7 @@ class ListWidget(QWidget):
                     self.device.p.pop(k)
 
     def ctx_menu_refresh(self):
+        # TODO: convert to signal so this functions calls tdm:initial_query()
         if self.device:
             for k in list(self.device.power().keys()):
                 self.device.p.pop(k)

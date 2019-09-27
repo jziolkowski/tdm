@@ -248,6 +248,7 @@ class HTMLLabel(QLabel):
 
 class Command(QWidget):
     def __init__(self, command, meta, value=None, *args, **kwargs):
+        # print(command, value)
         super(Command, self).__init__(*args, **kwargs)
         self.setMinimumWidth(250)
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum))
@@ -287,4 +288,46 @@ class Command(QWidget):
         vl.addWidget(desc)
         vl.addLayout(hl_input)
 
+        line = QFrame()
+        line.setFrameStyle(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        vl.addWidget(line)
+        self.setLayout(vl)
+
+
+class CommandMultiSelect(QWidget):
+    def __init__(self, command, meta, value=None, *args, **kwargs):
+        # print(command, value)
+        super(CommandMultiSelect, self).__init__(*args, **kwargs)
+        self.setMinimumWidth(250)
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum))
+        self.inputs = []
+
+        vl = VLayout()
+
+        hl = HLayout(0)
+        hl.addWidget(QLabel("<b>{}</b>".format(command)))
+        hl.addStretch(1)
+        hl.addWidget(CmdWikiUrl(command, "Wiki"))
+        vl.addLayout(hl)
+
+        desc = QLabel(meta['description'])
+        desc.setWordWrap(True)
+        vl.addWidget(desc)
+
+        for i, val in enumerate(value):
+            cb = QComboBox()
+            for k, v in meta['parameters'].items():
+                cb.addItem("{} {}".format(v['description'], "(default)" if v.get("default") else ""), k)
+                cb.setCurrentIndex(val)
+            hl_input = HLayout(0)
+            hl_input.addWidgets([QLabel("{}: ".format(i+1)), cb])
+
+            self.inputs.append(cb)
+            vl.addLayout(hl_input)
+
+        line = QFrame()
+        line.setFrameStyle(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        vl.addWidget(line)
         self.setLayout(vl)
