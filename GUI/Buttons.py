@@ -27,8 +27,8 @@ class ButtonsDialog(QDialog):
             cw = Command(cmd, commands[cmd], self.device.p.get(cmd))
             vl_cmd.addWidget(cw)
             self.command_widgets[cmd] = cw
-        sm = CommandMultiSelect("SwitchMode", commands["SwitchMode"], self.device.p.get("SwitchMode"))
-        vl_cmd.addWidget(sm)
+        # sm = CommandMultiSelect("SwitchMode", commands["SwitchMode"], self.device.p.get("SwitchMode"))
+        # vl_cmd.addWidget(sm)
         vl_cmd.addStretch(1)
 
         vl_so = VLayout(0, 0)
@@ -43,6 +43,7 @@ class ButtonsDialog(QDialog):
         vl.addLayout(hl_cm_so)
 
         btns = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Close)
+        btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
         vl.addWidgets([HTMLLabel("<a href=https://github.com/arendst/Sonoff-Tasmota/wiki/Buttons-and-Switches>Buttons and Switches</a>"), btns])
         self.setLayout(vl)

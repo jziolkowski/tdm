@@ -4,9 +4,10 @@ from PyQt5.QtCore import Qt, QSettings, QSortFilterProxyModel, QUrl, QDir, pyqtS
 from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QApplication, QInputDialog, QFileDialog, \
-    QAction, QActionGroup, QLabel, QSizePolicy, QLineEdit, QHeaderView, QToolButton, QPushButton, QColorDialog
+    QAction, QActionGroup, QLabel, QSizePolicy, QLineEdit, QHeaderView, QToolButton, QPushButton, QColorDialog, QDialog, \
+    QComboBox
 
-from GUI import VLayout, Toolbar, TableView, SliderAction, default_views, base_view
+from GUI import VLayout, Toolbar, TableView, SliderAction, default_views, base_view, SpinBox
 from GUI.Buttons import ButtonsDialog
 from GUI.GPIO import GPIODialog
 from GUI.Modules import ModuleDialog
@@ -73,6 +74,7 @@ class ListWidget(QWidget):
         self.sorted_device_model = QSortFilterProxyModel()
         self.sorted_device_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.sorted_device_model.setSourceModel(parent.device_model)
+        self.sorted_device_model.setSortRole(Qt.InitialSortOrderRole)
         self.sorted_device_model.setFilterKeyColumn(-1)
 
         self.device_list.setModel(self.sorted_device_model)
@@ -418,9 +420,39 @@ class ListWidget(QWidget):
 
     def configureButtons(self):
         if self.device:
+            backlog = []
             buttons = ButtonsDialog(self.device)
             buttons.sendCommand.connect(self.mqtt.publish)
-            buttons.exec_()
+            if buttons.exec_() == QDialog.Accepted:
+                for c, cw in buttons.command_widgets.items():
+                    current_value = self.device.p.get(c)
+                    new_value = ""
+
+                    if isinstance(cw.input, SpinBox):
+                        new_value = cw.input.value()
+
+                    if isinstance(cw.input, QComboBox):
+                        new_value = cw.input.currentIndex()
+
+                    if current_value != new_value:
+                        backlog.append("{} {}".format(c, new_value))
+
+                for so, sow in buttons.setoption_widgets.items():
+                    current_value = self.device.setoption(so)
+                    new_value = -1
+
+                    if isinstance(sow.input, SpinBox):
+                        new_value = sow.input.value()
+
+                    if isinstance(sow.input, QComboBox):
+                        new_value = sow.input.currentIndex()
+
+                    if current_value != new_value:
+                        backlog.append("SetOption{} {}".format(so, new_value))
+
+                if backlog:
+                    backlog.append("status 3")
+                    self.mqtt.publish(self.device.cmnd_topic("backlog"), "; ".join(backlog))
 
     def get_dump(self):
         self.backup += self.dl.readAll()

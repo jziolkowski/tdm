@@ -82,7 +82,9 @@ class TasmotaDevicesModel(QAbstractTableModel):
                         return d.module()
 
                 elif col_name == "Version" and val:
-                    return val[0:val.index("(")]
+                    if "(" in val:
+                        return val[0:val.index("(")]
+                    return val
 
                 elif col_name in ("Uptime", "Downtime") and val:
                     if val.startswith("0T"):
@@ -162,6 +164,16 @@ class TasmotaDevicesModel(QAbstractTableModel):
                         return QIcon("GUI/icons/status_high.png")
 
                 return QIcon("GUI/icons/status_offline.png")
+
+            elif role == Qt.InitialSortOrderRole:
+                if col_name in ("Uptime", "Downtime"):
+                    val = d.p.get(col_name, "")
+                    if val:
+                        d, hms = val.split("T")
+                        h, m, s = hms.split(":")
+                        return int(s) + int(m) * 60 + int(h) * 3600 + int(d) * 86400
+                else:
+                    return idx.data()
 
             elif role == Qt.ToolTipRole:
                 if col_name == "Version":
