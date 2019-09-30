@@ -1,4 +1,13 @@
 {
+    "0": {
+        "description": "Save power state and use after restart",
+        "type": "select",
+        "parameters": {
+            "0": {"description": "Disabled"},
+            "1": {"description": "Enabled", "default": "True"}
+        }
+    },
+
     "1": {
         "description": "Set button multipress mode",
         "type": "select",
@@ -23,6 +32,15 @@
         "parameters": {
             "0": {"description": "Single, multi-press and hold button actions", "default": "True"},
             "1": {"description": "Only single press action for immediate response"}
+        }
+    },
+
+    "26": {
+        "description": "Use indexes even when only one relay is present",
+        "type": "select",
+        "parameters": {
+            "0": {"description": "Messages use POWER", "default": "True"},
+            "1": {"description": "Messages use POWER1"}
         }
     },
 
@@ -52,6 +70,15 @@
         "parameters": {
             "0": {"description": "Disabled", "default": "True"},
             "1": {"description": "Enabled"}
+        }
+    },
+
+    "63": {
+        "description": "Scan relay power feedback state at restart",
+        "type": "select",
+        "parameters": {
+            "0": {"description": "Enabled", "default": "True"},
+            "1": {"description": "Disabled"}
         }
     }
 }

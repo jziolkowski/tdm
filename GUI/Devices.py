@@ -12,6 +12,7 @@ from GUI.Buttons import ButtonsDialog
 from GUI.GPIO import GPIODialog
 from GUI.Modules import ModuleDialog
 from GUI.SetOptions import SetOptionsDialog
+from GUI.Switches import SwitchesDialog
 from GUI.Templates import TemplateDialog
 from GUI.Timers import TimersDialog
 
@@ -155,11 +156,11 @@ class ListWidget(QWidget):
         buttons = self.tb.addAction(QIcon("GUI/icons/buttons.png"), "Buttons", self.configureButtons)
         buttons.setShortcut("Ctrl+B")
 
-        switches = self.tb.addAction(QIcon("GUI/icons/switches.png"), "Switches", self.openWebUI.emit)
+        switches = self.tb.addAction(QIcon("GUI/icons/switches.png"), "Switches", self.configureSwitches)
         switches.setShortcut("Ctrl+S")
 
-        power = self.tb.addAction(QIcon("GUI/icons/power.png"), "Power", self.openWebUI.emit)
-        power.setShortcut("Ctrl+P")
+        # power = self.tb.addAction(QIcon("GUI/icons/power.png"), "Power", self.openWebUI.emit)
+        # power.setShortcut("Ctrl+P")
 
         # setopts = self.tb.addAction(QIcon("GUI/icons/setoptions.png"), "SetOptions", self.configureSO)
         # setopts.setShortcut("Ctrl+S")
@@ -422,7 +423,6 @@ class ListWidget(QWidget):
         if self.device:
             backlog = []
             buttons = ButtonsDialog(self.device)
-            buttons.sendCommand.connect(self.mqtt.publish)
             if buttons.exec_() == QDialog.Accepted:
                 for c, cw in buttons.command_widgets.items():
                     current_value = self.device.p.get(c)
@@ -453,6 +453,48 @@ class ListWidget(QWidget):
                 if backlog:
                     backlog.append("status 3")
                     self.mqtt.publish(self.device.cmnd_topic("backlog"), "; ".join(backlog))
+
+    def configureSwitches(self):
+        if self.device:
+            backlog = []
+            switches = SwitchesDialog(self.device)
+            if switches.exec_() == QDialog.Accepted:
+                for c, cw in switches.command_widgets.items():
+                    current_value = self.device.p.get(c)
+                    new_value = ""
+
+                    if isinstance(cw.input, SpinBox):
+                        new_value = cw.input.value()
+
+                    if isinstance(cw.input, QComboBox):
+                        new_value = cw.input.currentIndex()
+
+                    if current_value != new_value:
+                        backlog.append("{} {}".format(c, new_value))
+
+                for so, sow in switches.setoption_widgets.items():
+                    current_value = self.device.setoption(so)
+                    new_value = -1
+
+                    if isinstance(sow.input, SpinBox):
+                        new_value = sow.input.value()
+
+                    if isinstance(sow.input, QComboBox):
+                        new_value = sow.input.currentIndex()
+
+                    if current_value != new_value:
+                        backlog.append("SetOption{} {}".format(so, new_value))
+
+                for sw, sw_mode in enumerate(self.device.p['SwitchMode']):
+                    new_value = switches.sm.inputs[sw].currentIndex()
+
+                    if sw_mode != new_value:
+                        backlog.append("switchmode{} {}".format(sw+1, new_value))
+
+                if backlog:
+                    backlog.append("status")
+                    backlog.append("status 3")
+                self.mqtt.publish(self.device.cmnd_topic("backlog"), "; ".join(backlog))
 
     def get_dump(self):
         self.backup += self.dl.readAll()

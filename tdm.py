@@ -179,7 +179,8 @@ class MainWindow(QMainWindow):
             ["gpio", ""],
             ["gpios", "255"],
             ["timers", ""],
-            ["buttondebounce", ""]
+            ["buttondebounce", ""],
+            ["switchdebounce", ""],
         ]
 
         for c in commands:

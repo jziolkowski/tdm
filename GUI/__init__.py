@@ -318,8 +318,8 @@ class CommandMultiSelect(QWidget):
         for i, val in enumerate(value):
             cb = QComboBox()
             for k, v in meta['parameters'].items():
-                cb.addItem("{} {}".format(v['description'], "(default)" if v.get("default") else ""), k)
-                cb.setCurrentIndex(val)
+                cb.addItem("{}: {} {}".format(k, v['description'], "(default)" if v.get("default") else ""), k)
+            cb.setCurrentIndex(val)
             hl_input = HLayout(0)
             hl_input.addWidgets([QLabel("{}: ".format(i+1)), cb])
 
