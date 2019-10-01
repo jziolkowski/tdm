@@ -1,5 +1,5 @@
 from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTabWidget, QWidget
 
 from GUI import HLayout, VLayout, GroupBoxV, HTMLLabel, Command, CommandMultiSelect
 from Util import setoptions, commands_json as commands
@@ -21,14 +21,11 @@ class ButtonsDialog(QDialog):
         self.setoption_widgets = {}
 
         vl = VLayout()
-
         vl_cmd = VLayout(0, 0)
         for cmd in self.commands_list:
             cw = Command(cmd, commands[cmd], self.device.p.get(cmd))
             vl_cmd.addWidget(cw)
             self.command_widgets[cmd] = cw
-        # sm = CommandMultiSelect("SwitchMode", commands["SwitchMode"], self.device.p.get("SwitchMode"))
-        # vl_cmd.addWidget(sm)
         vl_cmd.addStretch(1)
 
         vl_so = VLayout(0, 0)
@@ -37,10 +34,15 @@ class ButtonsDialog(QDialog):
             vl_so.addWidget(cw)
             self.setoption_widgets[so] = cw
 
-        hl_cm_so = HLayout()
-        hl_cm_so.addLayout(vl_cmd)
-        hl_cm_so.addLayout(vl_so)
-        vl.addLayout(hl_cm_so)
+        tabs = QTabWidget()
+        tab_cm = QWidget()
+        tab_cm.setLayout(vl_cmd)
+        tabs.addTab(tab_cm, "Settings")
+
+        tab_so = QWidget()
+        tab_so.setLayout(vl_so)
+        tabs.addTab(tab_so, "SetOptions")
+        vl.addWidget(tabs)
 
         btns = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Close)
         btns.accepted.connect(self.accept)

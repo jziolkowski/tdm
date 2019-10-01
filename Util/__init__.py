@@ -59,6 +59,27 @@ with open("Util/commands.json") as cm:
     commands_json = load(cm)
 
 
+def initial_commands():
+    commands = [
+        ["status", 0],
+        ["template", ""],
+        ["modules", ""],
+        ["gpio", ""],
+        ["gpios", "255"],
+        # ["timers", ""],
+        ["buttondebounce", ""],
+        ["switchdebounce", ""],
+        ["interlock", ""],
+        ["blinktime", ""],
+        ["blinkcount", ""],
+    ]
+    for pt in range(8):
+        commands.append(["pulsetime{}".format(pt+1), ""])
+
+    return commands
+
+
+
 def parse_topic(full_topic, topic):
     """
     :param full_topic: FullTopic to match against
@@ -252,6 +273,9 @@ class TasmotaDevice(QObject):
 
     def power(self):
         return {k: v for k, v in self.p.items() if k.startswith('POWER')}
+
+    def pulsetime(self):
+        return {k: {"Set": list(v.keys())[0], "Active": list(v.values())[0]['Active']} for k, v in self.p.items() if k.startswith('PulseTime')}
 
     def pwm(self):
         return {k: v for k, v in self.p.items() if k.startswith('PWM') or (k != "Channel" and k.startswith("Channel"))}

@@ -108,10 +108,11 @@ class TimersDialog(QDialog):
         # self.gbTimers.layout().addLayout(hl_tmr_btns)
 
         btns = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Close)
-        btns.addButton("Reload", QDialogButtonBox.ResetRole)
+        reload = btns.addButton("Reload", QDialogButtonBox.ResetRole)
 
-        # btns.accepted.connect(self.accept)
-        # btns.rejected.connect(self.reject)
+        btns.accepted.connect(self.saveTimer)
+        btns.rejected.connect(self.reject)
+        reload.clicked.connect(lambda: self.loadTimer(self.cbTimer.currentText()))
 
         vl.addWidgets([self.gbTimers, gbTimerDesc, btns])
         self.setLayout(vl)

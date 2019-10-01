@@ -1,7 +1,7 @@
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableView, QSpinBox, QAction, QToolBar, \
-    QHeaderView, QComboBox, QDoubleSpinBox, QWidget, QSizePolicy, QSlider, QWidgetAction, QPushButton, QToolButton, QFrame
+    QHeaderView, QComboBox, QDoubleSpinBox, QWidget, QSizePolicy, QSlider, QWidgetAction, QPushButton, QToolButton, QFrame, QLineEdit, QCheckBox
 
 base_view = ["FriendlyName"]
 default_views = {
@@ -228,6 +228,7 @@ class SliderAction(QWidgetAction):
 
         self.slider.valueChanged.connect(lambda x: self.value.setText(str(x)))
 
+
 class CmdWikiUrl(QLabel):
     def __init__(self, cmd, title="", *args, **kwargs):
         super(CmdWikiUrl, self).__init__(*args, **kwargs)
@@ -279,7 +280,9 @@ class Command(QWidget):
             if value:
                 self.input.setValue(value)
             hl_input.addStretch(1)
-            hl_input.addWidget(QLabel("Default: {}".format(meta['parameters']['default'])))
+            default = meta['parameters'].get('default')
+            if default:
+                hl_input.addWidget(QLabel("Default: {}".format(default)))
         hl_input.addWidget(self.input)
 
         vl.addLayout(hl)
@@ -325,6 +328,97 @@ class CommandMultiSelect(QWidget):
 
             self.inputs.append(cb)
             vl.addLayout(hl_input)
+
+        line = QFrame()
+        line.setFrameStyle(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        vl.addWidget(line)
+        self.setLayout(vl)
+
+
+class Interlock(QWidget):
+    def __init__(self, command, meta, value=None, *args, **kwargs):
+        super(Interlock, self).__init__(*args, **kwargs)
+        self.setMinimumWidth(250)
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum))
+        self.input = None
+        self.groups = []
+
+        vl = VLayout()
+
+        hl = HLayout(0)
+        hl.addWidget(QLabel("<b>{}</b>".format(command)))
+        hl.addStretch(1)
+        hl.addWidget(CmdWikiUrl(command, "Wiki"))
+        vl.addLayout(hl)
+
+        desc = QLabel(meta['description'])
+        desc.setWordWrap(True)
+        vl.addWidget(desc)
+
+        self.input = QComboBox()
+
+        user_data = ["OFF", "ON"]
+        for k, v in meta['parameters'].items():
+            self.input.addItem("{} {}".format(v['description'], "(default)" if v.get("default") else ""), user_data[int(k)])
+
+        if value and value.get("Interlock", "OFF") == "OFF":
+            self.input.setCurrentIndex(0)
+        else:
+            self.input.setCurrentIndex(1)
+        vl.addWidget(self.input)
+
+        vl_groups = VLayout(0)
+        for i in range(4):
+            le = QLineEdit()
+            le.setAlignment(Qt.AlignCenter)
+            group_value = value.get("Groups", [])
+            if group_value:
+                group_value_list = group_value.split(" ")
+                if i < len(group_value_list):
+                    group_value = group_value_list[i]
+                    le.setText(group_value)
+            hl_group = HLayout(0)
+            hl_group.addWidgets([QLabel("Group {}".format(i+1)), le])
+            vl_groups.addLayout(hl_group)
+            self.groups.append(le)
+        vl.addLayout(vl_groups)
+
+        line = QFrame()
+        line.setFrameStyle(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        vl.addWidget(line)
+        self.setLayout(vl)
+
+
+class PulseTime(QWidget):
+    def __init__(self, command, meta, value=None, *args, **kwargs):
+        super(PulseTime, self).__init__(*args, **kwargs)
+        self.setMinimumWidth(250)
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum))
+        self.inputs = []
+
+        vl = VLayout()
+
+        hl = HLayout(0)
+        hl.addWidget(QLabel("<b>{}</b>".format(command)))
+        hl.addStretch(1)
+        hl.addWidget(CmdWikiUrl(command, "Wiki"))
+        vl.addLayout(hl)
+
+        desc = QLabel(meta['description'])
+        desc.setWordWrap(True)
+        vl.addWidget(desc)
+
+        vl_groups = VLayout(0)
+        for k in sorted(list(value.keys())):
+            sb = SpinBox()
+            sb.setValue(int(value[k]['Set']))
+            hl_group = HLayout(0)
+            hl_group.addWidgets([QLabel(k), sb])
+            vl_groups.addLayout(hl_group)
+            self.inputs.append(sb)
+        vl.addLayout(vl_groups)
 
         line = QFrame()
         line.setFrameStyle(QFrame.HLine)

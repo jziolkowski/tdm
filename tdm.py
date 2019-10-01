@@ -28,7 +28,7 @@ from GUI.Telemetry import TelemetryWidget
 from GUI.Devices import ListWidget
 from GUI.Patterns import PatternsDialog
 from Util import TasmotaDevice, TasmotaEnvironment, parse_topic, default_patterns, prefixes, custom_patterns, \
-    expand_fulltopic
+    expand_fulltopic, initial_commands
 from Util.models import TasmotaDevicesModel
 from Util.mqtt import MqttClient
 
@@ -172,18 +172,7 @@ class MainWindow(QMainWindow):
         # main_toolbar.addAction(self.actToggleAutoUpdate)
 
     def initial_query(self, device, queued=False):
-        commands = [
-            ["status", 0],
-            ["template", ""],
-            ["modules", ""],
-            ["gpio", ""],
-            ["gpios", "255"],
-            ["timers", ""],
-            ["buttondebounce", ""],
-            ["switchdebounce", ""],
-        ]
-
-        for c in commands:
+        for c in initial_commands():
             cmd, payload = c
             cmd = device.cmnd_topic(cmd)
 
@@ -191,7 +180,6 @@ class MainWindow(QMainWindow):
                 self.mqtt_queue.append([cmd, payload])
             else:
                 self.mqtt.publish(cmd, payload, 1)
-
 
     def setup_broker(self):
         brokers_dlg = BrokerDialog()

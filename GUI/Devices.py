@@ -11,12 +11,13 @@ from GUI import VLayout, Toolbar, TableView, SliderAction, default_views, base_v
 from GUI.Buttons import ButtonsDialog
 from GUI.GPIO import GPIODialog
 from GUI.Modules import ModuleDialog
+from GUI.Power import PowerDialog
 from GUI.SetOptions import SetOptionsDialog
 from GUI.Switches import SwitchesDialog
 from GUI.Templates import TemplateDialog
 from GUI.Timers import TimersDialog
 
-from Util import TasmotaDevice, resets
+from Util import TasmotaDevice, resets, initial_commands
 from Util.models import DeviceDelegate
 
 
@@ -111,11 +112,7 @@ class ListWidget(QWidget):
         # self.ctx_menu_cfg.addAction("Wifi", self.ctx_menu_teleperiod)
         # self.ctx_menu_cfg.addAction("Time", self.cfgTime.emit)
         # self.ctx_menu_cfg.addAction("MQTT", self.ctx_menu_teleperiod)
-        # self.ctx_menu_cfg.addAction("Firmware and OTA", self.ctx_menu_teleperiod)
-        # self.ctx_menu_cfg.addAction("Relays", self.ctx_menu_teleperiod)
-        # self.ctx_menu_cfg.addAction("Colors and PWM", self.ctx_menu_teleperiod)
-        # self.ctx_menu_cfg.addAction("Buttons and switches", self.ctx_menu_teleperiod)
-        self.ctx_menu_cfg.addAction("Timers", self.configureTimers)
+
         # self.ctx_menu_cfg.addAction("Logging", self.ctx_menu_teleperiod)
 
         self.ctx_menu.addMenu(self.ctx_menu_cfg)
@@ -134,24 +131,13 @@ class ListWidget(QWidget):
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon("GUI/icons/delete.png"), "Delete", self.ctx_menu_delete_device)
 
-        ##### Toolbar
-        # add = self.tb.addAction(QIcon("GUI/icons/add.png"), "Add...", self.add_device)
-        # add.setShortcut("Ctrl+N")
-        #
-        # self.tb.addSeparator()
         console = self.tb.addAction(QIcon("GUI/icons/console.png"), "Console", self.openConsole.emit)
         console.setShortcut("Ctrl+E")
 
         rules = self.tb.addAction(QIcon("GUI/icons/rules.png"), "Rules", self.openRulesEditor.emit)
         rules.setShortcut("Ctrl+R")
 
-        telemetry = self.tb.addAction(QIcon("GUI/icons/telemetry.png"), "Telemetry", self.openTelemetry.emit)
-        telemetry.setShortcut("Ctrl+T")
-
-        webui = self.tb.addAction(QIcon("GUI/icons/web.png"), "WebUI", self.openWebUI.emit)
-        webui.setShortcut("Ctrl+U")
-
-        self.tb.addSeparator()
+        self.tb.addAction(QIcon("GUI/icons/timers.png"), "Timers", self.configureTimers)
 
         buttons = self.tb.addAction(QIcon("GUI/icons/buttons.png"), "Buttons", self.configureButtons)
         buttons.setShortcut("Ctrl+B")
@@ -159,15 +145,21 @@ class ListWidget(QWidget):
         switches = self.tb.addAction(QIcon("GUI/icons/switches.png"), "Switches", self.configureSwitches)
         switches.setShortcut("Ctrl+S")
 
-        # power = self.tb.addAction(QIcon("GUI/icons/power.png"), "Power", self.openWebUI.emit)
-        # power.setShortcut("Ctrl+P")
+        power = self.tb.addAction(QIcon("GUI/icons/power.png"), "Power", self.configurePower)
+        power.setShortcut("Ctrl+P")
 
         # setopts = self.tb.addAction(QIcon("GUI/icons/setoptions.png"), "SetOptions", self.configureSO)
         # setopts.setShortcut("Ctrl+S")
 
-        # self.tb.addAction(QIcon(), "Multi Command", self.ctx_menu_webui)
+        self.tb.addSpacer()
 
-        # self.tb_relays.addWidget(QLabel("Power:"))
+        telemetry = self.tb.addAction(QIcon("GUI/icons/telemetry.png"), "Telemetry", self.openTelemetry.emit)
+        telemetry.setShortcut("Ctrl+T")
+
+        webui = self.tb.addAction(QIcon("GUI/icons/web.png"), "WebUI", self.openWebUI.emit)
+        webui.setShortcut("Ctrl+U")
+
+        # self.tb.addAction(QIcon(), "Multi Command", self.ctx_menu_webui)
 
         self.agAllPower = QActionGroup(self)
         self.agAllPower.addAction(QIcon("GUI/icons/P_ON.png"), "All ON")
@@ -250,7 +242,7 @@ class ListWidget(QWidget):
             if relays and len(relays.keys()) > 0:
                 for r in relays.keys():
                     self.mqtt.publish(self.device.cmnd_topic(r), retain=True)
-                QMessageBox.information(self, "Clear retained", "Cleared retained messages.")
+            QMessageBox.information(self, "Clear retained", "Cleared retained messages.")
 
     def ctx_menu_clear_backlog(self):
         if self.device:
@@ -272,17 +264,14 @@ class ListWidget(QWidget):
                     self.device.p.pop(k)
 
     def ctx_menu_refresh(self):
-        # TODO: convert to signal so this functions calls tdm:initial_query()
         if self.device:
             for k in list(self.device.power().keys()):
                 self.device.p.pop(k)
-            status = self.device.cmnd_topic("status")
-            tpl = self.device.cmnd_topic("template")
-            modules = self.device.cmnd_topic("modules")
 
-            self.mqtt.publish(status, "0")
-            self.mqtt.publish(tpl)
-            self.mqtt.publish(modules)
+            for c in initial_commands():
+                cmd, payload = c
+                cmd = self.device.cmnd_topic(cmd)
+                self.mqtt.publish(cmd, payload, 1)
 
     def ctx_menu_delete_device(self):
         if self.device:
@@ -414,6 +403,7 @@ class ListWidget(QWidget):
 
     def configureTimers(self):
         if self.device:
+            self.mqtt.publish(self.device.cmnd_topic("timers"))
             timers = TimersDialog(self.device)
             self.mqtt.messageSignal.connect(timers.parseMessage)
             timers.sendCommand.connect(self.mqtt.publish)
@@ -495,6 +485,60 @@ class ListWidget(QWidget):
                     backlog.append("status")
                     backlog.append("status 3")
                 self.mqtt.publish(self.device.cmnd_topic("backlog"), "; ".join(backlog))
+
+    def configurePower(self):
+        if self.device:
+            backlog = []
+            power = PowerDialog(self.device)
+            if power.exec_() == QDialog.Accepted:
+                for c, cw in power.command_widgets.items():
+                    current_value = self.device.p.get(c)
+                    new_value = ""
+
+                    if isinstance(cw.input, SpinBox):
+                        new_value = cw.input.value()
+
+                    if isinstance(cw.input, QComboBox):
+                        new_value = cw.input.currentIndex()
+
+                    if current_value != new_value:
+                        backlog.append("{} {}".format(c, new_value))
+
+                for so, sow in power.setoption_widgets.items():
+                    new_value = -1
+
+                    if isinstance(sow.input, SpinBox):
+                        new_value = sow.input.value()
+
+                    if isinstance(sow.input, QComboBox):
+                        new_value = sow.input.currentIndex()
+
+                    if new_value != self.device.setoption(so):
+                        backlog.append("SetOption{} {}".format(so, new_value))
+
+                new_interlock_value = power.ci.input.currentData()
+                new_interlock_grps = " ".join([grp.text().replace(" ", "") for grp in power.ci.groups]).rstrip()
+
+                if new_interlock_value != self.device.p.get("Interlock", "OFF"):
+                    backlog.append("interlock {}".format(new_interlock_value))
+
+                if new_interlock_grps != self.device.p.get("Groups", ""):
+                    backlog.append("interlock {}".format(new_interlock_grps))
+
+                for i, pt in enumerate(power.cpt.inputs):
+                    ptime = "PulseTime{}".format(i+1)
+                    current_ptime = self.device.p.get(ptime)
+                    if current_ptime:
+                        current_value = list(current_ptime.keys())[0]
+                        new_value = str(pt.value())
+
+                        if new_value != current_value:
+                            backlog.append("{} {}".format(ptime, new_value))
+
+                if backlog:
+                    backlog.append("status")
+                    backlog.append("status 3")
+                    self.mqtt.publish(self.device.cmnd_topic("backlog"), "; ".join(backlog))
 
     def get_dump(self):
         self.backup += self.dl.readAll()

@@ -1,34 +1,38 @@
 from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTabWidget, QWidget
 
-from GUI import HLayout, VLayout, GroupBoxV, HTMLLabel, Command, CommandMultiSelect
+from GUI import HLayout, VLayout, GroupBoxV, HTMLLabel, Command, CommandMultiSelect, Interlock, PulseTime
 from Util import setoptions, commands_json as commands
 
 
-class SwitchesDialog(QDialog):
+class PowerDialog(QDialog):
     sendCommand = pyqtSignal(str, str)
 
     def __init__(self, device, *args, **kwargs):
-        super(SwitchesDialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle("Switches settings [{}]".format(device.p['FriendlyName1']))
+        super(PowerDialog, self).__init__(*args, **kwargs)
+        self.setWindowTitle("Power settings [{}]".format(device.p['FriendlyName1']))
         self.setMinimumWidth(300)
         self.device = device
 
-        self.commands_list = ["SwitchDebounce", "SwitchRetain"]
+        self.commands_list = ["BlinkCount", "BlinkTime", "PowerOnState", "PowerRetain"]
         self.command_widgets = {}
 
-        self.setoption_list = [32]
+        self.setoption_list = [0, 26, 63]
         self.setoption_widgets = {}
 
         vl = VLayout()
-
         vl_cmd = VLayout(0, 0)
         for cmd in self.commands_list:
             cw = Command(cmd, commands[cmd], self.device.p.get(cmd))
             vl_cmd.addWidget(cw)
             self.command_widgets[cmd] = cw
-        self.sm = CommandMultiSelect("SwitchMode", commands["SwitchMode"], self.device.p.get("SwitchMode"))
-        vl_cmd.addWidget(self.sm)
+
+        self.ci = Interlock("Interlock", commands["Interlock"], {"Interlock": self.device.p.get("Interlock", "OFF"), "Groups": self.device.p.get("Groups", "")})
+        vl_cmd.addWidget(self.ci)
+
+        self.cpt = PulseTime("PulseTime", commands["PulseTime"], self.device.pulsetime())
+        vl_cmd.addWidget(self.cpt)
+
         vl_cmd.addStretch(1)
 
         vl_so = VLayout(0, 0)

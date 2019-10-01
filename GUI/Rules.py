@@ -62,9 +62,9 @@ class RulesWidget(QWidget):
         self.actUpload = tb.addAction(QIcon("GUI/icons/upload.png"), "Upload")
         self.actUpload.triggered.connect(self.upload_rule)
 
-        tb.addSeparator()
-        self.actLoad = tb.addAction(QIcon("GUI/icons/open.png"), "Load...")
-        self.actSave = tb.addAction(QIcon("GUI/icons/save.png"), "Save...")
+        # tb.addSeparator()
+        # self.actLoad = tb.addAction(QIcon("GUI/icons/open.png"), "Load...")
+        # self.actSave = tb.addAction(QIcon("GUI/icons/save.png"), "Save...")
 
         tb.addSpacer()
 
@@ -87,7 +87,8 @@ class RulesWidget(QWidget):
         self.editor.textChanged.connect(self.update_counter)
         self.gbEditor.addWidget(self.editor)
 
-        hl.addWidgets([self.gbTriggers, self.gbEditor])
+        # hl.addWidgets([self.gbTriggers, self.gbEditor])
+        hl.addWidget(self.gbEditor)
 
         self.rules_hl = RuleHighLighter(self.editor.document())
 
@@ -134,9 +135,9 @@ class RulesWidget(QWidget):
         # vl_helpers.addWidgets([self.gbPolling, self.gbVars, self.gbMems, self.gbRTs])
         vl_helpers.addWidgets([self.gbPolling, self.lwVars, self.lwMems, self.lwRTs])
         hl.addLayout(vl_helpers)
-        hl.setStretch(0, 1)
-        hl.setStretch(1, 3)
-        hl.setStretch(2, 1)
+        hl.setStretch(0, 3)
+        hl.setStretch(1, 1)
+        # hl.setStretch(2, 1)
 
         vl.addLayout(hl)
         self.setLayout(vl)
