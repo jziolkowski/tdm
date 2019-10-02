@@ -7,10 +7,6 @@ Easy to use GUI application to manage, configure and monitor devices flashed wit
 
 Join the TDM's Official Discord Server at https://discord.gg/eAhVDXM
 
-# Discord Server
-
-Join the TDM's Official Discord Server at https://discord.gg/eAhVDXM
-
 # Features
 
  - autodetection of Tasmota devices (even if they use custom FullTopics)
