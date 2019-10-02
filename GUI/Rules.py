@@ -35,7 +35,7 @@ class RulesWidget(QWidget):
         self.rt = None
 
         fnt_mono = QFont("asd")
-        fnt_mono.setStyleHint(QFont.Monospace)
+        fnt_mono.setStyleHint(QFont.TypeWriter)
 
         tb = Toolbar(iconsize=24, label_position=Qt.ToolButtonTextBesideIcon)
         vl = VLayout(margin=0, spacing=0)

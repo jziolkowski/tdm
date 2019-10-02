@@ -25,7 +25,7 @@ class ConsoleWidget(QDockWidget):
         self.console.setTabChangesFocus(True)
 
         fnt_mono = QFont("asd")
-        fnt_mono.setStyleHint(QFont.Monospace)
+        fnt_mono.setStyleHint(QFont.TypeWriter)
 
         self.console.setFont(fnt_mono)
         self.console.setReadOnly(True)
