@@ -1,131 +1,114 @@
+import re
 import sys
 import csv
 from json import loads, JSONDecodeError
 
-from PyQt5.QtCore import QSortFilterProxyModel, QDir, QTimer
-from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QTreeView, QWidget, \
-    QSplitter, QMenu, QFileDialog
+from PyQt5.QtCore import QTimer, pyqtSlot, QSettings, QDir, QSize, Qt, QDateTime, QUrl
+from PyQt5.QtGui import QIcon, QDesktopServices
+from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QFileDialog, QAction, QFrame, \
+    QInputDialog, QMessageBox, QPushButton
 
-from GUI import *
+from GUI.GPIO import GPIODialog
+from GUI.Modules import ModuleDialog
+from GUI.SetOptions import SetOptionsDialog
+from GUI.Templates import TemplateDialog
+from GUI.Timers import TimersDialog
+
+try:
+    from PyQt5.QtWebEngineWidgets import QWebEngineView
+except ImportError:
+    pass
+
+from GUI import Toolbar, VLayout
 from GUI.BSSID import BSSIdDialog
 from GUI.Broker import BrokerDialog
-from GUI.DevicesList import DevicesListWidget
-from GUI.PayloadView import PayloadViewDialog
-from Util import initial_queries
-from Util.models import *
+from GUI.Console import ConsoleWidget
+from GUI.Rules import RulesWidget
+from GUI.Telemetry import TelemetryWidget
+from GUI.Devices import ListWidget
+from GUI.Patterns import PatternsDialog
+from Util import TasmotaDevice, TasmotaEnvironment, parse_topic, default_patterns, prefixes, custom_patterns, \
+    expand_fulltopic, initial_commands
+from Util.models import TasmotaDevicesModel
 from Util.mqtt import MqttClient
+
+# TODO: rework device export
 
 
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.1.20"
+        self._version = "0.2.0"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
-        self.main_splitter = QSplitter()
-        self.devices_splitter = QSplitter(Qt.Vertical)
+        self.unknown = []
+        self.env = TasmotaEnvironment()
+        self.device = None
 
+        self.topics = []
         self.mqtt_queue = []
-        self.devices = {}
-
         self.fulltopic_queue = []
-        old_settings = QSettings()
 
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
-        self.setMinimumSize(QSize(1280,800))
+        self.devices = QSettings("{}/TDM/devices.cfg".format(QDir.homePath()), QSettings.IniFormat)
+        self.setMinimumSize(QSize(1000, 618))  # because golden ratio :)
 
-        for k in old_settings.allKeys():
-            self.settings.setValue(k, old_settings.value(k))
-            old_settings.remove(k)
+        # load devices from the devices file, create TasmotaDevices and add the to the envvironment
+        for mac in self.devices.childGroups():
+            self.devices.beginGroup(mac)
+            device = TasmotaDevice(self.devices.value("topic"), self.devices.value("full_topic"), self.devices.value("friendly_name"))
+            device.p['Mac'] = mac.replace("-", ":")
+            device.env = self.env
+            self.env.devices.append(device)
 
-        self.device_model = TasmotaDevicesModel()
-        self.telemetry_model = TasmotaDevicesTree()
-        self.console_model = ConsoleModel()
+            # load device command history
+            self.devices.beginGroup("history")
+            for k in self.devices.childKeys():
+                device.history.append(self.devices.value(k))
+            self.devices.endGroup()
+            
+            self.devices.endGroup()
 
-        self.sorted_console_model = QSortFilterProxyModel()
-        self.sorted_console_model.setSourceModel(self.console_model)
-        self.sorted_console_model.setFilterKeyColumn(CnsMdl.FRIENDLY_NAME)
+        # load custom autodiscovery patterns
+        self.settings.beginGroup("Patterns")
+        for k in self.settings.childKeys():
+            custom_patterns.append(self.settings.value(k))
+        self.settings.endGroup()
+
+        self.device_model = TasmotaDevicesModel(self.env)
 
         self.setup_mqtt()
-        self.setup_telemetry_view()
         self.setup_main_layout()
         self.add_devices_tab()
-        self.build_toolbars()
+        self.build_mainmenu()
+        # self.build_toolbars()
         self.setStatusBar(QStatusBar())
+
+        pbSubs = QPushButton("Show subscriptions")
+        pbSubs.setFlat(True)
+        pbSubs.clicked.connect(self.showSubs)
+        self.statusBar().addPermanentWidget(pbSubs)
 
         self.queue_timer = QTimer()
         self.queue_timer.timeout.connect(self.mqtt_publish_queue)
-        self.queue_timer.start(500)
+        self.queue_timer.start(250)
 
         self.auto_timer = QTimer()
-        self.auto_timer.timeout.connect(self.autoupdate)
+        self.auto_timer.timeout.connect(self.auto_telemetry)
 
         self.load_window_state()
 
         if self.settings.value("connect_on_startup", False, bool):
             self.actToggleConnect.trigger()
 
+        self.tele_docks = {}
+
     def setup_main_layout(self):
         self.mdi = QMdiArea()
         self.mdi.setActivationOrder(QMdiArea.ActivationHistoryOrder)
-        self.mdi.setViewMode(QMdiArea.TabbedView)
-        self.mdi.setDocumentMode(True)
-
-        mdi_widget = QWidget()
-        mdi_widget.setLayout(VLayout())
-        mdi_widget.layout().addWidget(self.mdi)
-
-        self.devices_splitter.addWidget(mdi_widget)
-
-        vl_console = VLayout()
-        hl_filter = HLayout()
-        self.cbFilter = QCheckBox("Console filtering")
-        self.cbxFilterDevice = QComboBox()
-        self.cbxFilterDevice.setEnabled(False)
-        self.cbxFilterDevice.setFixedWidth(200)
-        self.cbxFilterDevice.setModel(self.device_model)
-        self.cbxFilterDevice.setModelColumn(DevMdl.FRIENDLY_NAME)
-        hl_filter.addWidgets([self.cbFilter, self.cbxFilterDevice])
-        hl_filter.addStretch(0)
-        vl_console.addLayout(hl_filter)
-
-        self.console_view = TableView()
-        self.console_view.setModel(self.console_model)
-        self.console_view.setupColumns(columns_console)
-        self.console_view.setAlternatingRowColors(True)
-        self.console_view.verticalHeader().setDefaultSectionSize(20)
-        self.console_view.setMinimumHeight(200)
-
-        vl_console.addWidget(self.console_view)
-
-        console_widget = QWidget()
-        console_widget.setLayout(vl_console)
-
-        self.devices_splitter.addWidget(console_widget)
-        self.main_splitter.insertWidget(0, self.devices_splitter)
-        self.setCentralWidget(self.main_splitter)
-        self.console_view.clicked.connect(self.select_cons_entry)
-        self.console_view.doubleClicked.connect(self.view_payload)
-
-        self.cbFilter.toggled.connect(self.toggle_console_filter)
-        self.cbxFilterDevice.currentTextChanged.connect(self.select_console_filter)
-
-    def setup_telemetry_view(self):
-        tele_widget = QWidget()
-        vl_tele = VLayout()
-        self.tview = QTreeView()
-        self.tview.setMinimumWidth(300)
-        self.tview.setModel(self.telemetry_model)
-        self.tview.setAlternatingRowColors(True)
-        self.tview.setUniformRowHeights(True)
-        self.tview.setIndentation(15)
-        self.tview.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
-        self.tview.expandAll()
-        self.tview.resizeColumnToContents(0)
-        vl_tele.addWidget(self.tview)
-        tele_widget.setLayout(vl_tele)
-        self.main_splitter.addWidget(tele_widget)
+        self.mdi.setTabsClosable(True)
+        self.setCentralWidget(self.mdi)
 
     def setup_mqtt(self):
         self.mqtt = MqttClient()
@@ -136,46 +119,67 @@ class MainWindow(QMainWindow):
         self.mqtt.messageSignal.connect(self.mqtt_message)
 
     def add_devices_tab(self):
-        tabDevicesList = DevicesListWidget(self)
-        self.mdi.addSubWindow(tabDevicesList)
-        tabDevicesList.setWindowState(Qt.WindowMaximized)
+        self.devices_list = ListWidget(self)
+        sub = self.mdi.addSubWindow(self.devices_list)
+        sub.setWindowState(Qt.WindowMaximized)
+        self.devices_list.deviceSelected.connect(self.selectDevice)
+        self.devices_list.openConsole.connect(self.openConsole)
+        self.devices_list.openRulesEditor.connect(self.openRulesEditor)
+        self.devices_list.openTelemetry.connect(self.openTelemetry)
+        self.devices_list.openWebUI.connect(self.openWebUI)
 
     def load_window_state(self):
         wndGeometry = self.settings.value('window_geometry')
         if wndGeometry:
             self.restoreGeometry(wndGeometry)
-        spltState = self.settings.value('splitter_state')
-        if spltState:
-            self.main_splitter.restoreState(spltState)
 
-    def build_toolbars(self):
-        main_toolbar = Toolbar(orientation=Qt.Horizontal, iconsize=16, label_position=Qt.ToolButtonTextBesideIcon)
-        main_toolbar.setObjectName("main_toolbar")
-        self.addToolBar(main_toolbar)
-
-        main_toolbar.addAction(QIcon("./GUI/icons/connections.png"), "Broker", self.setup_broker)
-        self.actToggleConnect = QAction(QIcon("./GUI/icons/disconnect.png"), "MQTT")
+    def build_mainmenu(self):
+        mMQTT  = self.menuBar().addMenu("MQTT")
+        self.actToggleConnect = QAction(QIcon("./GUI/icons/disconnect.png"), "Connect")
         self.actToggleConnect.setCheckable(True)
         self.actToggleConnect.toggled.connect(self.toggle_connect)
-        main_toolbar.addAction(self.actToggleConnect)
+        mMQTT.addAction(self.actToggleConnect)
 
-        self.actToggleAutoUpdate = QAction(QIcon("./GUI/icons/automatic.png"), "Auto telemetry")
+        mMQTT.addAction(QIcon(), "Broker", self.setup_broker)
+        mMQTT.addAction(QIcon(), "Autodiscovery patterns", self.patterns)
+
+        mMQTT.addSeparator()
+        mMQTT.addAction(QIcon(), "Auto telemetry period", self.auto_telemetry_period)
+
+        self.actToggleAutoUpdate = QAction(QIcon("./GUI/icons/auto_telemetry.png"), "Auto telemetry")
         self.actToggleAutoUpdate.setCheckable(True)
         self.actToggleAutoUpdate.toggled.connect(self.toggle_autoupdate)
-        main_toolbar.addAction(self.actToggleAutoUpdate)
+        mMQTT.addAction(self.actToggleAutoUpdate)
 
-        main_toolbar.addSeparator()
-        main_toolbar.addAction(QIcon("./GUI/icons/bssid.png"), "BSSId", self.bssid)
-        main_toolbar.addAction(QIcon("./GUI/icons/export.png"), "Export list", self.export)
+        mSettings = self.menuBar().addMenu("Settings")
+        mSettings.addAction(QIcon(), "BSSId aliases", self.bssid)
 
-    def initial_query(self, idx, queued=False):
-        for q in initial_queries:
-            topic = "{}status".format(self.device_model.commandTopic(idx))
+        # mDevices.addAction(QIcon("GUI/icons/export.png"), "Export list", self.export)
+
+    def build_toolbars(self):
+        main_toolbar = Toolbar(orientation=Qt.Horizontal, iconsize=24, label_position=Qt.ToolButtonTextBesideIcon)
+        main_toolbar.setObjectName("main_toolbar")
+        # self.addToolBar(main_toolbar)
+
+        # self.actToggleConnect = QAction(QIcon("./GUI/icons/disconnect.png"), "Connect")
+        # self.actToggleConnect.setCheckable(True)
+        # self.actToggleConnect.toggled.connect(self.toggle_connect)
+        # main_toolbar.addAction(self.actToggleConnect)
+        #
+        # self.actToggleAutoUpdate = QAction(QIcon("./GUI/icons/auto_telemetry.png"), "Auto telemetry")
+        # self.actToggleAutoUpdate.setCheckable(True)
+        # self.actToggleAutoUpdate.toggled.connect(self.toggle_autoupdate)
+        # main_toolbar.addAction(self.actToggleAutoUpdate)
+
+    def initial_query(self, device, queued=False):
+        for c in initial_commands():
+            cmd, payload = c
+            cmd = device.cmnd_topic(cmd)
+
             if queued:
-                self.mqtt_queue.append([topic, q])
+                self.mqtt_queue.append([cmd, payload])
             else:
-                self.mqtt.publish(topic, q, 1)
-            self.console_log(topic, "Asked for STATUS {}".format(q), q)
+                self.mqtt.publish(cmd, payload, 1)
 
     def setup_broker(self):
         brokers_dlg = BrokerDialog()
@@ -183,45 +187,50 @@ class MainWindow(QMainWindow):
             self.mqtt.disconnect()
 
     def toggle_autoupdate(self, state):
-        if state:
-            self.auto_timer.setInterval(5000)
+        if state == True:
+            if self.mqtt.state == self.mqtt.Connected:
+                for d in self.env.devices:
+                    self.mqtt.publish(d.cmnd_topic('STATUS'), payload=8)
+            self.auto_timer.setInterval(self.settings.value("autotelemetry", 5000, int))
             self.auto_timer.start()
+        else:
+            self.auto_timer.stop()
 
     def toggle_connect(self, state):
         if state and self.mqtt.state == self.mqtt.Disconnected:
-            self.mqtt_connect_perform()
+            self.broker_hostname = self.settings.value('hostname', 'localhost')
+            self.broker_port = self.settings.value('port', 1883, int)
+            self.broker_username = self.settings.value('username')
+            self.broker_password = self.settings.value('password')
+
+            self.mqtt.hostname = self.broker_hostname
+            self.mqtt.port = self.broker_port
+
+            if self.broker_username:
+                self.mqtt.setAuth(self.broker_username, self.broker_password)
             self.mqtt.connectToHost()
         elif not state and self.mqtt.state == self.mqtt.Connected:
             self.mqtt_disconnect()
 
-    def autoupdate(self):
+    def auto_telemetry(self):
         if self.mqtt.state == self.mqtt.Connected:
-            for d in range(self.device_model.rowCount()):
-                idx = self.device_model.index(d, 0)
-                cmnd = self.device_model.commandTopic(idx)
-                self.mqtt.publish(cmnd+"STATUS", payload=8)
+            for d in self.env.devices:
+                self.mqtt.publish(d.cmnd_topic('STATUS'), payload=8)
 
     def mqtt_connect(self):
-        self.mqtt_connect_perform()
-        if self.mqtt.state == self.mqtt.Disconnected:
-            self.mqtt.connectToHost()
-
-    def mqtt_connect_perform(self):
         self.broker_hostname = self.settings.value('hostname', 'localhost')
         self.broker_port = self.settings.value('port', 1883, int)
         self.broker_username = self.settings.value('username')
         self.broker_password = self.settings.value('password')
-        self.broker_clientId = self.settings.value('client_id')
 
         self.mqtt.hostname = self.broker_hostname
         self.mqtt.port = self.broker_port
 
         if self.broker_username:
-            self.mqtt.username = self.broker_username
-            self.mqtt.password = self.broker_password
-        if self.broker_clientId:
-            self.mqtt.clientId = self.broker_clientId
+            self.mqtt.setAuth(self.broker_username, self.broker_password)
 
+        if self.mqtt.state == self.mqtt.Disconnected:
+            self.mqtt.connectToHost()
 
     def mqtt_disconnect(self):
         self.mqtt.disconnectFromHost()
@@ -231,25 +240,36 @@ class MainWindow(QMainWindow):
 
     def mqtt_connected(self):
         self.actToggleConnect.setIcon(QIcon("./GUI/icons/connect.png"))
+        self.actToggleConnect.setText("Disconnect")
         self.statusBar().showMessage("Connected to {}:{} as {}".format(self.broker_hostname, self.broker_port, self.broker_username if self.broker_username else '[anonymous]'))
 
         self.mqtt_subscribe()
 
-        for d in range(self.device_model.rowCount()):
-            idx = self.device_model.index(d, 0)
-            self.initial_query(idx)
-
     def mqtt_subscribe(self):
-        main_topics = ["+/stat/+", "+/tele/+", "stat/#", "tele/#"]
+        # expand fulltopic patterns to subscribable topics
+        for pat in default_patterns:    # tasmota default and SO19
+            self.topics += expand_fulltopic(pat)
 
-        for d in range(self.device_model.rowCount()):
-            idx = self.device_model.index(d, 0)
-            if not self.device_model.isDefaultTemplate(idx):
-                main_topics.append(self.device_model.commandTopic(idx))
-                main_topics.append(self.device_model.statTopic(idx))
+        for d in self.env.devices:
+            # if device has a non-standard pattern, check if the pattern is found in the custom patterns
+            if not d.is_default() and d.p['FullTopic'] not in custom_patterns:
+                # if pattern is not found then add the device topics to subscription list.
+                # if the pattern is found, it will be matched without implicit subscription
+                self.topics += expand_fulltopic(d.p['FullTopic'])
 
-        for t in main_topics:
-            self.mqtt.subscribe(t)
+        # check if custom patterns can be matched by default patterns
+        for pat in custom_patterns:
+            if pat.startswith("%prefix%") or pat.split('/')[1] == "%prefix%":
+                continue    # do nothing, default subcriptions will match this topic
+            else:
+                self.topics += expand_fulltopic(pat)
+
+        # passing a list of tuples as recommended by paho
+        self.mqtt.subscribe([(topic, 0) for topic in self.topics])
+
+    @pyqtSlot(str, str)
+    def mqtt_publish(self, t, p):
+        self.mqtt.publish(t, p)
 
     def mqtt_publish_queue(self):
         for q in self.mqtt_queue:
@@ -259,6 +279,7 @@ class MainWindow(QMainWindow):
 
     def mqtt_disconnected(self):
         self.actToggleConnect.setIcon(QIcon("./GUI/icons/disconnect.png"))
+        self.actToggleConnect.setText("Connect")
         self.statusBar().showMessage("Disconnected")
 
     def mqtt_connectError(self, rc):
@@ -273,285 +294,63 @@ class MainWindow(QMainWindow):
         self.actToggleConnect.setChecked(False)
 
     def mqtt_message(self, topic, msg):
-        found = self.device_model.findDevice(topic)
-        if found.reply == 'LWT':
-            if not msg:
-                msg = "offline"
-
-            if found.index.isValid():
-                self.console_log(topic, "LWT update: {}".format(msg), msg)
-                self.device_model.updateValue(found.index, DevMdl.LWT, msg)
-                self.initial_query(found.index, queued=True)
-
-            elif msg == "Online":
-                self.console_log(topic, "LWT for unknown device '{}'. Asking for FullTopic.".format(found.topic), msg, False)
-                self.mqtt_queue.append(["cmnd/{}/fulltopic".format(found.topic), ""])
-                self.mqtt_queue.append(["{}/cmnd/fulltopic".format(found.topic), ""])
-
-        elif found.reply == 'RESULT':
-            try:
-                full_topic = loads(msg).get('FullTopic')
-                new_topic = loads(msg).get('Topic')
-                template_name = loads(msg).get('NAME')
-                ota_url = loads(msg).get('OtaUrl')
-                teleperiod = loads(msg).get('TelePeriod')
-
-                if full_topic:
-                    # TODO: update FullTopic for existing device AFTER the FullTopic changes externally (the message will arrive from new FullTopic)
-                    if not found.index.isValid():
-                        self.console_log(topic, "FullTopic for {}".format(found.topic), msg, False)
-
-                        new_idx = self.device_model.addDevice(found.topic, full_topic, lwt='online')
-                        tele_idx = self.telemetry_model.addDevice(TasmotaDevice, found.topic)
-                        self.telemetry_model.devices[found.topic] = tele_idx
-                        #TODO: add QSortFilterProxyModel to telemetry treeview and sort devices after adding
-
-                        self.initial_query(new_idx)
-                        self.console_log(topic, "Added {} with fulltopic {}, querying for STATE".format(found.topic, full_topic), msg)
-                        self.tview.expand(tele_idx)
-                        self.tview.resizeColumnToContents(0)
-
-                elif new_topic:
-                    if found.index.isValid() and found.topic != new_topic:
-                        self.console_log(topic, "New topic for {}".format(found.topic), msg)
-
-                        self.device_model.updateValue(found.index, DevMdl.TOPIC, new_topic)
-
-                        tele_idx = self.telemetry_model.devices.get(found.topic)
-
-                        if tele_idx:
-                            self.telemetry_model.setDeviceName(tele_idx, new_topic)
-                            self.telemetry_model.devices[new_topic] = self.telemetry_model.devices.pop(found.topic)
-
-                elif template_name:
-                    self.device_model.updateValue(found.index, DevMdl.MODULE, "{} (0)".format(template_name))
-
-                elif ota_url:
-                    self.device_model.updateValue(found.index, DevMdl.OTA_URL, ota_url)
-
-                elif teleperiod:
-                    self.device_model.updateValue(found.index, DevMdl.TELEPERIOD, teleperiod)
-
-            except JSONDecodeError as e:
-                self.console_log(topic, "JSON payload decode error. Check error.log for additional info.")
-                with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
-                    l.write("{}\t{}\t{}\t{}\n".format(QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss"), topic, msg, e.msg))
-
-        elif found.index.isValid():
-            ok = False
-            try:
-                if msg.startswith("{"):
-                    payload = loads(msg)
-                else:
-                    payload = msg
-                ok = True
-            except JSONDecodeError as e:
-                self.console_log(topic, "JSON payload decode error. Check error.log for additional info.")
-                with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
-                    l.write("{}\t{}\t{}\t{}\n".format(QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss"), topic, msg, e.msg))
-
-            if ok:
-                try:
-                    if found.reply == 'STATUS':
-                        self.console_log(topic, "Received device status", msg)
-                        payload = payload['Status']
-                        self.device_model.updateValue(found.index, DevMdl.FRIENDLY_NAME, payload['FriendlyName'][0])
-                        self.telemetry_model.setDeviceFriendlyName(self.telemetry_model.devices[found.topic], payload['FriendlyName'][0])
-                        module = payload['Module']
-                        if module == 0:
-                            self.mqtt.publish(self.device_model.commandTopic(found.index)+"template")
-                        else:
-                            self.device_model.updateValue(found.index, DevMdl.MODULE, modules.get(module, 'Unknown'))
-                        self.device_model.updateValue(found.index, DevMdl.MODULE_ID, module)
-
-
-                    elif found.reply == 'STATUS1':
-                        self.console_log(topic, "Received program information", msg)
-                        payload = payload['StatusPRM']
-                        self.device_model.updateValue(found.index, DevMdl.RESTART_REASON, payload.get('RestartReason'))
-                        self.device_model.updateValue(found.index, DevMdl.OTA_URL, payload.get('OtaUrl'))
-
-                    elif found.reply == 'STATUS2':
-                        self.console_log(topic, "Received firmware information", msg)
-                        payload = payload['StatusFWR']
-                        self.device_model.updateValue(found.index, DevMdl.FIRMWARE, payload['Version'])
-                        self.device_model.updateValue(found.index, DevMdl.CORE, payload['Core'])
-
-                    elif found.reply == 'STATUS3':
-                        self.console_log(topic, "Received syslog information", msg)
-                        payload = payload['StatusLOG']
-                        self.device_model.updateValue(found.index, DevMdl.TELEPERIOD, payload['TelePeriod'])
-
-                    elif found.reply == 'STATUS5':
-                        self.console_log(topic, "Received network status", msg)
-                        payload = payload['StatusNET']
-                        self.device_model.updateValue(found.index, DevMdl.MAC, payload['Mac'])
-                        self.device_model.updateValue(found.index, DevMdl.IP, payload['IPAddress'])
-
-                    elif found.reply in ('STATE', 'STATUS11'):
-                        self.console_log(topic, "Received device state", msg)
-                        if found.reply == 'STATUS11':
-                            payload = payload['StatusSTS']
-                        self.parse_state(found.index, payload)
-
-                    elif found.reply in ('SENSOR', 'STATUS8'):
-                        self.console_log(topic, "Received telemetry", msg)
-                        if found.reply == 'STATUS8':
-                            payload = payload['StatusSNS']
-                        self.parse_telemetry(found.index, payload)
-
-                    elif found.reply.startswith('POWER'):
-                        self.console_log(topic, "Received {} state".format(found.reply), msg)
-                        payload = {found.reply: msg}
-                        self.parse_power(found.index, payload)
-
-                except KeyError as k:
-                    self.console_log(topic, "JSON key error. Check error.log for additional info.")
-                    with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
-                        l.write("{}\t{}\t{}\tKeyError: {}\n".format(QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss"),
-                                                          topic, payload, k.args[0]))
-
-    def parse_power(self, index, payload, from_state=False):
-        old = self.device_model.power(index)
-        power = {k: payload[k] for k in payload.keys() if k.startswith("POWER")}
-        # TODO: fix so that number of relays get updated properly after module/no. of relays change
-        needs_update = False
-        if old:
-            # if from_state and len(old) != len(power):
-            #     needs_update = True
-            #
-            # else:
-            for k in old.keys():
-                needs_update |= old[k] != power.get(k, old[k])
-                if needs_update:
-                    break
-        else:
-            needs_update = True
-
-        if needs_update:
-            self.device_model.updateValue(index, DevMdl.POWER, power)
-
-    def parse_state(self, index, payload):
-        bssid = payload['Wifi'].get('BSSId')
-        if not bssid:
-            bssid = payload['Wifi'].get('APMac')
-        self.device_model.updateValue(index, DevMdl.BSSID, bssid)
-        self.device_model.updateValue(index, DevMdl.SSID, payload['Wifi']['SSId'])
-        self.device_model.updateValue(index, DevMdl.CHANNEL, payload['Wifi'].get('Channel', "n/a"))
-        self.device_model.updateValue(index, DevMdl.RSSI, payload['Wifi']['RSSI'])
-        self.device_model.updateValue(index, DevMdl.UPTIME, payload['Uptime'])
-        self.device_model.updateValue(index, DevMdl.LOADAVG, payload.get('LoadAvg'))
-        self.device_model.updateValue(index, DevMdl.LINKCOUNT, payload['Wifi'].get('LinkCount', "n/a"))
-        self.device_model.updateValue(index, DevMdl.DOWNTIME, payload['Wifi'].get('Downtime', "n/a"))
-
-        self.parse_power(index, payload, True)
-
-        tele_idx = self.telemetry_model.devices.get(self.device_model.topic(index))
-
-        if tele_idx:
-            tele_device = self.telemetry_model.getNode(tele_idx)
-            self.telemetry_model.setDeviceFriendlyName(tele_idx, self.device_model.friendly_name(index))
-
-            pr = tele_device.provides()
-            for k in pr.keys():
-                self.telemetry_model.setData(pr[k], payload.get(k))
-
-    def parse_telemetry(self, index, payload):
-        device = self.telemetry_model.devices.get(self.device_model.topic(index))
+        # try to find a device by matching known FullTopics against the MQTT topic of the message
+        device = self.env.find_device(topic)
         if device:
-            node = self.telemetry_model.getNode(device)
-            time = node.provides()['Time']
-            if 'Time' in payload:
-                self.telemetry_model.setData(time, payload.pop('Time'))
+            if topic.endswith("LWT"):
+                if not msg:
+                    msg = "Offline"
+                device.update_property("LWT", msg)
 
-            temp_unit = "C"
-            pres_unit = "hPa"
+                if msg == 'Online':
+                    # known device came online, query initial state
+                    self.initial_query(device, True)
 
-            if 'TempUnit' in payload:
-                temp_unit = payload.pop('TempUnit')
+            else:
+                # forward the message for processing
+                device.parse_message(topic, msg)
 
-            if 'PressureUnit' in payload:
-                pres_unit = payload.pop('PressureUnit')
+        else:            # unknown device, start autodiscovery process
+            if topic.endswith("LWT"):
+                # STAGE 1
+                # load default and user-provided FullTopic patterns and for all the patterns,
+                # try matching the LWT topic (it follows the device's FullTopic syntax
 
-            for sensor in sorted(payload.keys()):
-                if sensor == 'DS18x20':
-                    for sns_name in payload[sensor].keys():
-                        d = node.devices().get(sensor)
-                        if not d:
-                            d = self.telemetry_model.addDevice(DS18x20, payload[sensor][sns_name]['Type'], device)
-                        self.telemetry_model.getNode(d).setTempUnit(temp_unit)
-                        payload[sensor][sns_name]['Id'] = payload[sensor][sns_name].pop('Address')
+                for p in default_patterns + custom_patterns:
+                    match = re.fullmatch(p.replace("%topic%", "(?P<topic>.*?)").replace("%prefix%", "(?P<prefix>.*?)") + ".*$", topic)
+                    if match:
+                        # assume that the matched topic is the one configured in device settings
+                        possible_topic = match.groupdict().get('topic')
+                        if possible_topic not in ('tele', 'stat'):
+                            # if the assumed topic is different from tele or stat, there is a chance that it's a valid topic
+                            # query the assumed device for its FullTopic. False positives won't reply.
+                            self.mqtt_queue.append([p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic) + "FullTopic", ""])
 
-                        pr = self.telemetry_model.getNode(d).provides()
-                        for pk in pr.keys():
-                            self.telemetry_model.setData(pr[pk], payload[sensor][sns_name].get(pk))
-                        self.tview.expand(d)
+            elif topic.endswith("RESULT"):      # reply from an unknown device
+                # STAGE 2
+                try:
+                    full_topic = loads(msg).get('FullTopic')
+                    if full_topic:
+                        # the device replies with its FullTopic
+                        # here the Topic is extracted using the returned FullTopic, identifying the device
+                        parsed = parse_topic(full_topic, topic)
+                        if parsed:
+                            # got a match, we query the device's MAC address in case it's a known device that had its topic changed
 
-                elif sensor.startswith('DS18B20'):
-                    d = node.devices().get(sensor)
-                    if not d:
-                        d = self.telemetry_model.addDevice(DS18x20, sensor, device)
-                    self.telemetry_model.getNode(d).setTempUnit(temp_unit)
-                    pr = self.telemetry_model.getNode(d).provides()
-                    for pk in pr.keys():
-                        self.telemetry_model.setData(pr[pk], payload[sensor].get(pk))
-                    self.tview.expand(d)
+                            d = self.env.find_device(topic=parsed['topic'])
+                            if d:
+                                d.update_property("FullTopic", full_topic)
+                            else:
+                                print("DISCOVERED", parsed['topic'])
+                                d = TasmotaDevice(parsed['topic'], full_topic)
+                                self.env.devices.append(d)
+                                self.device_model.addDevice(d)
+                                self.initial_query(d, True)
+                            d.update_property("LWT", "Online")
 
-                if sensor == 'COUNTER':
-                    d = node.devices().get("Counter")
-                    if not d:
-                        d = self.telemetry_model.addDevice(CounterSns, "Counter", device)
-                    pr = self.telemetry_model.getNode(d).provides()
-                    for pk in pr.keys():
-                        self.telemetry_model.setData(pr[pk], payload[sensor].get(pk))
-                    self.tview.expand(d)
-
-                else:
-                    d = node.devices().get(sensor)
-                    if not d:
-                        d = self.telemetry_model.addDevice(sensor_map.get(sensor, Node), sensor, device)
-                    pr = self.telemetry_model.getNode(d).provides()
-                    if 'Temperature' in pr:
-                        self.telemetry_model.getNode(d).setTempUnit(temp_unit)
-                    if 'Pressure' in pr or 'SeaPressure' in pr:
-                        self.telemetry_model.getNode(d).setPresUnit(pres_unit)
-                    for pk in pr.keys():
-                        self.telemetry_model.setData(pr[pk], payload[sensor].get(pk))
-                    self.tview.expand(d)
-        # self.tview.resizeColumnToContents(0)
-
-    def console_log(self, topic, description, payload="", known=True):
-        longest_tp = 0
-        longest_fn = 0
-        short_topic = "/".join(topic.split("/")[0:-1])
-        fname = self.devices.get(short_topic, "")
-        if not fname:
-            device = self.device_model.findDevice(topic)
-            fname = self.device_model.friendly_name(device.index)
-            self.devices.update({short_topic: fname})
-        self.console_model.addEntry(topic, fname, description, payload, known)
-
-        if len(topic) > longest_tp:
-            longest_tp = len(topic)
-            self.console_view.resizeColumnToContents(1)
-
-        if len(fname) > longest_fn:
-            longest_fn = len(fname)
-            self.console_view.resizeColumnToContents(1)
-
-    def view_payload(self, idx):
-        if self.cbFilter.isChecked():
-            idx = self.sorted_console_model.mapToSource(idx)
-        row = idx.row()
-        timestamp = self.console_model.data(self.console_model.index(row, CnsMdl.TIMESTAMP))
-        topic = self.console_model.data(self.console_model.index(row, CnsMdl.TOPIC))
-        payload = self.console_model.data(self.console_model.index(row, CnsMdl.PAYLOAD))
-
-        dlg = PayloadViewDialog(timestamp, topic, payload)
-        dlg.exec_()
-
-    def select_cons_entry(self, idx):
-        self.cons_idx = idx
+                except JSONDecodeError as e:
+                    with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
+                        l.write("{}\t{}\t{}\t{}\n".format(QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss"), topic, msg, e.msg))
 
     def export(self):
         fname, _ = QFileDialog.getSaveFileName(self, "Export device list as...", directory=QDir.homePath(), filter="CSV files (*.csv)")
@@ -574,7 +373,7 @@ class MainWindow(QMainWindow):
                         self.device_model.commandTopic(d),
                         self.device_model.statTopic(d),
                         self.device_model.teleTopic(d),
-                        modules.get(self.device_model.module(d)),
+                        # modules.get(self.device_model.module(d)),
                         self.device_model.module(d),
                         self.device_model.firmware(d),
                         self.device_model.core(d)
@@ -582,22 +381,112 @@ class MainWindow(QMainWindow):
 
     def bssid(self):
         BSSIdDialog().exec_()
-        # if dlg.exec_() == QDialog.Accepted:
 
-    def toggle_console_filter(self, state):
-        self.cbxFilterDevice.setEnabled(state)
-        if state:
-            self.console_view.setModel(self.sorted_console_model)
-        else:
-            self.console_view.setModel(self.console_model)
+    def patterns(self):
+        PatternsDialog().exec_()
 
-    def select_console_filter(self, fname):
-        self.sorted_console_model.setFilterFixedString(fname)
+    def showSubs(self):
+        QMessageBox.information(self, "Subscriptions", "\n".join(sorted(self.topics)))
+
+    def auto_telemetry_period(self):
+        curr_val = self.settings.value("autotelemetry", 5000, int)
+        period, ok = QInputDialog.getInt(self, "Set AutoTelemetry period", "Values under 5000ms may cause increased ESP LoadAvg", curr_val, 1000)
+        if ok:
+            self.settings.setValue("autotelemetry", period)
+            self.settings.sync()
+
+    @pyqtSlot(TasmotaDevice)
+    def selectDevice(self, d):
+        self.device = d
+
+    @pyqtSlot()
+    def openTelemetry(self):
+        if self.device:
+            tele_widget = TelemetryWidget(self.device)
+            self.addDockWidget(Qt.RightDockWidgetArea, tele_widget)
+            self.mqtt_publish(self.device.cmnd_topic('STATUS'), "8")
+
+    @pyqtSlot()
+    def openConsole(self):
+        if self.device:
+            console_widget = ConsoleWidget(self.device)
+            self.mqtt.messageSignal.connect(console_widget.consoleAppend)
+            console_widget.sendCommand.connect(self.mqtt.publish)
+            self.addDockWidget(Qt.BottomDockWidgetArea, console_widget)
+            console_widget.command.setFocus()
+
+    @pyqtSlot()
+    def openRulesEditor(self):
+        if self.device:
+            rules = RulesWidget(self.device)
+            self.mqtt.messageSignal.connect(rules.parseMessage)
+            rules.sendCommand.connect(self.mqtt_publish)
+            self.mdi.setViewMode(QMdiArea.TabbedView)
+            self.mdi.addSubWindow(rules)
+            rules.setWindowState(Qt.WindowMaximized)
+            rules.destroyed.connect(self.updateMDI)
+            self.mqtt_queue.append((self.device.cmnd_topic("ruletimer"), ""))
+            self.mqtt_queue.append((self.device.cmnd_topic("rule1"), ""))
+            self.mqtt_queue.append((self.device.cmnd_topic("Var"), ""))
+            self.mqtt_queue.append((self.device.cmnd_topic("Mem"), ""))
+
+    @pyqtSlot()
+    def openWebUI(self):
+        if self.device and self.device.p.get('IPAddress'):
+            url = QUrl("http://{}".format(self.device.p['IPAddress']))
+
+            try:
+                webui = QWebEngineView()
+                webui.load(url)
+
+                frm_webui = QFrame()
+                frm_webui.setWindowTitle("WebUI [{}]".format(self.device.p['FriendlyName1']))
+                frm_webui.setFrameShape(QFrame.StyledPanel)
+                frm_webui.setLayout(VLayout(0))
+                frm_webui.layout().addWidget(webui)
+                frm_webui.destroyed.connect(self.updateMDI)
+
+                self.mdi.addSubWindow(frm_webui)
+                self.mdi.setViewMode(QMdiArea.TabbedView)
+                frm_webui.setWindowState(Qt.WindowMaximized)
+
+            except NameError:
+                QDesktopServices.openUrl(QUrl("http://{}".format(self.device.p['IPAddress'])))
+
+    def updateMDI(self):
+        if len(self.mdi.subWindowList()) == 1:
+            self.mdi.setViewMode(QMdiArea.SubWindowView)
+            self.devices_list.setWindowState(Qt.WindowMaximized)
 
     def closeEvent(self, e):
+        self.settings.setValue("version", self._version)
         self.settings.setValue("window_geometry", self.saveGeometry())
-        self.settings.setValue("splitter_state", self.main_splitter.saveState())
+        self.settings.setValue("views_order", ";".join(self.devices_list.views.keys()))
+
+        self.settings.beginGroup("Views")
+        for view, items in self.devices_list.views.items():
+            self.settings.setValue(view, ";".join(items[1:]))
+        self.settings.endGroup()
+
         self.settings.sync()
+
+        for d in self.env.devices:
+            mac = d.p.get('Mac')
+            topic = d.p['Topic']
+            full_topic = d.p['FullTopic']
+            friendly_name = d.p['FriendlyName1']
+
+            if mac:
+                self.devices.beginGroup(mac.replace(":", "-"))
+                self.devices.setValue("topic", topic)
+                self.devices.setValue("full_topic", full_topic)
+                self.devices.setValue("friendly_name", friendly_name)
+
+                for i, h in enumerate(d.history):
+                    self.devices.setValue("history/{}".format(i), h)
+                self.devices.endGroup()
+        self.devices.sync()
+
         e.accept()
 
 
