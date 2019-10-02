@@ -66,7 +66,6 @@ def initial_commands():
         ["modules", ""],
         ["gpio", ""],
         ["gpios", "255"],
-        # ["timers", ""],
         ["buttondebounce", ""],
         ["switchdebounce", ""],
         ["interlock", ""],
@@ -275,7 +274,16 @@ class TasmotaDevice(QObject):
         return {k: v for k, v in self.p.items() if k.startswith('POWER')}
 
     def pulsetime(self):
-        return {k: {"Set": list(v.keys())[0], "Active": list(v.values())[0]['Active']} for k, v in self.p.items() if k.startswith('PulseTime')}
+        ptime = {}
+        for k, v in self.p.items():
+            if k.startswith('PulseTime'):
+                val = 0
+                if isinstance(v, dict):
+                    val = list(v.keys())[0]
+                elif isinstance(v, str):
+                    val = v.split(" ")[0]
+                ptime[k] = int(val)
+        return ptime
 
     def pwm(self):
         return {k: v for k, v in self.p.items() if k.startswith('PWM') or (k != "Channel" and k.startswith("Channel"))}
