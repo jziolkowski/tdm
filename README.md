@@ -34,7 +34,7 @@ Join the TDM's Official Discord Server at https://discord.gg/eAhVDXM
 
 # Requirements and installation instructions
 
-See the [wiki article](https://github.com/jziolkowski/tdm/wiki/Installation)
+See the [wiki article](https://github.com/jziolkowski/tdm/wiki/Prerequisites-installation-and-running)
 
 Uses free icons from [Icons8](https://icons8.com)
 
