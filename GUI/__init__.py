@@ -412,7 +412,7 @@ class PulseTime(QWidget):
 
         vl_groups = VLayout(0)
         for k in sorted(list(value.keys())):
-            sb = SpinBox()
+            sb = SpinBox(minimum=int(meta['parameters']['min']), maximum=int(meta['parameters']['max']))
             sb.setValue(value[k])
             hl_group = HLayout(0)
             hl_group.addWidgets([QLabel(k), sb])

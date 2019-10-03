@@ -280,7 +280,11 @@ class TasmotaDevice(QObject):
             if k.startswith('PulseTime'):
                 val = 0
                 if isinstance(v, dict):
-                    val = list(v.keys())[0]
+                    first_key = list(v.keys())[0]
+                    if first_key == "Set":
+                        val = v['Set']
+                    else:
+                        val = first_key
                 elif isinstance(v, str):
                     val = v.split(" ")[0]
                 ptime[k] = int(val)
