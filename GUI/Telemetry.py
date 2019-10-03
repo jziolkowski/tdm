@@ -78,22 +78,21 @@ class TelemetryWidget(QDockWidget):
         t = self.device.t
 
         time = t.get("Time")
-        if time:
-            t.pop('Time')
 
         time_item = self.get_top_item("Time")
         time_item.setText(1, time.replace("T", " "))
 
         for key in sorted(t.keys()):
-            v = t[key]
-            if isinstance(v, dict):
-                for nested_key, nested_v in v.items():
-                    nested_item = self.get_nested_item(key, nested_key)
-                    nested_item.setText(1, "{} {}".format(nested_v, item_units.get(nested_key, "")))
+            if key != "Time":
+                v = t[key]
+                if isinstance(v, dict):
+                    for nested_key, nested_v in v.items():
+                        nested_item = self.get_nested_item(key, nested_key)
+                        nested_item.setText(1, "{} {}".format(nested_v, item_units.get(nested_key, "")))
 
-            else:
-                item = self.get_top_item(key)
-                item.setText(1, "{}".format(v))
+                else:
+                    item = self.get_top_item(key)
+                    item.setText(1, "{}".format(v))
 
         self.tree.expandAll()
         self.tree.resizeColumnToContents(0)
