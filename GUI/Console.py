@@ -3,7 +3,7 @@ from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont
 from PyQt5.QtWidgets import QDockWidget, QPlainTextEdit, QLineEdit, QWidget, QCompleter, QComboBox, QListWidget, \
     QDialog, QLabel
 
-from GUI import VLayout, GroupBoxV
+from GUI import VLayout, GroupBoxV, HLayout
 from Util import commands
 
 
@@ -32,6 +32,8 @@ class ConsoleWidget(QDockWidget):
 
         self.console_hl = JSONHighLighter(self.console.document())
 
+        hl_command_mqttlog = HLayout(0)
+
         self.command = QLineEdit()
         self.command.setFont(fnt_mono)
         self.command.setPlaceholderText("Type the command and press ENTER to send.")
@@ -47,7 +49,21 @@ class ConsoleWidget(QDockWidget):
 
         command_cpl.activated.connect(self.command.clear, Qt.QueuedConnection)
 
-        vl.addWidgets([self.console, self.command])
+        self.cbMQTTLog = QComboBox()
+        self.cbMQTTLog.addItems(["Disabled", "Error", "Error/Info (default)", "Error/Info/Debug", "Error/Info/More debug", "All"])
+        mqttlog = self.device.p.get("MqttLog", -1)
+
+        if mqttlog != -1:
+            self.cbMQTTLog.setCurrentIndex(int(mqttlog))
+        else:
+            self.cbMQTTLog.setEnabled(False)
+
+        self.cbMQTTLog.currentIndexChanged.connect(self.change_mqttlog)
+
+        hl_command_mqttlog.addWidgets([self.command, QLabel("MQTT Log level"), self.cbMQTTLog])
+
+        vl.addWidget(self.console)
+        vl.addLayout(hl_command_mqttlog)
 
         w.setLayout(vl)
         self.setWidget(w)
@@ -90,7 +106,6 @@ class ConsoleWidget(QDockWidget):
             cmd = split_cmd_input[0]
 
             payload = " ".join(split_cmd_input[1:])
-            # self.consoleAppend(topic, payload)
             self.sendCommand.emit(self.device.cmnd_topic(cmd), payload)
             self.command.clear()
 
@@ -101,6 +116,8 @@ class ConsoleWidget(QDockWidget):
             if len(history) > 25:
                 history = history[0:26]
 
+    def change_mqttlog(self, idx):
+        self.sendCommand.emit(self.device.cmnd_topic("MqttLog"), str(idx))
 
 class JSONHighLighter(QSyntaxHighlighter):
     keyword = QTextCharFormat()

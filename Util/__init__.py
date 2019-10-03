@@ -71,6 +71,7 @@ def initial_commands():
         ["interlock", ""],
         ["blinktime", ""],
         ["blinkcount", ""],
+        ["mqttlog", ""]     # will be removed after MqttLog will be added to Status 3
     ]
     for pt in range(8):
         commands.append(["pulsetime{}".format(pt+1), ""])
