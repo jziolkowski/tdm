@@ -234,7 +234,10 @@ class ListWidget(QWidget):
 
     def ctx_menu_copy(self):
         if self.idx:
-            QApplication.clipboard().setText(dumps(self.model.data(self.idx)))
+            string = dumps(self.model.data(self.idx))
+            if string.startswith('"') and string.endswith('"'):
+                string = string[1:-1]
+            QApplication.clipboard().setText(string)
 
     def ctx_menu_clear_retained(self):
         if self.device:
