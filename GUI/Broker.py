@@ -65,7 +65,7 @@ class BrokerDialog(QDialog):
         self.settings.setValue("username", self.username.text())
         self.settings.setValue("password", self.password.text())
         self.settings.setValue("connect_on_startup", self.cbConnectStartup.isChecked())
-        self.settings.setValue("client_id", self.clientId.text())
+        # self.settings.setValue("client_id", self.clientId.text())
         self.settings.sync()
         self.done(QDialog.Accepted)
 
