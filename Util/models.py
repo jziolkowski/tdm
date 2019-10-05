@@ -27,7 +27,9 @@ class TasmotaDevicesModel(QAbstractTableModel):
         self.endResetModel()
 
     def deviceAtRow(self, row):
-        return self.tasmota_env.devices[row]
+        if len(self.tasmota_env.devices) > 0:
+            return self.tasmota_env.devices[row]
+        return None
 
     def notify_change(self, d, key):
         row = self.tasmota_env.devices.index(d)
