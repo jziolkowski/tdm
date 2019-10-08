@@ -9,7 +9,7 @@ Join the TDM's Official Discord Server at https://discord.gg/eAhVDXM
 
 # Features
 
- - autodetection of Tasmota devices (even if they use custom FullTopics)
+ - [autodiscovery](https://github.com/jziolkowski/tdm/wiki/Autodiscovery) of Tasmota devices (even if they use custom FullTopics)
  - module, GPIO and template configuration
  - [rules editor](https://github.com/jziolkowski/tdm/Rules_editor) with Var/Mem/Ruletimer monitor
  - easy to read detachable telemetry viewer (working in active and passive mode) 
