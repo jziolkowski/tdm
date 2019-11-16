@@ -323,7 +323,7 @@ class DeviceDelegate(QStyledItemDelegate):
                 num = len(index.data().keys())
 
                 if num <= 4:
-                    for i, k in enumerate(index.data().keys()):
+                    for i, k in enumerate(sorted(index.data().keys())):
                         x = option.rect.x() + i * 24 + (option.rect.width() - num * 24) / 2
                         y = option.rect.y() + (option.rect.height() - 24) / 2
 
