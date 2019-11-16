@@ -1,15 +1,13 @@
 # Tasmota Device Manager
 Easy to use GUI application to manage, configure and monitor devices flashed with [Tasmota firmware](https://github.com/arendst/Tasmota)
 
+<a href="https://discord.gg/eAhVDXM" rel="noopener"><img class="alignnone" title="theme.park!" src="https://img.shields.io/badge/chat-Discord-blue.svg?style=for-the-badge&logo=discord" alt="" height="37" /></a>
+
 ![image](https://user-images.githubusercontent.com/11555742/66050573-bf764900-e52d-11e9-8356-e3dbf4ef6205.png)
-
-# Discord Server
-
-Join the TDM's Official Discord Server at https://discord.gg/eAhVDXM
 
 # Features
 
- - autodetection of Tasmota devices (even if they use custom FullTopics)
+ - [autodiscovery](https://github.com/jziolkowski/tdm/wiki/Autodiscovery) of Tasmota devices (even if they use custom FullTopics)
  - module, GPIO and template configuration
  - [rules editor](https://github.com/jziolkowski/tdm/Rules_editor) with Var/Mem/Ruletimer monitor
  - easy to read detachable telemetry viewer (working in active and passive mode) 
@@ -38,3 +36,4 @@ See the [wiki article](https://github.com/jziolkowski/tdm/wiki/Prerequisites-ins
 
 Uses free icons from [Icons8](https://icons8.com)
 
+<a href="https://www.buymeacoffee.com/eYmkLXO" target="_blank"><img src="https://bmc-cdn.nyc3.digitaloceanspaces.com/BMC-button-images/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: auto !important;width: auto !important;" ></a>
