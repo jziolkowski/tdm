@@ -8,12 +8,6 @@ from PyQt5.QtGui import QIcon, QDesktopServices
 from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QFileDialog, QAction, QFrame, \
     QInputDialog, QMessageBox, QPushButton
 
-from GUI.GPIO import GPIODialog
-from GUI.Modules import ModuleDialog
-from GUI.SetOptions import SetOptionsDialog
-from GUI.Templates import TemplateDialog
-from GUI.Timers import TimersDialog
-
 try:
     from PyQt5.QtWebEngineWidgets import QWebEngineView
 except ImportError:
@@ -38,7 +32,7 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.2.0"
+        self._version = "0.2.1"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
@@ -154,7 +148,8 @@ class MainWindow(QMainWindow):
         mSettings = self.menuBar().addMenu("Settings")
         mSettings.addAction(QIcon(), "BSSId aliases", self.bssid)
 
-        # mDevices.addAction(QIcon("GUI/icons/export.png"), "Export list", self.export)
+        # mExport = self.menuBar().addMenu("Export")
+        # mExport.addAction(QIcon(), "OpenHAB", lambda: "")
 
     def build_toolbars(self):
         main_toolbar = Toolbar(orientation=Qt.Horizontal, iconsize=24, label_position=Qt.ToolButtonTextBesideIcon)
@@ -490,7 +485,7 @@ class MainWindow(QMainWindow):
         e.accept()
 
 
-if __name__ == '__main__':
+def start():
     app = QApplication(sys.argv)
     app.setOrganizationName("Tasmota")
     app.setApplicationName("TDM")
@@ -500,3 +495,7 @@ if __name__ == '__main__':
     MW.show()
 
     sys.exit(app.exec_())
+
+
+if __name__ == '__main__':
+    start()
