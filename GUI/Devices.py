@@ -360,7 +360,7 @@ class ListWidget(QWidget):
     def toggle_power_all(self, action):
         if self.device:
             idx = self.agAllPower.actions().index(action)
-            for r in self.device.power().keys():
+            for r in sorted(self.device.power().keys()):
                 self.mqtt.publish(self.device.cmnd_topic(r), str(not bool(idx)))
 
     def set_color(self):
@@ -430,8 +430,14 @@ class ListWidget(QWidget):
                     if current_value != new_value:
                         backlog.append("{} {}".format(c, new_value))
 
+                so_error = False
                 for so, sow in buttons.setoption_widgets.items():
-                    current_value = self.device.setoption(so)
+                    current_value = None
+                    try:
+                        current_value = self.device.setoption(so)
+                    except ValueError:
+                        so_error = True
+
                     new_value = -1
 
                     if isinstance(sow.input, SpinBox):
@@ -440,7 +446,7 @@ class ListWidget(QWidget):
                     if isinstance(sow.input, QComboBox):
                         new_value = sow.input.currentIndex()
 
-                    if current_value != new_value:
+                    if not so_error and current_value and current_value != new_value:
                         backlog.append("SetOption{} {}".format(so, new_value))
 
                 if backlog:
@@ -465,8 +471,13 @@ class ListWidget(QWidget):
                     if current_value != new_value:
                         backlog.append("{} {}".format(c, new_value))
 
+                so_error = False
                 for so, sow in switches.setoption_widgets.items():
-                    current_value = self.device.setoption(so)
+                    current_value = None
+                    try:
+                        current_value = self.device.setoption(so)
+                    except ValueError:
+                        so_error = True
                     new_value = -1
 
                     if isinstance(sow.input, SpinBox):
@@ -475,7 +486,7 @@ class ListWidget(QWidget):
                     if isinstance(sow.input, QComboBox):
                         new_value = sow.input.currentIndex()
 
-                    if current_value != new_value:
+                    if not so_error and current_value != new_value:
                         backlog.append("SetOption{} {}".format(so, new_value))
 
                 for sw, sw_mode in enumerate(self.device.p['SwitchMode']):
@@ -507,8 +518,15 @@ class ListWidget(QWidget):
                     if current_value != new_value:
                         backlog.append("{} {}".format(c, new_value))
 
+                so_error = False
                 for so, sow in power.setoption_widgets.items():
+                    current_value = None
+                    try:
+                        current_value = self.device.setoption(so)
+                    except ValueError:
+                        so_error = True
                     new_value = -1
+
 
                     if isinstance(sow.input, SpinBox):
                         new_value = sow.input.value()
@@ -516,7 +534,7 @@ class ListWidget(QWidget):
                     if isinstance(sow.input, QComboBox):
                         new_value = sow.input.currentIndex()
 
-                    if new_value != self.device.setoption(so):
+                    if not so_error and current_value != new_value:
                         backlog.append("SetOption{} {}".format(so, new_value))
 
                 new_interlock_value = power.ci.input.currentData()
