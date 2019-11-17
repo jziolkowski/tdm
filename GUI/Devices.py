@@ -354,7 +354,7 @@ class ListWidget(QWidget):
     def toggle_power(self, action):
         if self.device:
             idx = self.agRelays.actions().index(action)
-            relay = list(self.device.power().keys())[idx]
+            relay = sorted(list(self.device.power().keys()))[idx]
             self.mqtt.publish(self.device.cmnd_topic(relay), "toggle")
 
     def toggle_power_all(self, action):
