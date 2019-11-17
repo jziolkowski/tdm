@@ -311,15 +311,18 @@ class TasmotaDevice(QObject):
 
         so = self.p.get('SetOption')
         if so:
-            if reg in (0, 2):
+            if reg in (0, 2, 3):
                 options = int(so[reg], 16)
-                if reg == 2:
+                if reg > 1:
                     o -= 50
                 state = int(options >> o & 1)
 
             else:
                 o -= 32
-                split_register = [int(so[reg][opt * 2:opt * 2 + 2], 16) for opt in range(18)]
+                if len(so[reg]) == 18:
+                    split_register = [int(so[reg][opt * 2:opt * 2 + 2], 16) for opt in range(18)]
+                else:
+                    split_register = [-1] * 18
                 return split_register[o]
             return state
         return -1
