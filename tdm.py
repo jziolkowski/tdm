@@ -10,7 +10,8 @@ from PyQt5.QtGui import QIcon, QDesktopServices
 from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QFileDialog, QAction, QFrame, \
     QInputDialog, QMessageBox, QPushButton
 
-from GUI.OpenHAB import OpenHABDialog
+# from GUI.ClearLWT import ClearLWTDialog
+# from GUI.OpenHAB import OpenHABDialog
 
 try:
     from PyQt5.QtWebEngineWidgets import QWebEngineView
@@ -146,6 +147,9 @@ class MainWindow(QMainWindow):
 
         mMQTT.addAction(QIcon(), "Broker", self.setup_broker)
         mMQTT.addAction(QIcon(), "Autodiscovery patterns", self.patterns)
+        #
+        # mMQTT.addSeparator()
+        # mMQTT.addAction(QIcon(), "Clear obsolete retained LWTs", self.clear_LWT)
 
         mMQTT.addSeparator()
         mMQTT.addAction(QIcon(), "Auto telemetry period", self.auto_telemetry_period)
@@ -323,7 +327,7 @@ class MainWindow(QMainWindow):
                             logging.debug("DISCOVERY: Asking an unknown device for FullTopic at %s", possible_topic_cmnd)
                             self.mqtt_queue.append([possible_topic_cmnd, ""])
 
-            elif topic.endswith("RESULT"):      # reply from an unknown device
+            elif topic.endswith("RESULT") or topic.endswith("FULLTOPIC"):      # reply from an unknown device
                 # STAGE 2
                 full_topic = loads(msg).get('FullTopic')
                 if full_topic:
@@ -379,11 +383,14 @@ class MainWindow(QMainWindow):
     def patterns(self):
         PatternsDialog().exec_()
 
-    def openhab(self):
-        OpenHABDialog(self.env).exec_()
+    # def openhab(self):
+    #     OpenHABDialog(self.env).exec_()
 
     def showSubs(self):
         QMessageBox.information(self, "Subscriptions", "\n".join(sorted(self.topics)))
+
+    def clear_LWT(self):
+        ClearLWTDialog(self.env).exec_()
 
     def auto_telemetry_period(self):
         curr_val = self.settings.value("autotelemetry", 5000, int)
