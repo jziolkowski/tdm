@@ -1,3 +1,11 @@
+## [0.2.2] - 2019-11-20
+### Added
+- Device list now sorts correctly when using diactrics in friendly names
+- Added some logging features
+
+### Fixed
+- Power ALL was sending true/false instead of 0/1 (#53)
+
 ## [0.2.1] - 2019-11-16
 ### Fixed
 - forced sorting of POWER\<x\> keys when generating toggle actions and drawing state icons
