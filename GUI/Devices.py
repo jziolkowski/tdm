@@ -77,6 +77,7 @@ class ListWidget(QWidget):
         self.sorted_device_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.sorted_device_model.setSourceModel(parent.device_model)
         self.sorted_device_model.setSortRole(Qt.InitialSortOrderRole)
+        self.sorted_device_model.setSortLocaleAware(True)
         self.sorted_device_model.setFilterKeyColumn(-1)
 
         self.device_list.setModel(self.sorted_device_model)
@@ -361,7 +362,7 @@ class ListWidget(QWidget):
         if self.device:
             idx = self.agAllPower.actions().index(action)
             for r in sorted(self.device.power().keys()):
-                self.mqtt.publish(self.device.cmnd_topic(r), str(not bool(idx)))
+                self.mqtt.publish(self.device.cmnd_topic(r), idx ^ 1)
 
     def set_color(self):
         if self.device:

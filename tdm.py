@@ -3,10 +3,14 @@ import sys
 import csv
 from json import loads, JSONDecodeError
 
+import logging
+
 from PyQt5.QtCore import QTimer, pyqtSlot, QSettings, QDir, QSize, Qt, QDateTime, QUrl
 from PyQt5.QtGui import QIcon, QDesktopServices
 from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QFileDialog, QAction, QFrame, \
     QInputDialog, QMessageBox, QPushButton
+
+from GUI.OpenHAB import OpenHABDialog
 
 try:
     from PyQt5.QtWebEngineWidgets import QWebEngineView
@@ -32,7 +36,7 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.2.1"
+        self._version = "0.2.2"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
@@ -46,7 +50,13 @@ class MainWindow(QMainWindow):
 
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
         self.devices = QSettings("{}/TDM/devices.cfg".format(QDir.homePath()), QSettings.IniFormat)
-        self.setMinimumSize(QSize(1000, 618))  # because golden ratio :)
+        self.setMinimumSize(QSize(1000, 600))
+
+        # configure logging
+        logging.basicConfig(filename="{}/TDM/tdm.log".format(QDir.homePath()),
+                            level=self.settings.value("loglevel", "INFO"),
+                            datefmt="%Y-%m-%d %H:%M:%S",
+                            format='%(asctime)s [%(levelname)s] %(message)s')
 
         # load devices from the devices file, create TasmotaDevices and add the to the envvironment
         for mac in self.devices.childGroups():
@@ -149,22 +159,11 @@ class MainWindow(QMainWindow):
         mSettings.addAction(QIcon(), "BSSId aliases", self.bssid)
 
         # mExport = self.menuBar().addMenu("Export")
-        # mExport.addAction(QIcon(), "OpenHAB", lambda: "")
+        # mExport.addAction(QIcon(), "OpenHAB", self.openhab)
 
     def build_toolbars(self):
         main_toolbar = Toolbar(orientation=Qt.Horizontal, iconsize=24, label_position=Qt.ToolButtonTextBesideIcon)
         main_toolbar.setObjectName("main_toolbar")
-        # self.addToolBar(main_toolbar)
-
-        # self.actToggleConnect = QAction(QIcon("./GUI/icons/disconnect.png"), "Connect")
-        # self.actToggleConnect.setCheckable(True)
-        # self.actToggleConnect.toggled.connect(self.toggle_connect)
-        # main_toolbar.addAction(self.actToggleConnect)
-        #
-        # self.actToggleAutoUpdate = QAction(QIcon("./GUI/icons/auto_telemetry.png"), "Auto telemetry")
-        # self.actToggleAutoUpdate.setCheckable(True)
-        # self.actToggleAutoUpdate.toggled.connect(self.toggle_autoupdate)
-        # main_toolbar.addAction(self.actToggleAutoUpdate)
 
     def initial_query(self, device, queued=False):
         for c in initial_commands():
@@ -245,19 +244,19 @@ class MainWindow(QMainWindow):
         for pat in default_patterns:    # tasmota default and SO19
             self.topics += expand_fulltopic(pat)
 
+        # check if custom patterns can be matched by default patterns
+        for pat in custom_patterns:
+            if pat.startswith("%prefix%") or pat.split('/')[1] == "%prefix%":
+                continue  # do nothing, default subcriptions will match this topic
+            else:
+                self.topics += expand_fulltopic(pat)
+
         for d in self.env.devices:
             # if device has a non-standard pattern, check if the pattern is found in the custom patterns
             if not d.is_default() and d.p['FullTopic'] not in custom_patterns:
                 # if pattern is not found then add the device topics to subscription list.
                 # if the pattern is found, it will be matched without implicit subscription
                 self.topics += expand_fulltopic(d.p['FullTopic'])
-
-        # check if custom patterns can be matched by default patterns
-        for pat in custom_patterns:
-            if pat.startswith("%prefix%") or pat.split('/')[1] == "%prefix%":
-                continue    # do nothing, default subcriptions will match this topic
-            else:
-                self.topics += expand_fulltopic(pat)
 
         # passing a list of tuples as recommended by paho
         self.mqtt.subscribe([(topic, 0) for topic in self.topics])
@@ -307,6 +306,7 @@ class MainWindow(QMainWindow):
 
         else:            # unknown device, start autodiscovery process
             if topic.endswith("LWT"):
+                logging.debug("DISCOVERY: LWT from an unknown device %s", topic)
                 # STAGE 1
                 # load default and user-provided FullTopic patterns and for all the patterns,
                 # try matching the LWT topic (it follows the device's FullTopic syntax
@@ -319,33 +319,32 @@ class MainWindow(QMainWindow):
                         if possible_topic not in ('tele', 'stat'):
                             # if the assumed topic is different from tele or stat, there is a chance that it's a valid topic
                             # query the assumed device for its FullTopic. False positives won't reply.
-                            self.mqtt_queue.append([p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic) + "FullTopic", ""])
+                            possible_topic_cmnd = p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic) + "FullTopic"
+                            logging.debug("DISCOVERY: Asking an unknown device for FullTopic at %s", possible_topic_cmnd)
+                            self.mqtt_queue.append([possible_topic_cmnd, ""])
 
             elif topic.endswith("RESULT"):      # reply from an unknown device
                 # STAGE 2
-                try:
-                    full_topic = loads(msg).get('FullTopic')
-                    if full_topic:
-                        # the device replies with its FullTopic
-                        # here the Topic is extracted using the returned FullTopic, identifying the device
-                        parsed = parse_topic(full_topic, topic)
-                        if parsed:
-                            # got a match, we query the device's MAC address in case it's a known device that had its topic changed
+                full_topic = loads(msg).get('FullTopic')
+                if full_topic:
+                    # the device replies with its FullTopic
+                    # here the Topic is extracted using the returned FullTopic, identifying the device
+                    parsed = parse_topic(full_topic, topic)
+                    if parsed:
+                        # got a match, we query the device's MAC address in case it's a known device that had its topic changed
+                        logging.debug("DISCOVERY: topic %s is matched by fulltopic %s", topic, full_topic)
 
-                            d = self.env.find_device(topic=parsed['topic'])
-                            if d:
-                                d.update_property("FullTopic", full_topic)
-                            else:
-                                print("DISCOVERED", parsed['topic'])
-                                d = TasmotaDevice(parsed['topic'], full_topic)
-                                self.env.devices.append(d)
-                                self.device_model.addDevice(d)
-                                self.initial_query(d, True)
-                            d.update_property("LWT", "Online")
-
-                except JSONDecodeError as e:
-                    with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
-                        l.write("{}\t{}\t{}\t{}\n".format(QDateTime.currentDateTime().toString("yyyy-MM-dd hh:mm:ss"), topic, msg, e.msg))
+                        d = self.env.find_device(topic=parsed['topic'])
+                        if d:
+                            d.update_property("FullTopic", full_topic)
+                        else:
+                            logging.info("DISCOVERY: Discovered topic=%s with fulltopic=%s", parsed['topic'], full_topic)
+                            d = TasmotaDevice(parsed['topic'], full_topic)
+                            self.env.devices.append(d)
+                            self.device_model.addDevice(d)
+                            logging.debug("DISCOVERY: Sending initial query to topic %s", parsed['topic'])
+                            self.initial_query(d, True)
+                        d.update_property("LWT", "Online")
 
     def export(self):
         fname, _ = QFileDialog.getSaveFileName(self, "Export device list as...", directory=QDir.homePath(), filter="CSV files (*.csv)")
@@ -379,6 +378,9 @@ class MainWindow(QMainWindow):
 
     def patterns(self):
         PatternsDialog().exec_()
+
+    def openhab(self):
+        OpenHABDialog(self.env).exec_()
 
     def showSubs(self):
         QMessageBox.information(self, "Subscriptions", "\n".join(sorted(self.topics)))

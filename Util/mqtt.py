@@ -2,6 +2,7 @@ import paho.mqtt.client as mqtt
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSlot
 
+import logging
 
 class MqttClient(QtCore.QObject):
     Disconnected = 0
@@ -132,6 +133,7 @@ class MqttClient(QtCore.QObject):
     def subscribe(self, path):
         if self.state == MqttClient.Connected:
             self.m_client.subscribe(path)
+            logging.debug("MQTT: Subscribed to %s", ", ".join([p[0] for p in path]))
 
     @pyqtSlot(str, str)
     def publish(self, topic, payload = None, qos=0, retain=False):
