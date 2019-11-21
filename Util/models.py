@@ -17,6 +17,8 @@ class TasmotaDevicesModel(QAbstractTableModel):
         self.tasmota_env = tasmota_env
         self.columns = []
 
+        self.devices_short_version = self.settings.value("devices_short_version", True, bool)
+
         for d in self.tasmota_env.devices:
             d.property_changed = self.notify_change
             d.module_changed = self.module_change
@@ -84,9 +86,9 @@ class TasmotaDevicesModel(QAbstractTableModel):
                         return d.module()
 
                 elif col_name == "Version" and val:
-                    if "(" in val:
+                    if self.devices_short_version and "(" in val:
                         return val[0:val.index("(")]
-                    return val
+                    return val.replace("(", " (")
 
                 elif col_name in ("Uptime", "Downtime") and val:
                     val = str(val)

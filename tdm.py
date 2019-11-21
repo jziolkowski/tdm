@@ -6,12 +6,13 @@ from json import loads, JSONDecodeError
 import logging
 
 from PyQt5.QtCore import QTimer, pyqtSlot, QSettings, QDir, QSize, Qt, QDateTime, QUrl
-from PyQt5.QtGui import QIcon, QDesktopServices
+from PyQt5.QtGui import QIcon, QDesktopServices, QFont
 from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QFileDialog, QAction, QFrame, \
     QInputDialog, QMessageBox, QPushButton
 
-# from GUI.ClearLWT import ClearLWTDialog
+from GUI.ClearLWT import ClearLWTDialog
 # from GUI.OpenHAB import OpenHABDialog
+from GUI.Prefs import PrefsDialog
 
 try:
     from PyQt5.QtWebEngineWidgets import QWebEngineView
@@ -58,6 +59,7 @@ class MainWindow(QMainWindow):
                             level=self.settings.value("loglevel", "INFO"),
                             datefmt="%Y-%m-%d %H:%M:%S",
                             format='%(asctime)s [%(levelname)s] %(message)s')
+        logging.info("### TDM START ###")
 
         # load devices from the devices file, create TasmotaDevices and add the to the envvironment
         for mac in self.devices.childGroups():
@@ -108,6 +110,7 @@ class MainWindow(QMainWindow):
             self.actToggleConnect.trigger()
 
         self.tele_docks = {}
+        self.consoles = []
 
     def setup_main_layout(self):
         self.mdi = QMdiArea()
@@ -147,9 +150,9 @@ class MainWindow(QMainWindow):
 
         mMQTT.addAction(QIcon(), "Broker", self.setup_broker)
         mMQTT.addAction(QIcon(), "Autodiscovery patterns", self.patterns)
-        #
-        # mMQTT.addSeparator()
-        # mMQTT.addAction(QIcon(), "Clear obsolete retained LWTs", self.clear_LWT)
+
+        mMQTT.addSeparator()
+        mMQTT.addAction(QIcon(), "Clear obsolete retained LWTs", self.clear_LWT)
 
         mMQTT.addSeparator()
         mMQTT.addAction(QIcon(), "Auto telemetry period", self.auto_telemetry_period)
@@ -161,6 +164,8 @@ class MainWindow(QMainWindow):
 
         mSettings = self.menuBar().addMenu("Settings")
         mSettings.addAction(QIcon(), "BSSId aliases", self.bssid)
+        mSettings.addSeparator()
+        mSettings.addAction(QIcon(), "Preferences", self.prefs)
 
         # mExport = self.menuBar().addMenu("Export")
         # mExport.addAction(QIcon(), "OpenHAB", self.openhab)
@@ -310,6 +315,7 @@ class MainWindow(QMainWindow):
 
         else:            # unknown device, start autodiscovery process
             if topic.endswith("LWT"):
+                self.env.lwts.append(topic)
                 logging.debug("DISCOVERY: LWT from an unknown device %s", topic)
                 # STAGE 1
                 # load default and user-provided FullTopic patterns and for all the patterns,
@@ -348,6 +354,7 @@ class MainWindow(QMainWindow):
                             self.device_model.addDevice(d)
                             logging.debug("DISCOVERY: Sending initial query to topic %s", parsed['topic'])
                             self.initial_query(d, True)
+                            self.env.lwts.remove(d.tele_topic("LWT"))
                         d.update_property("LWT", "Online")
 
     def export(self):
@@ -390,7 +397,47 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "Subscriptions", "\n".join(sorted(self.topics)))
 
     def clear_LWT(self):
-        ClearLWTDialog(self.env).exec_()
+        dlg = ClearLWTDialog(self.env)
+        if dlg.exec_() == ClearLWTDialog.Accepted:
+            for row in range(dlg.lw.count()):
+                itm = dlg.lw.item(row)
+                if itm.checkState() == Qt.Checked:
+                    topic = itm.text()
+                    self.mqtt.publish(topic, retain=True)
+                    self.env.lwts.remove(topic)
+                    logging.info("MQTT: Cleared %s", topic)
+
+    def prefs(self):
+        dlg = PrefsDialog()
+        if dlg.exec_() == QDialog.Accepted:
+            update_devices = False
+
+            devices_short_version = self.settings.value("devices_short_version", True, bool)
+            if devices_short_version != dlg.cbDevShortVersion.isChecked():
+                update_devices = True
+                self.settings.setValue("devices_short_version", dlg.cbDevShortVersion.isChecked())
+
+
+            update_consoles = False
+
+            console_font_size = self.settings.value("console_font_size", 9)
+            if console_font_size != dlg.sbConsFontSize.value():
+                update_consoles = True
+                self.settings.setValue("console_font_size", dlg.sbConsFontSize.value())
+
+            console_word_wrap = self.settings.value("console_word_wrap", True, bool)
+            if console_word_wrap != dlg.cbConsWW.isChecked():
+                update_consoles = True
+                self.settings.setValue("console_word_wrap", dlg.cbConsWW.isChecked())
+
+            if update_consoles:
+                for c in self.consoles:
+                    c.console.setWordWrapMode(dlg.cbConsWW.isChecked())
+                    new_font = QFont(c.console.font())
+                    new_font.setPointSize(dlg.sbConsFontSize.value())
+                    c.console.setFont(new_font)
+
+        self.settings.sync()
 
     def auto_telemetry_period(self):
         curr_val = self.settings.value("autotelemetry", 5000, int)
@@ -418,6 +465,7 @@ class MainWindow(QMainWindow):
             console_widget.sendCommand.connect(self.mqtt.publish)
             self.addDockWidget(Qt.BottomDockWidgetArea, console_widget)
             console_widget.command.setFocus()
+            self.consoles.append(console_widget)
 
     @pyqtSlot()
     def openRulesEditor(self):

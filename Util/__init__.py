@@ -2,6 +2,8 @@ import re
 from collections import namedtuple
 from json import loads, JSONDecodeError, load
 
+import logging
+
 from PyQt5.QtCore import QDir, QDateTime, pyqtSignal, QObject
 
 commands = [
@@ -79,7 +81,6 @@ def initial_commands():
     return commands
 
 
-
 def parse_topic(full_topic, topic):
     """
     :param full_topic: FullTopic to match against
@@ -112,6 +113,7 @@ def expand_fulltopic(fulltopic):
 class TasmotaEnvironment(object):
     def __init__(self):
         self.devices = []
+        self.lwts = []
 
     def find_device(self, topic):
         for d in self.devices:
@@ -122,6 +124,7 @@ class TasmotaEnvironment(object):
 
 class TasmotaDevice(QObject):
     update_telemetry = pyqtSignal()
+
     def __init__(self, topic, fulltopic, friendlyname=""):
         super(TasmotaDevice, self).__init__()
         self.p = {
@@ -159,7 +162,9 @@ class TasmotaDevice(QObject):
     def stat_topic(self):
         return self.build_topic("stat")
 
-    def tele_topic(self):
+    def tele_topic(self, endpoint=""):
+        if endpoint:
+            return "{}/{}".format(self.build_topic("tele"), endpoint)
         return self.build_topic("tele")
 
     def is_default(self):
@@ -188,13 +193,17 @@ class TasmotaDevice(QObject):
         return parsed.get('topic') == self.p['Topic']
 
     def parse_message(self, topic, msg):
-        parse_statuses = ["STATUS{}".format(s) for s in [1, 2, 3, 4, 5, 6, 7]]
+        parse_statuses = ["STATUS{}".format(s) for s in [1, 2, 3, 4, 5, 6, 7, 9]]
         if self.prefix in ("stat", "tele"):
+            payload = None
 
-            try:
-                payload = loads(msg)
+            if self.reply == 'STATUS':
+                try:
+                    payload = loads(msg)
+                except JSONDecodeError as e:
+                    logging.critical("PARSER: Can't parse STATUS (%s)", e)
 
-                if self.reply == 'STATUS':
+                if payload:
                     payload = payload['Status']
                     for k, v in payload.items():
                         if k == "FriendlyName":
@@ -203,12 +212,24 @@ class TasmotaDevice(QObject):
                         else:
                             self.update_property(k, v)
 
-                elif self.reply in parse_statuses:
+            elif self.reply in parse_statuses:
+                try:
+                    payload = loads(msg)
+                except JSONDecodeError as e:
+                    logging.critical("PARSER: Can't parse %s (%s)", self.reply, e)
+
+                if payload:
                     payload = payload[list(payload.keys())[0]]
                     for k, v in payload.items():
                         self.update_property(k, v)
 
-                elif self.reply in ('STATE', 'STATUS11'):
+            elif self.reply in ('STATE', 'STATUS11'):
+                try:
+                    payload = loads(msg)
+                except JSONDecodeError as e:
+                    logging.critical("PARSER: Can't parse %s (%s)", self.reply, e)
+
+                if payload:
                     if self.reply == 'STATUS11':
                         payload = payload['StatusSTS']
 
@@ -219,18 +240,30 @@ class TasmotaDevice(QObject):
                         else:
                             self.update_property(k, v)
 
-                elif self.reply in ('SENSOR', 'STATUS8', 'STATUS10'):
+            elif self.reply in ('SENSOR', 'STATUS8', 'STATUS10'):
+                try:
+                    payload = loads(msg)
+                except JSONDecodeError as e:
+                    logging.critical("PARSER: Can't parse %s (%s)", self.reply, e)
+
+                if payload:
                     if self.reply in ('STATUS8', 'STATUS10'):
                         payload = payload['StatusSNS']
 
                     self.t = payload
                     self.update_telemetry.emit()
 
-                elif self.reply == 'RESULT':
+            elif msg.startswith("{"):
+                try:
+                    payload = loads(msg)
+                except JSONDecodeError as e:
+                    logging.critical("PARSER: Can't parse %s (%s)", self.reply, e)
+
+                if payload:
                     keys = list(payload.keys())
                     fk = keys[0]
 
-                    if fk.startswith("Modules"):
+                    if self.reply == 'RESULT' and fk.startswith("Modules") or self.reply == "MODULES":
                         for k, v in payload.items():
                             if isinstance(v, list):
                                 for mdl in v:
@@ -239,12 +272,12 @@ class TasmotaDevice(QObject):
                                 self.modules.update(v)
                             self.module_changed(self)
 
-                    elif fk == 'NAME':
+                    elif self.reply == 'RESULT' and fk == 'NAME' or self.reply == "TEMPLATE":
                         self.p['Template'] = payload
                         if self.module_changed:
                             self.module_changed(self)
 
-                    elif fk.startswith("GPIOs"):
+                    elif self.reply == 'RESULT' and fk.startswith("GPIOs") or self.reply == "GPIOS":
                         for k, v in payload.items():
                             if isinstance(v, list):
                                 for gp in v:
@@ -252,7 +285,7 @@ class TasmotaDevice(QObject):
                             elif isinstance(v, dict):
                                 self.gpios.update(v)
 
-                    elif fk.startswith("GPIO"):
+                    elif self.reply == 'RESULT' and fk.startswith("GPIO") or self.reply == "GPIO":
                         for gp, gp_val in payload.items():
                             if not gp == "GPIO":
                                 if isinstance(gp_val, str):
@@ -264,12 +297,6 @@ class TasmotaDevice(QObject):
                     else:
                         for k, v in payload.items():
                             self.update_property(k, v)
-
-            except JSONDecodeError as e:
-                    with open("{}/TDM/error.log".format(QDir.homePath()), "a+") as l:
-                        l.write("{}\t{}\t{}\t{}\n"
-                                .format(QDateTime.currentDateTime()
-                                        .toString("yyyy-MM-dd hh:mm:ss"), topic, msg, e.msg))
 
     def power(self):
         return {k: v for k, v in self.p.items() if k.startswith('POWER')}

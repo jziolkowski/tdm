@@ -1,7 +1,7 @@
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableView, QSpinBox, QAction, QToolBar, \
-    QHeaderView, QComboBox, QDoubleSpinBox, QWidget, QSizePolicy, QSlider, QWidgetAction, QPushButton, QToolButton, QFrame, QLineEdit, QCheckBox
+    QHeaderView, QComboBox, QDoubleSpinBox, QWidget, QSizePolicy, QSlider, QWidgetAction, QFrame, QLineEdit
 
 base_view = ["FriendlyName"]
 default_views = {
@@ -12,6 +12,8 @@ default_views = {
     "MQTT": base_view + ["Topic", "FullTopic", "CommandTopic", "StatTopic", "TeleTopic", "FallbackTopic", "GroupTopic"],
 }
 
+console_font = QFont("asd")
+console_font.setStyleHint(QFont.TypeWriter)
 
 class VLayout(QVBoxLayout):
     def __init__(self, margin=3, spacing=3, label='', *args, **kwargs):

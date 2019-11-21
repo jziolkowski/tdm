@@ -1,11 +1,12 @@
-from PyQt5.QtCore import Qt, pyqtSlot, QTime, pyqtSignal, QRegExp, QEvent, QStringListModel, QSize
-from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont
+from PyQt5.QtCore import Qt, pyqtSlot, QTime, pyqtSignal, QRegExp, QEvent, QStringListModel, QSize, QSettings, QDir
+from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QIcon
 from PyQt5.QtWidgets import QDockWidget, QPlainTextEdit, QLineEdit, QWidget, QCompleter, QComboBox, QListWidget, \
-    QDialog, QLabel
+    QDialog, QLabel, QPushButton, QFileDialog
 
-from GUI import VLayout, GroupBoxV, HLayout
+from GUI import VLayout, GroupBoxV, HLayout, console_font
 from Util import commands
 
+from datetime import datetime
 
 class ConsoleWidget(QDockWidget):
 
@@ -17,25 +18,30 @@ class ConsoleWidget(QDockWidget):
         self.setWindowTitle("Console [{}]".format(device.p["FriendlyName1"]))
         self.device = device
 
+        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
+
+        console_font_size = self.settings.value("console_font_size", 9, int)
+        console_font.setPointSize(console_font_size)
+
+        console_word_wrap = self.settings.value("console_word_wrap", True, bool)
+
         w = QWidget()
 
         vl = VLayout()
 
         self.console = QPlainTextEdit()
         self.console.setTabChangesFocus(True)
+        self.console.setWordWrapMode(console_word_wrap)
 
-        fnt_mono = QFont("asd")
-        fnt_mono.setStyleHint(QFont.TypeWriter)
-
-        self.console.setFont(fnt_mono)
         self.console.setReadOnly(True)
+        self.console.setFont(console_font)
 
         self.console_hl = JSONHighLighter(self.console.document())
 
         hl_command_mqttlog = HLayout(0)
 
         self.command = QLineEdit()
-        self.command.setFont(fnt_mono)
+        self.command.setFont(console_font)
         self.command.setPlaceholderText("Type the command and press ENTER to send.")
         self.command.returnPressed.connect(self.command_enter)
         self.command.textChanged.connect(self.command_changed)
@@ -49,6 +55,16 @@ class ConsoleWidget(QDockWidget):
 
         command_cpl.activated.connect(self.command.clear, Qt.QueuedConnection)
 
+        pbSave = QPushButton(QIcon("GUI/icons/save.png"), "")
+        pbSave.setFlat(True)
+        pbSave.setToolTip("Save console")
+        pbSave.clicked.connect(self.save_console)
+
+        pbClear = QPushButton(QIcon("GUI/icons/clear.png"), "")
+        pbClear.setFlat(True)
+        pbClear.setToolTip("Clear console")
+        pbClear.clicked.connect(self.clear_console)
+
         self.cbMQTTLog = QComboBox()
         self.cbMQTTLog.addItems(["Disabled", "Error", "Error/Info (default)", "Error/Info/Debug", "Error/Info/More debug", "All"])
         mqttlog = self.device.p.get("MqttLog", -1)
@@ -60,7 +76,7 @@ class ConsoleWidget(QDockWidget):
 
         self.cbMQTTLog.currentIndexChanged.connect(self.change_mqttlog)
 
-        hl_command_mqttlog.addWidgets([self.command, QLabel("MQTT Log level"), self.cbMQTTLog])
+        hl_command_mqttlog.addWidgets([self.command, pbSave, pbClear, QLabel("MQTT Log level"), self.cbMQTTLog])
 
         vl.addWidget(self.console)
         vl.addLayout(hl_command_mqttlog)
@@ -118,6 +134,16 @@ class ConsoleWidget(QDockWidget):
 
     def change_mqttlog(self, idx):
         self.sendCommand.emit(self.device.cmnd_topic("MqttLog"), str(idx))
+
+    def save_console(self):
+        new_fname = "{}/TDM/{} {}.log".format(QDir.homePath(), self.device.p["FriendlyName1"], datetime.now().strftime("%Y%m%d-%H%M%S"))
+        file, ok = QFileDialog.getSaveFileName(self, "Save console", new_fname, "Log files | *.log")
+        if ok:
+            with open(file, "w") as f:
+                f.write(self.console.toPlainText())
+
+    def clear_console(self):
+        self.console.clear()
 
 class JSONHighLighter(QSyntaxHighlighter):
     keyword = QTextCharFormat()

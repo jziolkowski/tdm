@@ -96,7 +96,6 @@ class ListWidget(QWidget):
         self.device_list.customContextMenuRequested.connect(self.show_list_ctx_menu)
 
         self.ctx_menu = QMenu()
-        self.ctx_menu_relays = None
 
         self.create_actions()
         self.create_view_buttons()
@@ -105,6 +104,37 @@ class ListWidget(QWidget):
         self.device_list.doubleClicked.connect(lambda: self.openConsole.emit())
 
     def create_actions(self):
+        actConsole = self.tb.addAction(QIcon("GUI/icons/console.png"), "Console", self.openConsole.emit)
+        actConsole.setShortcut("Ctrl+E")
+
+        actRules = self.tb.addAction(QIcon("GUI/icons/rules.png"), "Rules", self.openRulesEditor.emit)
+        actRules.setShortcut("Ctrl+R")
+
+        actTimers = self.tb.addAction(QIcon("GUI/icons/timers.png"), "Timers", self.configureTimers)
+
+        actButtons = self.tb.addAction(QIcon("GUI/icons/buttons.png"), "Buttons", self.configureButtons)
+        actButtons.setShortcut("Ctrl+B")
+
+        actSwitches = self.tb.addAction(QIcon("GUI/icons/switches.png"), "Switches", self.configureSwitches)
+        actSwitches.setShortcut("Ctrl+S")
+
+        actPower = self.tb.addAction(QIcon("GUI/icons/power.png"), "Power", self.configurePower)
+        actPower.setShortcut("Ctrl+P")
+
+        # setopts = self.tb.addAction(QIcon("GUI/icons/setoptions.png"), "SetOptions", self.configureSO)
+        # setopts.setShortcut("Ctrl+S")
+
+        self.tb.addSpacer()
+
+        actTelemetry = self.tb.addAction(QIcon("GUI/icons/telemetry.png"), "Telemetry", self.openTelemetry.emit)
+        actTelemetry.setShortcut("Ctrl+T")
+
+        actWebui = self.tb.addAction(QIcon("GUI/icons/web.png"), "WebUI", self.openWebUI.emit)
+        actWebui.setShortcut("Ctrl+U")
+
+        self.ctx_menu.addActions([actRules, actTimers, actButtons, actSwitches, actPower, actTelemetry, actWebui])
+        self.ctx_menu.addSeparator()
+
         self.ctx_menu_cfg = QMenu("Configure")
         self.ctx_menu_cfg.setIcon(QIcon("GUI/icons/settings.png"))
         self.ctx_menu_cfg.addAction("Module", self.configureModule)
@@ -131,34 +161,6 @@ class ListWidget(QWidget):
         self.ctx_menu.addAction(QIcon(), "Reset", self.ctx_menu_reset)
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon("GUI/icons/delete.png"), "Delete", self.ctx_menu_delete_device)
-
-        console = self.tb.addAction(QIcon("GUI/icons/console.png"), "Console", self.openConsole.emit)
-        console.setShortcut("Ctrl+E")
-
-        rules = self.tb.addAction(QIcon("GUI/icons/rules.png"), "Rules", self.openRulesEditor.emit)
-        rules.setShortcut("Ctrl+R")
-
-        self.tb.addAction(QIcon("GUI/icons/timers.png"), "Timers", self.configureTimers)
-
-        buttons = self.tb.addAction(QIcon("GUI/icons/buttons.png"), "Buttons", self.configureButtons)
-        buttons.setShortcut("Ctrl+B")
-
-        switches = self.tb.addAction(QIcon("GUI/icons/switches.png"), "Switches", self.configureSwitches)
-        switches.setShortcut("Ctrl+S")
-
-        power = self.tb.addAction(QIcon("GUI/icons/power.png"), "Power", self.configurePower)
-        power.setShortcut("Ctrl+P")
-
-        # setopts = self.tb.addAction(QIcon("GUI/icons/setoptions.png"), "SetOptions", self.configureSO)
-        # setopts.setShortcut("Ctrl+S")
-
-        self.tb.addSpacer()
-
-        telemetry = self.tb.addAction(QIcon("GUI/icons/telemetry.png"), "Telemetry", self.openTelemetry.emit)
-        telemetry.setShortcut("Ctrl+T")
-
-        webui = self.tb.addAction(QIcon("GUI/icons/web.png"), "WebUI", self.openWebUI.emit)
-        webui.setShortcut("Ctrl+U")
 
         # self.tb.addAction(QIcon(), "Multi Command", self.ctx_menu_webui)
 

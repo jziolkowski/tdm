@@ -1,7 +1,11 @@
-## [0.2.2] - 2019-11-20
+## [0.2.2] - 2019-11-21
 ### Added
 - Device list now sorts correctly when using diactrics in friendly names
-- Added some logging features
+- Some logging features for MQTT and Autodiscovery process
+- Toolbar actions now available in device list context menu (#55)
+- Preferences dialog: console word-wrap setting and font size and version formatting option for device list
+- Clear obsolete LWTs dialog added in MQTT menu
+- Save/Clear functions to console
 
 ### Fixed
 - Power ALL was sending true/false instead of 0/1 (#53)
