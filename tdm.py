@@ -243,8 +243,11 @@ class MainWindow(QMainWindow):
         self.mqtt_subscribe()
 
     def mqtt_subscribe(self):
-        # load custom autodiscovery patterns
+        # clear old topics
+        self.topics.clear()
         custom_patterns.clear()
+
+        # load custom autodiscovery patterns
         self.settings.beginGroup("Patterns")
         for k in self.settings.childKeys():
             custom_patterns.append(self.settings.value(k))
