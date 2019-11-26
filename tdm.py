@@ -77,12 +77,6 @@ class MainWindow(QMainWindow):
             
             self.devices.endGroup()
 
-        # load custom autodiscovery patterns
-        self.settings.beginGroup("Patterns")
-        for k in self.settings.childKeys():
-            custom_patterns.append(self.settings.value(k))
-        self.settings.endGroup()
-
         self.device_model = TasmotaDevicesModel(self.env)
 
         self.setup_mqtt()
@@ -249,6 +243,12 @@ class MainWindow(QMainWindow):
         self.mqtt_subscribe()
 
     def mqtt_subscribe(self):
+        # load custom autodiscovery patterns
+        self.settings.beginGroup("Patterns")
+        for k in self.settings.childKeys():
+            custom_patterns.append(self.settings.value(k))
+        self.settings.endGroup()
+
         # expand fulltopic patterns to subscribable topics
         for pat in default_patterns:    # tasmota default and SO19
             self.topics += expand_fulltopic(pat)
