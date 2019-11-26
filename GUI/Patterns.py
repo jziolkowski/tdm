@@ -68,6 +68,9 @@ class PatternsDialog(QDialog):
 
         for r in range(self.tw.rowCount()):
             val = self.tw.item(r, 0).text()
+            # check for trailing /
+            if (not val.endswith('/')):
+                val += '/'
             self.settings.setValue(str(r), val)
         self.settings.endGroup()
         self.done(QDialog.Accepted)
