@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 import csv
@@ -38,7 +39,7 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.2.2"
+        self._version = "0.2.3"
         self.setWindowIcon(QIcon("GUI/icons/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
@@ -49,6 +50,10 @@ class MainWindow(QMainWindow):
         self.topics = []
         self.mqtt_queue = []
         self.fulltopic_queue = []
+
+        # ensure TDM directory exists in the user directory
+        if not os.path.isdir("{}/TDM".format(QDir.homePath())):
+            os.mkdir("{}/TDM".format(QDir.homePath()))
 
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
         self.devices = QSettings("{}/TDM/devices.cfg".format(QDir.homePath()), QSettings.IniFormat)
