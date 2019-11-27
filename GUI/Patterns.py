@@ -29,7 +29,8 @@ class PatternsDialog(QDialog):
 
         vl.addWidgets([QLabel("Add your modified FullTopic patterns to enable auto-discovery of such devices\n"
                               "Patterns MUST include %prefix%, %topic% and trailing /\n"
-                              "Default Tasmota FullTopics are built-in"), self.tw])
+                              "Default Tasmota FullTopics are built-in\n\n"
+                              "You have to reconnect to your Broker after topic changes."), self.tw])
 
         hl_btns = HLayout([0, 3, 0, 3])
         btnAdd = QPushButton("Add")
@@ -67,6 +68,9 @@ class PatternsDialog(QDialog):
 
         for r in range(self.tw.rowCount()):
             val = self.tw.item(r, 0).text()
+            # check for trailing /
+            if (not val.endswith('/')):
+                val += '/'
             self.settings.setValue(str(r), val)
         self.settings.endGroup()
         self.done(QDialog.Accepted)
