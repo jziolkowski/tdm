@@ -1,3 +1,11 @@
+## [0.2.3] - 2019-11-27
+### Added
+- ~/TDM directory is created automatically if missing, to prevent logging module crash
+
+### Fixed
+- forced RSSI to be cast as int() for some odd cases
+- reconnect is now enough to subscribe to new custom patterns (thanks to pgollor)
+
 ## [0.2.2] - 2019-11-21
 ### Added
 - Device list now sorts correctly when using diactrics in friendly names
