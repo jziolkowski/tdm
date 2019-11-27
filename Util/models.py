@@ -125,6 +125,10 @@ class TasmotaDevicesModel(QAbstractTableModel):
                     if alias:
                         return alias
 
+                elif col_name == "RSSI":
+                    val = int(d.p.get("RSSI", 0))
+                    return val
+
                 return val
 
             elif role == LWTRole:
@@ -136,7 +140,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 return val
 
             elif role == RSSIRole:
-                val = d.p.get('RSSI', 0)
+                val = int(d.p.get('RSSI', 0))
                 return val
 
             elif role == FirmwareRole:
@@ -262,7 +266,7 @@ class DeviceDelegate(QStyledItemDelegate):
             if index.data():
                 px = QPixmap("GUI/icons/status_offline.png")
                 if index.data(LWTRole) == "Online":
-                    rssi = int(index.data(RSSIRole))
+                    rssi = index.data(RSSIRole)
 
                     if rssi > 0 and rssi < 50:
                         px = QPixmap("GUI/icons/status_low.png")
