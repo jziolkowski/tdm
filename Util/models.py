@@ -164,15 +164,15 @@ class TasmotaDevicesModel(QAbstractTableModel):
                     rssi = int(d.p.get("RSSI", 0))
 
                     if rssi > 0 and rssi < 50:
-                        return QIcon("GUI/icons/status_low.png")
+                        return QIcon(":/status_low.png")
 
                     elif rssi < 75:
-                        return QIcon("GUI/icons/status_medium.png")
+                        return QIcon(":/status_medium.png")
 
                     elif rssi >= 75:
-                        return QIcon("GUI/icons/status_high.png")
+                        return QIcon(":/status_high.png")
 
-                return QIcon("GUI/icons/status_offline.png")
+                return QIcon(":/status_offline.png")
 
             elif role == Qt.InitialSortOrderRole:
                 if col_name in ("Uptime", "Downtime"):
@@ -264,18 +264,18 @@ class DeviceDelegate(QStyledItemDelegate):
 
         if col_name == "FriendlyName":
             if index.data():
-                px = QPixmap("GUI/icons/status_offline.png")
+                px = QPixmap(":/status_offline.png")
                 if index.data(LWTRole) == "Online":
                     rssi = index.data(RSSIRole)
 
                     if rssi > 0 and rssi < 50:
-                        px = QPixmap("GUI/icons/status_low.png")
+                        px = QPixmap(":/status_low.png")
 
                     elif rssi < 75:
-                        px = QPixmap("GUI/icons/status_medium.png")
+                        px = QPixmap(":/status_medium.png")
 
                     elif rssi >= 75:
-                        px = QPixmap("GUI/icons/status_high.png")
+                        px = QPixmap(":/status_high.png")
 
                 px_y = (option.rect.height() - 24) / 2
                 p.drawPixmap(option.rect.x() + 2, option.rect.y() + px_y, px.scaled(24, 24))
@@ -335,10 +335,10 @@ class DeviceDelegate(QStyledItemDelegate):
                         y = option.rect.y() + (option.rect.height() - 24) / 2
 
                         if num == 1:
-                            p.drawPixmap(x, y, 24, 24, QPixmap("./GUI/icons/P_{}".format(index.data()[k])))
+                            p.drawPixmap(x, y, 24, 24, QPixmap("./:/P_{}".format(index.data()[k])))
 
                         else:
-                            p.drawPixmap(x, y, 24, 24, QPixmap("./GUI/icons/P{}_{}".format(i + 1, index.data()[k])))
+                            p.drawPixmap(x, y, 24, 24, QPixmap("./:/P{}_{}".format(i + 1, index.data()[k])))
 
                 else:
                     i = 0
@@ -348,7 +348,7 @@ class DeviceDelegate(QStyledItemDelegate):
                             y = option.rect.y() + row * 24
 
                             if i < num:
-                                p.drawPixmap(x, y, 24, 24, QPixmap("./GUI/icons/P{}_{}".format(i + 1, list(index.data().values())[i])))
+                                p.drawPixmap(x, y, 24, 24, QPixmap("./:/P{}_{}".format(i + 1, list(index.data().values())[i])))
                             i += 1
 
         elif col_name == "Color":
