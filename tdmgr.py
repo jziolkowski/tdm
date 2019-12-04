@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os
 import re
 import sys
@@ -41,7 +43,7 @@ from Util.mqtt import MqttClient
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.2.3"
+        self._version = "0.2.4"
         self.setWindowIcon(QIcon(":/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
@@ -72,6 +74,7 @@ class MainWindow(QMainWindow):
         for mac in self.devices.childGroups():
             self.devices.beginGroup(mac)
             device = TasmotaDevice(self.devices.value("topic"), self.devices.value("full_topic"), self.devices.value("friendly_name"))
+            device.debug = self.devices.value("debug", False, bool)
             device.p['Mac'] = mac.replace("-", ":")
             device.env = self.env
             self.env.devices.append(device)
@@ -323,11 +326,14 @@ class MainWindow(QMainWindow):
             else:
                 # forward the message for processing
                 device.parse_message(topic, msg)
+                if device.debug:
+                    logging.debug("MQTT: %s %s", topic, msg)
 
         else:            # unknown device, start autodiscovery process
             if topic.endswith("LWT"):
                 self.env.lwts.append(topic)
-                logging.debug("DISCOVERY: LWT from an unknown device %s", topic)
+                logging.info("DISCOVERY: LWT from an unknown device %s", topic)
+
                 # STAGE 1
                 # load default and user-provided FullTopic patterns and for all the patterns,
                 # try matching the LWT topic (it follows the device's FullTopic syntax
