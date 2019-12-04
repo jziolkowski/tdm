@@ -1,4 +1,4 @@
-{
+commands = {
   "BlinkCount": {
         "description": "Number of relay toggles (blinks)",
         "type": "value",

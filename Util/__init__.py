@@ -1,10 +1,12 @@
 import re
-from collections import namedtuple
 from json import loads, JSONDecodeError, load
 
 import logging
 
-from PyQt5.QtCore import QDir, QDateTime, pyqtSignal, QObject
+from PyQt5.QtCore import pyqtSignal, QObject
+
+from Util.commands import commands as commands_json
+from Util.setoptions import setoptions
 
 commands = [
     "Backlog", "BlinkCount", "BlinkTime", "ButtonDebounce", "FanSpeed", "Interlock", "LedMask", "LedPower", "LedPower", "LedState", "Power", "PowerOnState", "PulseTime", "SwitchDebounce", "SwitchMode",
@@ -52,14 +54,6 @@ template_adc = {
     "4": "Button",
     "5": "Buttoni"
 }
-
-with open("Util/setoptions.json") as so:
-    setoptions = load(so)
-
-# TODO: add all commands to the JSON file and get rid of the list above
-with open("Util/commands.json") as cm:
-    commands_json = load(cm)
-
 
 def initial_commands():
     commands = [

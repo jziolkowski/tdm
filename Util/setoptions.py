@@ -1,4 +1,4 @@
-{
+setoptions = {
     "0": {
         "description": "Save power state and use after restart",
         "type": "select",
