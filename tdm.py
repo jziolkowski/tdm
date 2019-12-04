@@ -15,6 +15,8 @@ from GUI.ClearLWT import ClearLWTDialog
 # from GUI.OpenHAB import OpenHABDialog
 from GUI.Prefs import PrefsDialog
 
+from GUI import icons
+
 try:
     from PyQt5.QtWebEngineWidgets import QWebEngineView
 except ImportError:
@@ -40,7 +42,7 @@ class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self._version = "0.2.3"
-        self.setWindowIcon(QIcon("GUI/icons/logo.png"))
+        self.setWindowIcon(QIcon(":/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
         self.unknown = []
@@ -142,7 +144,7 @@ class MainWindow(QMainWindow):
 
     def build_mainmenu(self):
         mMQTT  = self.menuBar().addMenu("MQTT")
-        self.actToggleConnect = QAction(QIcon("./GUI/icons/disconnect.png"), "Connect")
+        self.actToggleConnect = QAction(QIcon(":/disconnect.png"), "Connect")
         self.actToggleConnect.setCheckable(True)
         self.actToggleConnect.toggled.connect(self.toggle_connect)
         mMQTT.addAction(self.actToggleConnect)
@@ -156,7 +158,7 @@ class MainWindow(QMainWindow):
         mMQTT.addSeparator()
         mMQTT.addAction(QIcon(), "Auto telemetry period", self.auto_telemetry_period)
 
-        self.actToggleAutoUpdate = QAction(QIcon("./GUI/icons/auto_telemetry.png"), "Auto telemetry")
+        self.actToggleAutoUpdate = QAction(QIcon(":/auto_telemetry.png"), "Auto telemetry")
         self.actToggleAutoUpdate.setCheckable(True)
         self.actToggleAutoUpdate.toggled.connect(self.toggle_autoupdate)
         mMQTT.addAction(self.actToggleAutoUpdate)
@@ -241,7 +243,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Connecting to broker")
 
     def mqtt_connected(self):
-        self.actToggleConnect.setIcon(QIcon("./GUI/icons/connect.png"))
+        self.actToggleConnect.setIcon(QIcon(":/connect.png"))
         self.actToggleConnect.setText("Disconnect")
         self.statusBar().showMessage("Connected to {}:{} as {}".format(self.broker_hostname, self.broker_port, self.broker_username if self.broker_username else '[anonymous]'))
 
@@ -290,7 +292,7 @@ class MainWindow(QMainWindow):
             self.mqtt_queue.pop(self.mqtt_queue.index(q))
 
     def mqtt_disconnected(self):
-        self.actToggleConnect.setIcon(QIcon("./GUI/icons/disconnect.png"))
+        self.actToggleConnect.setIcon(QIcon(":/disconnect.png"))
         self.actToggleConnect.setText("Connect")
         self.statusBar().showMessage("Disconnected")
 

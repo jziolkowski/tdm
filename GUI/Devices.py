@@ -104,39 +104,39 @@ class ListWidget(QWidget):
         self.device_list.doubleClicked.connect(lambda: self.openConsole.emit())
 
     def create_actions(self):
-        actConsole = self.tb.addAction(QIcon("GUI/icons/console.png"), "Console", self.openConsole.emit)
+        actConsole = self.tb.addAction(QIcon(":/console.png"), "Console", self.openConsole.emit)
         actConsole.setShortcut("Ctrl+E")
 
-        actRules = self.tb.addAction(QIcon("GUI/icons/rules.png"), "Rules", self.openRulesEditor.emit)
+        actRules = self.tb.addAction(QIcon(":/rules.png"), "Rules", self.openRulesEditor.emit)
         actRules.setShortcut("Ctrl+R")
 
-        actTimers = self.tb.addAction(QIcon("GUI/icons/timers.png"), "Timers", self.configureTimers)
+        actTimers = self.tb.addAction(QIcon(":/timers.png"), "Timers", self.configureTimers)
 
-        actButtons = self.tb.addAction(QIcon("GUI/icons/buttons.png"), "Buttons", self.configureButtons)
+        actButtons = self.tb.addAction(QIcon(":/buttons.png"), "Buttons", self.configureButtons)
         actButtons.setShortcut("Ctrl+B")
 
-        actSwitches = self.tb.addAction(QIcon("GUI/icons/switches.png"), "Switches", self.configureSwitches)
+        actSwitches = self.tb.addAction(QIcon(":/switches.png"), "Switches", self.configureSwitches)
         actSwitches.setShortcut("Ctrl+S")
 
-        actPower = self.tb.addAction(QIcon("GUI/icons/power.png"), "Power", self.configurePower)
+        actPower = self.tb.addAction(QIcon(":/power.png"), "Power", self.configurePower)
         actPower.setShortcut("Ctrl+P")
 
-        # setopts = self.tb.addAction(QIcon("GUI/icons/setoptions.png"), "SetOptions", self.configureSO)
+        # setopts = self.tb.addAction(QIcon(":/setoptions.png"), "SetOptions", self.configureSO)
         # setopts.setShortcut("Ctrl+S")
 
         self.tb.addSpacer()
 
-        actTelemetry = self.tb.addAction(QIcon("GUI/icons/telemetry.png"), "Telemetry", self.openTelemetry.emit)
+        actTelemetry = self.tb.addAction(QIcon(":/telemetry.png"), "Telemetry", self.openTelemetry.emit)
         actTelemetry.setShortcut("Ctrl+T")
 
-        actWebui = self.tb.addAction(QIcon("GUI/icons/web.png"), "WebUI", self.openWebUI.emit)
+        actWebui = self.tb.addAction(QIcon(":/web.png"), "WebUI", self.openWebUI.emit)
         actWebui.setShortcut("Ctrl+U")
 
         self.ctx_menu.addActions([actRules, actTimers, actButtons, actSwitches, actPower, actTelemetry, actWebui])
         self.ctx_menu.addSeparator()
 
         self.ctx_menu_cfg = QMenu("Configure")
-        self.ctx_menu_cfg.setIcon(QIcon("GUI/icons/settings.png"))
+        self.ctx_menu_cfg.setIcon(QIcon(":/settings.png"))
         self.ctx_menu_cfg.addAction("Module", self.configureModule)
         self.ctx_menu_cfg.addAction("GPIO", self.configureGPIO)
         self.ctx_menu_cfg.addAction("Template", self.configureTemplate)
@@ -149,24 +149,24 @@ class ListWidget(QWidget):
         self.ctx_menu.addMenu(self.ctx_menu_cfg)
         self.ctx_menu.addSeparator()
 
-        self.ctx_menu.addAction(QIcon("GUI/icons/refresh.png"), "Refresh", self.ctx_menu_refresh)
+        self.ctx_menu.addAction(QIcon(":/refresh.png"), "Refresh", self.ctx_menu_refresh)
 
         self.ctx_menu.addSeparator()
-        self.ctx_menu.addAction(QIcon("GUI/icons/clear.png"), "Clear retained", self.ctx_menu_clear_retained)
+        self.ctx_menu.addAction(QIcon(":/clear.png"), "Clear retained", self.ctx_menu_clear_retained)
         self.ctx_menu.addAction("Clear Backlog", self.ctx_menu_clear_backlog)
         self.ctx_menu.addSeparator()
-        self.ctx_menu.addAction(QIcon("GUI/icons/copy.png"), "Copy", self.ctx_menu_copy)
+        self.ctx_menu.addAction(QIcon(":/copy.png"), "Copy", self.ctx_menu_copy)
         self.ctx_menu.addSeparator()
-        self.ctx_menu.addAction(QIcon("GUI/icons/restart.png"), "Restart", self.ctx_menu_restart)
+        self.ctx_menu.addAction(QIcon(":/restart.png"), "Restart", self.ctx_menu_restart)
         self.ctx_menu.addAction(QIcon(), "Reset", self.ctx_menu_reset)
         self.ctx_menu.addSeparator()
-        self.ctx_menu.addAction(QIcon("GUI/icons/delete.png"), "Delete", self.ctx_menu_delete_device)
+        self.ctx_menu.addAction(QIcon(":/delete.png"), "Delete", self.ctx_menu_delete_device)
 
         # self.tb.addAction(QIcon(), "Multi Command", self.ctx_menu_webui)
 
         self.agAllPower = QActionGroup(self)
-        self.agAllPower.addAction(QIcon("GUI/icons/P_ON.png"), "All ON")
-        self.agAllPower.addAction(QIcon("GUI/icons/P_OFF.png"), "All OFF")
+        self.agAllPower.addAction(QIcon(":/P_ON.png"), "All ON")
+        self.agAllPower.addAction(QIcon(":/P_OFF.png"), "All OFF")
         self.agAllPower.setEnabled(False)
         self.agAllPower.setExclusive(False)
         self.agAllPower.triggered.connect(self.toggle_power_all)
@@ -177,7 +177,7 @@ class ListWidget(QWidget):
         self.agRelays.setExclusive(False)
 
         for a in range(1, 9):
-            act = QAction(QIcon("GUI/icons/P{}_OFF.png".format(a)), "")
+            act = QAction(QIcon(":/P{}_OFF.png".format(a)), "")
             act.setShortcut("F{}".format(a))
             self.agRelays.addAction(act)
 
@@ -185,10 +185,10 @@ class ListWidget(QWidget):
         self.tb_relays.addActions(self.agRelays.actions())
 
         self.tb_relays.addSeparator()
-        self.actColor = self.tb_relays.addAction(QIcon("GUI/icons/color.png"), "Color", self.set_color)
+        self.actColor = self.tb_relays.addAction(QIcon(":/color.png"), "Color", self.set_color)
         self.actColor.setEnabled(False)
 
-        self.actChannels = self.tb_relays.addAction(QIcon("GUI/icons/sliders.png"), "Channels")
+        self.actChannels = self.tb_relays.addAction(QIcon(":/sliders.png"), "Channels")
         self.actChannels.setEnabled(False)
         self.mChannels = QMenu()
         self.actChannels.setMenu(self.mChannels)
