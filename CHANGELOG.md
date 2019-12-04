@@ -1,3 +1,10 @@
+## [0.2.4] - 2019-12-04
+### Added
+- optional MQTT messages dump for devices
+
+## Changed
+- main script name changed to `tdmgr.py` prior to packaging on PyPI (due to conflicting name with other project)
+
 ## [0.2.3] - 2019-11-27
 ### Added
 - ~/TDM directory is created automatically if missing, to prevent logging module crash
