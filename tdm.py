@@ -558,6 +558,7 @@ def start():
     app.setOrganizationName("Tasmota")
     app.setApplicationName("TDM")
     app.lastWindowClosed.connect(app.quit)
+    app.setStyle("Fusion")
 
     MW = MainWindow()
     MW.show()
