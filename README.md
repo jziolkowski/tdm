@@ -1,8 +1,8 @@
 # Tasmota Device Manager
 Easy to use GUI application to manage, configure and monitor devices flashed with [Tasmota firmware](https://github.com/arendst/Tasmota)
 
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/jziolkowski/tdm?style=for-the-badge)
-![GitHub All Releases](https://img.shields.io/github/downloads/jziolkowski/tdm/total?logo=github&style=for-the-badge)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/jziolkowski/tdm?style=for-the-badge)](https://github.com/jziolkowski/tdm/releases/latest)
+[![GitHub All Releases](https://img.shields.io/github/downloads/jziolkowski/tdm/total?logo=github&style=for-the-badge)](https://github.com/jziolkowski/tdm/releases/latest)
 ![https://pypi.org/project/tdmgr/](https://img.shields.io/pypi/dw/tdmgr?logo=pypi&style=for-the-badge)
 ![Discord](https://img.shields.io/discord/545967340794413078?logo=discord&style=for-the-badge)
 
