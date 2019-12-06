@@ -1,1 +1,0 @@
-pyinstaller.exe tdmgr.spec
