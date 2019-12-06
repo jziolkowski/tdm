@@ -129,6 +129,7 @@ class TasmotaDevice(QObject):
             "Template": {},
         }
 
+        self.debug = False
         self.env = None
         self.history = []
 

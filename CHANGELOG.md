@@ -1,3 +1,13 @@
+## [0.2.5] - 2019-12-06
+### Added
+- now available as `tdmgr.exe` for Windows
+- now available on PyPI as `tdmgr`
+- support for SetOption4 (commands reply on /<COMMAND> topic instead of /RESULT)
+
+## Changed
+- removed support for Var/Mem command JSON payload for Tasmota pre 6.6.0.12 
+- rule parser now doesn't throw errors when rule contains JSON
+
 ## [0.2.4] - 2019-12-04
 ### Added
 - optional MQTT messages dump for devices

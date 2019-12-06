@@ -1,8 +1,9 @@
+import logging
 from json import loads, JSONDecodeError, dumps
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, Qt, QTime
 from PyQt5.QtWidgets import QDialog, QMessageBox, QComboBox, QCheckBox, QButtonGroup, QRadioButton, QTimeEdit, QLabel, \
-    QSizePolicy, QPushButton, QDialogButtonBox
+    QDialogButtonBox
 
 from GUI import VLayout, GroupBoxV, HLayout, GroupBoxH
 
@@ -88,13 +89,6 @@ class TimersDialog(QDialog):
         self.lbTimerDesc.setAlignment(Qt.AlignCenter)
         self.lbTimerDesc.setWordWrap(True)
         gbTimerDesc.layout().addWidget(self.lbTimerDesc)
-        # hl_tmr_btns = HLayout(0)
-        #
-        # btnTimerSave = QPushButton("Save")
-        # hl_tmr_btns.addWidget(btnTimerSave)
-        # hl_tmr_btns.insertStretch(0)
-        #
-        # btnTimerSave.clicked.connect(self.saveTimer)
 
         hl_tmr_time.addWidgets([self.cbxTimerPM, self.teTimerTime, lbWnd, self.cbxTimerWnd])
 
@@ -104,8 +98,6 @@ class TimersDialog(QDialog):
         self.gbTimers.layout().addWidget(gbTimerMode)
         self.gbTimers.layout().addLayout(hl_tmr_time)
         self.gbTimers.layout().addLayout(hl_tmr_days)
-        # self.gbTimers.layout().addWidget(gbTimerDesc)
-        # self.gbTimers.layout().addLayout(hl_tmr_btns)
 
         btns = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Close)
         reload = btns.addButton("Reload", QDialogButtonBox.ResetRole)
@@ -225,11 +217,17 @@ class TimersDialog(QDialog):
     @pyqtSlot(str, str)
     def parseMessage(self, topic, msg):
         if self.device.matches(topic):
-            if self.device.reply == "RESULT":
+            if self.device.reply == "RESULT" or self.device.reply == "TIMERS":
                 try:
                     payload = loads(msg)
                     first = list(payload)[0]
 
+                except JSONDecodeError as e:
+                    error = "Timer loading error", "Can't load the timer from device.\n{}".format(e)
+                    logging.critical(error)
+                    QMessageBox.critical(self, error)
+
+                else:
                     if first == 'Timers':
                         self.gbTimers.setChecked(payload[first] == "ON")
 
@@ -239,5 +237,3 @@ class TimersDialog(QDialog):
                     if first == 'Timers4':
                         self.loadTimer(self.cbTimer.currentText())
 
-                except JSONDecodeError as e:
-                    QMessageBox.critical(self, "Timer loading error", "Can't load the timer from device.\n{}".format(e))

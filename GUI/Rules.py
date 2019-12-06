@@ -1,4 +1,6 @@
+from copy import deepcopy
 from json import loads, JSONDecodeError
+import logging
 
 from PyQt5.QtCore import QSize, QSettings, QDir, pyqtSlot, Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QIcon, QFont, QSyntaxHighlighter, QTextCharFormat, QColor
@@ -11,7 +13,7 @@ import re
 
 # TODO: triggers list
 # TODO: open/save rule from/to file
-# TODO: add check if device supports Var/Mem in a single dictionary
+
 
 class RulesWidget(QWidget):
     sendCommand = pyqtSignal(str, str)
@@ -47,24 +49,24 @@ class RulesWidget(QWidget):
 
         tb.addWidget(self.cbRule)
 
-        self.actEnabled = CheckableAction(QIcon("GUI/icons/off.png"), "Enabled")
+        self.actEnabled = CheckableAction(QIcon(":/off.png"), "Enabled")
         self.actEnabled.triggered.connect(self.toggle_rule)
 
-        self.actOnce = CheckableAction(QIcon("GUI/icons/once.png"), "Once")
+        self.actOnce = CheckableAction(QIcon(":/once.png"), "Once")
         self.actOnce.triggered.connect(self.toggle_once)
 
-        self.actStopOnError = CheckableAction(QIcon("GUI/icons/stop.png"), "Stop on error")
+        self.actStopOnError = CheckableAction(QIcon(":/stop.png"), "Stop on error")
         self.actStopOnError.triggered.connect(self.toggle_stop)
 
         tb.addActions([self.actEnabled, self.actOnce, self.actStopOnError])
         self.cbRule.setFixedHeight(tb.widgetForAction(self.actEnabled).height()+1)
 
-        self.actUpload = tb.addAction(QIcon("GUI/icons/upload.png"), "Upload")
+        self.actUpload = tb.addAction(QIcon(":/upload.png"), "Upload")
         self.actUpload.triggered.connect(self.upload_rule)
 
         # tb.addSeparator()
-        # self.actLoad = tb.addAction(QIcon("GUI/icons/open.png"), "Load...")
-        # self.actSave = tb.addAction(QIcon("GUI/icons/save.png"), "Save...")
+        # self.actLoad = tb.addAction(QIcon(":/open.png"), "Load...")
+        # self.actSave = tb.addAction(QIcon(":/save.png"), "Save...")
 
         tb.addSpacer()
 
@@ -172,10 +174,10 @@ class RulesWidget(QWidget):
 
     def poll(self):
         if self.pbPollVars.isChecked():
-            self.sendCommand.emit(self.device.cmnd_topic("backlog"), "var1; var2; var3; var4; var5")
+            self.sendCommand.emit(self.device.cmnd_topic("var"), "")
 
         if self.pbPollMems.isChecked():
-            self.sendCommand.emit(self.device.cmnd_topic("backlog"), "mem1; mem2; mem3; mem4; mem5")
+            self.sendCommand.emit(self.device.cmnd_topic("mem"), "")
 
         if self.pbPollRTs.isChecked():
             self.sendCommand.emit(self.device.cmnd_topic("ruletimer"), "")
@@ -211,65 +213,57 @@ class RulesWidget(QWidget):
         if ok:
             self.sendCommand.emit(self.device.cmnd_topic("ruletimer{}".format(self.rt+1)), str(new))
 
+    def display_rule(self, payload, rule):
+            rules = payload['Rules'].replace(" on ", "\non ").replace(" do ", " do\n\t").replace(" endon", "\nendon ").rstrip(" ")
+            if len(rules) == 0:
+                self.editor.setPlaceholderText("rule buffer is empty")
+            self.editor.setPlainText(rules)
+
+            self.actEnabled.setChecked(payload[rule] == "ON")
+            self.actOnce.setChecked(payload['Once'] == 'ON')
+            self.actStopOnError.setChecked(payload['StopOnError'] == 'ON')
+
     @pyqtSlot(str, str)
     def parseMessage(self, topic, msg):
         if self.device.matches(topic):
-            if self.device.reply == "RESULT":
+            payload = None
+            if msg.startswith("{"):
                 try:
                     payload = loads(msg)
-                    first = list(payload)[0]
+                except JSONDecodeError as e:
+                    # JSON parse exception means that most likely the rule contains an unescaped JSON payload
+                    # TDM will attempt parsing using a regex instead of json.loads()
+                    parsed_rule = re.match(r"{\"(?P<rule>Rule(\d))\":\"(?P<enabled>ON|OFF)\",\"Once\":\"(?P<Once>ON|OFF)\",\"StopOnError\":\"(?P<StopOnError>ON|OFF)\",\"Free\":\d+,\"Rules\":\"(?P<Rules>.*?)\"}$", msg, re.IGNORECASE)
+                    # modify the resulting matchdict to follow the keys of original JSON payload
+                    payload = deepcopy(parsed_rule.groupdict())
+                    rule = payload.pop("rule")
+                    payload[rule] = payload.pop("enabled")
+                    self.display_rule(payload, rule)
+                else:
 
-                    if first.startswith('Rule'):
-                        rule = payload['Rules'].replace(" on ", "\non ").replace(" do ", " do\n\t").replace(" endon", "\nendon ").rstrip(" ")
-                        if len(rule) == 0:
-                            self.editor.setPlaceholderText("rule buffer is empty")
-                        self.editor.setPlainText(rule)
+                    if payload:
+                        keys = list(payload.keys())
+                        fk = keys[0]
 
-                        self.actEnabled.setChecked(payload[first] == "ON")
-                        self.actOnce.setChecked(payload['Once'] == 'ON')
-                        self.actStopOnError.setChecked(payload['StopOnError'] == 'ON')
+                        if self.device.reply == 'RESULT' and fk == "T1" or self.device.reply == "RULETIMER":
+                            for i, rt in enumerate(payload.keys()):
+                                self.lwRTs.item(i).setText("RuleTimer{}: {}".format(i+1, payload[rt]))
+                                self.rts[i] = payload[rt]
 
-                    elif first == 'Var1':
-                        if len(payload) == 1:   # old firmware, doesn't return all Vars in a dict
-                            self.lwVars.item(0).setText("VAR1: {}".format(payload[first]))
-                            self.vars[0] = payload[first]
-                            for var in range(2, 6):
-                                self.sendCommand.emit(self.device.cmnd_topic("var{}".format(var)), "")
-                        else:
+                        elif self.device.reply == 'RESULT' and fk.startswith("Var") or self.device.reply.startswith("VAR"):
                             for k, v in payload.items():
                                 row = int(k.replace("Var", "")) - 1
                                 self.lwVars.item(row).setText("VAR{}: {}".format(row + 1, v))
                                 self.vars[row] = v
 
-                    elif first.startswith('Var'):
-                        row = int(first.replace("Var", ""))-1
-                        self.lwVars.item(row).setText("VAR{}: {}".format(row+1, payload[first]))
-                        self.vars[row] = payload[first]
-
-                    elif first == 'Mem1':
-                        if len(payload) == 1:   # old firmware, doesn't return all Mems in a dict
-                            self.lwMems.item(0).setText("MEM1: {}".format(payload[first]))
-                            self.mems[0] = payload[first]
-                            for mem in range(2, 6):
-                                self.sendCommand.emit(self.device.cmnd_topic("mem{}".format(mem)), "")
-                        else:
+                        elif self.device.reply == 'RESULT' and fk.startswith("Mem") or self.device.reply.startswith("MEM"):
                             for k, v in payload.items():
                                 row = int(k.replace("Mem", "")) - 1
                                 self.lwMems.item(row).setText("MEM{}: {}".format(row + 1, v))
                                 self.mems[row] = v
 
-                    elif first.startswith('Mem'):
-                        row = int(first.replace("Mem", ""))-1
-                        self.lwMems.item(row).setText("MEM{}: {}".format(row+1, payload[first]))
-                        self.mems[row] = payload[first]
-
-                    elif first == 'T1':
-                        for i, rt in enumerate(payload.keys()):
-                            self.lwRTs.item(i).setText("RuleTimer{}: {}".format(i+1, payload[rt]))
-                            self.rts[i] = payload[rt]
-
-                except JSONDecodeError as e:
-                    QMessageBox.critical(self, "Rule loading error", "Can't load the rule from device.\n{}".format(e))
+                        elif self.device.reply == 'RESULT' and fk.startswith("Rule") or self.device.reply.startswith("RULE"):
+                            self.display_rule(payload, fk)
 
 
 class RuleHighLighter(QSyntaxHighlighter):
@@ -282,7 +276,7 @@ class RuleHighLighter(QSyntaxHighlighter):
     command = QTextCharFormat()
     command.setBackground(QColor("red"))
 
-    control_words = ["on", "do", "endon"]
+    control_words = ["on", "do", "endon", "break"]
 
     def __init__(self, document):
         QSyntaxHighlighter.__init__(self, document)

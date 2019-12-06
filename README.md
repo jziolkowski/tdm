@@ -5,17 +5,20 @@ Easy to use GUI application to manage, configure and monitor devices flashed wit
 
 ![image](https://user-images.githubusercontent.com/11555742/66050573-bf764900-e52d-11e9-8356-e3dbf4ef6205.png)
 
+
+#### Minimum fully-supported Tasmota firmware version: [6.6.0.17](https://github.com/arendst/Tasmota/blob/development/tasmota/CHANGELOG.md#66017-20191009)
+
 # Features
 
  - [autodiscovery](https://github.com/jziolkowski/tdm/wiki/Autodiscovery) of Tasmota devices (even if they use custom FullTopics)
  - module, GPIO and template configuration
- - [rules editor](https://github.com/jziolkowski/tdm/Rules_editor) with Var/Mem/Ruletimer monitor
- - easy to read detachable telemetry viewer (working in active and passive mode) 
+ - rules edito with Var/Mem/Ruletimer monitor
+ - easy to read detachable telemetry viewers (working in active and passive mode) 
  - relay, color and PWM control
  - user-friendly configuration of buttons, switches and relays, including their related SetOptions
  - timers editor
- - clear retained relay topic messages
- - detachable device consoles with command completion and  intuitive history 
+ - clear retained relay and LWT topics
+ - detachable device consoles with command completion and intuitive history 
  - selectable views to see the most vital device parameters at a glance
  - BSSID aliasing for larger deployments
 

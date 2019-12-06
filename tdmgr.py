@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import os
 import re
 import sys
@@ -39,11 +38,13 @@ from Util.mqtt import MqttClient
 
 # TODO: rework device export
 
+__version__ = "0.2.5"
+__tasmota_minimum__ = "6.6.0.17"
 
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = "0.2.4"
+        self._version = __version__
         self.setWindowIcon(QIcon(":/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
