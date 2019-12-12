@@ -4,7 +4,7 @@ Easy to use GUI application to manage, configure and monitor devices flashed wit
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/jziolkowski/tdm?style=for-the-badge)](https://github.com/jziolkowski/tdm/releases/latest)
 [![GitHub All Releases](https://img.shields.io/github/downloads/jziolkowski/tdm/total?logo=github&style=for-the-badge)](https://github.com/jziolkowski/tdm/releases/latest)
 [![https://pypi.org/project/tdmgr/](https://img.shields.io/pypi/dw/tdmgr?logo=pypi&style=for-the-badge)](https://pypi.org/project/tdmgr/)
-[![Discord](https://img.shields.io/discord/545967340794413078?logo=discord&style=for-the-badge)](https://discord.gg/d9FgEp)
+[![Discord](https://img.shields.io/discord/545967340794413078?logo=discord&style=for-the-badge)](https://discord.gg/eAhVDXM)
 
 ![image](https://user-images.githubusercontent.com/11555742/66050573-bf764900-e52d-11e9-8356-e3dbf4ef6205.png)
 
