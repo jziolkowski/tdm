@@ -27,10 +27,10 @@ class RulesWidget(QWidget):
         self.poll_timer.timeout.connect(self.poll)
         self.poll_timer.start(1000)
 
-        self.vars = [''] * 5
+        self.vars = [''] * 16
         self.var = None
 
-        self.mems = [''] * 5
+        self.mems = [''] * 16
         self.mem = None
 
         self.rts = [0] * 8
@@ -136,6 +136,9 @@ class RulesWidget(QWidget):
 
         # vl_helpers.addWidgets([self.gbPolling, self.gbVars, self.gbMems, self.gbRTs])
         vl_helpers.addWidgets([self.gbPolling, self.lwVars, self.lwMems, self.lwRTs])
+        vl_helpers.setStretch(1, 16)
+        vl_helpers.setStretch(2, 16)
+        vl_helpers.setStretch(3, 8)
         hl.addLayout(vl_helpers)
         hl.setStretch(0, 3)
         hl.setStretch(1, 1)
