@@ -27,10 +27,10 @@ class RulesWidget(QWidget):
         self.poll_timer.timeout.connect(self.poll)
         self.poll_timer.start(1000)
 
-        self.vars = [''] * 5
+        self.vars = [''] * 16
         self.var = None
 
-        self.mems = [''] * 5
+        self.mems = [''] * 16
         self.mem = None
 
         self.rts = [0] * 8
@@ -111,7 +111,7 @@ class RulesWidget(QWidget):
         # self.gbVars = GroupBoxV("VARs")
         self.lwVars = QListWidget()
         self.lwVars.setAlternatingRowColors(True)
-        self.lwVars.addItems(["VAR{}: loading...".format(i) for i in range(1, 6)])
+        self.lwVars.addItems(["VAR{}: <unknown>".format(i) for i in range(1, 17)])
         self.lwVars.clicked.connect(self.select_var)
         self.lwVars.doubleClicked.connect(self.set_var)
         # self.gbVars.addWidget(self.lwVars)
@@ -120,7 +120,7 @@ class RulesWidget(QWidget):
         # self.gbMems = GroupBoxV("MEMs")
         self.lwMems = QListWidget()
         self.lwMems.setAlternatingRowColors(True)
-        self.lwMems.addItems(["MEM{}: loading...".format(i) for i in range(1, 6)])
+        self.lwMems.addItems(["MEM{}: <unknown>".format(i) for i in range(1, 17)])
         self.lwMems.clicked.connect(self.select_mem)
         self.lwMems.doubleClicked.connect(self.set_mem)
         # self.gbMems.addWidget(self.lwMems)
@@ -129,13 +129,16 @@ class RulesWidget(QWidget):
         # self.gbRTs = GroupBoxV("Rule timers")
         self.lwRTs = QListWidget()
         self.lwRTs.setAlternatingRowColors(True)
-        self.lwRTs.addItems(["RuleTimer{}: loading...".format(i) for i in range(1, 9)])
+        self.lwRTs.addItems(["RuleTimer{}: <unknown>".format(i) for i in range(1, 9)])
         self.lwRTs.clicked.connect(self.select_rt)
         self.lwRTs.doubleClicked.connect(self.set_rt)
         # self.gbRTs.addWidget(self.lwRTs)
 
         # vl_helpers.addWidgets([self.gbPolling, self.gbVars, self.gbMems, self.gbRTs])
         vl_helpers.addWidgets([self.gbPolling, self.lwVars, self.lwMems, self.lwRTs])
+        vl_helpers.setStretch(1, 16)
+        vl_helpers.setStretch(2, 16)
+        vl_helpers.setStretch(3, 8)
         hl.addLayout(vl_helpers)
         hl.setStretch(0, 3)
         hl.setStretch(1, 1)
