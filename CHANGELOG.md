@@ -1,3 +1,8 @@
+## [0.2.6] - 2019-12-24
+## Changed
+- support for 16 var/mem in rules editor
+- for older devices, the missing rows now say "unknown" instead of "loading" to avoid confusion
+
 ## [0.2.5] - 2019-12-06
 ### Added
 - now available as `tdmgr.exe` for Windows
