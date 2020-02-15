@@ -38,7 +38,7 @@ from Util.mqtt import MqttClient
 
 # TODO: rework device export
 
-__version__ = "0.2.6"
+__version__ = "0.2.6 Beta"
 __tasmota_minimum__ = "6.6.0.17"
 
 class MainWindow(QMainWindow):

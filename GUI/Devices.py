@@ -16,7 +16,7 @@ from GUI.SetOptions import SetOptionsDialog
 from GUI.Switches import SwitchesDialog
 from GUI.Templates import TemplateDialog
 from GUI.Timers import TimersDialog
-
+from GUI.Light import LightDialog
 from Util import TasmotaDevice, resets, initial_commands
 from Util.models import DeviceDelegate
 
@@ -121,6 +121,8 @@ class ListWidget(QWidget):
         actPower = self.tb.addAction(QIcon(":/power.png"), "Power", self.configurePower)
         actPower.setShortcut("Ctrl+P")
 
+        actLight = self.tb.addAction(QIcon(":/color.png"), "Light", self.configureLight)
+
         # setopts = self.tb.addAction(QIcon(":/setoptions.png"), "SetOptions", self.configureSO)
         # setopts.setShortcut("Ctrl+S")
 
@@ -132,7 +134,7 @@ class ListWidget(QWidget):
         actWebui = self.tb.addAction(QIcon(":/web.png"), "WebUI", self.openWebUI.emit)
         actWebui.setShortcut("Ctrl+U")
 
-        self.ctx_menu.addActions([actRules, actTimers, actButtons, actSwitches, actPower, actTelemetry, actWebui])
+        self.ctx_menu.addActions([actRules, actTimers, actButtons, actSwitches, actPower, actLight, actTelemetry, actWebui])
         self.ctx_menu.addSeparator()
 
         self.ctx_menu_cfg = QMenu("Configure")
@@ -146,9 +148,14 @@ class ListWidget(QWidget):
 
         # self.ctx_menu_cfg.addAction("Logging", self.ctx_menu_teleperiod)
 
+        self.ctx_menu_cfg_auto = QMenu("Auto Configure")
+        self.ctx_menu_cfg_auto.addAction("Module", self.configureModule)
+
         self.ctx_menu.addMenu(self.ctx_menu_cfg)
         self.ctx_menu.addSeparator()
 
+        self.ctx_menu.addMenu(self.ctx_menu_cfg_auto)
+        self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon(":/refresh.png"), "Refresh", self.ctx_menu_refresh)
 
         self.ctx_menu.addSeparator()
@@ -563,6 +570,46 @@ class ListWidget(QWidget):
                     backlog.append("status")
                     backlog.append("status 3")
                     self.mqtt.publish(self.device.cmnd_topic("backlog"), "; ".join(backlog))
+
+    def configureLight(self):
+        if self.device:
+            backlog = []
+            light = LightDialog(self.device)
+            if light.exec_() == QDialog.Accepted:
+                print("Light Execute")
+                so_error = False
+                for so, sow in light.setoption_widgets.items():
+                    current_value = None
+                    try:
+                        current_value = self.device.setoption(so)
+                    except ValueError:
+                        so_error = True
+
+                    new_value = -1
+
+                    if isinstance(sow.input, SpinBox):
+                        new_value = sow.input.value()
+
+                    if isinstance(sow.input, QComboBox):
+                        new_value = sow.input.currentIndex()
+
+                    print("so_error", so_error, current_value, new_value)
+                    if not so_error: print("so_error ok")
+                    if current_value: print("current_value ok")
+                    if current_value != new_value: print("diff ok")
+                    if not so_error and current_value != new_value:
+                        print("backlock append")
+                        backlog.append("SetOption{} {}".format(so, new_value))
+                    print("backlog",backlog)
+                print("LOOP EXIT")
+                if backlog:
+                    print("Save via Backlog")
+                    backlog.append("status")
+                    backlog.append("status 3")
+                    self.mqtt.publish(self.device.cmnd_topic("backlog"), "; ".join(backlog))
+        print("Finished")
+
+
 
     def get_dump(self):
         self.backup += self.dl.readAll()
