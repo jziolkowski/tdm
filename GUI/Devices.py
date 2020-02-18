@@ -576,7 +576,6 @@ class ListWidget(QWidget):
             backlog = []
             light = LightDialog(self.device)
             if light.exec_() == QDialog.Accepted:
-                print("Light Execute")
                 so_error = False
                 for so, sow in light.setoption_widgets.items():
                     current_value = None
@@ -593,23 +592,12 @@ class ListWidget(QWidget):
                     if isinstance(sow.input, QComboBox):
                         new_value = sow.input.currentIndex()
 
-                    print("so_error", so_error, current_value, new_value)
-                    if not so_error: print("so_error ok")
-                    if current_value: print("current_value ok")
-                    if current_value != new_value: print("diff ok")
                     if not so_error and current_value != new_value:
-                        print("backlock append")
                         backlog.append("SetOption{} {}".format(so, new_value))
-                    print("backlog",backlog)
-                print("LOOP EXIT")
                 if backlog:
-                    print("Save via Backlog")
                     backlog.append("status")
                     backlog.append("status 3")
                     self.mqtt.publish(self.device.cmnd_topic("backlog"), "; ".join(backlog))
-        print("Finished")
-
-
 
     def get_dump(self):
         self.backup += self.dl.readAll()
