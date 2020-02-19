@@ -57,20 +57,46 @@ class MainWindow(QMainWindow):
         self.mqtt_queue = []
         self.fulltopic_queue = []
 
-        s_path = "{}/TDM".format(QDir.homePath())
-
+        s_path_old = "{}/TDM".format(QDir.homePath())
+        s_path = s_path_old
+        migrate = False
         if platform.system() == "Linux":
             # proper config file storage for linux
             s_path = os.environ.get("XDG_CONFIG_HOME", os.path.join(os.path.expanduser("~"), ".config"))
             s_path = os.path.join(s_path, "tdm")
+            migrate = True
 
         if platform.system() == "Windows":
             # proper config file storage for windows
             s_path = os.environ.get("APPDATA", os.path.join(os.path.expanduser("~"), "AppData\\Roaming"))
             s_path = os.path.join(s_path, "tdm")
+            migrate = True
 
         # check directory exists
         os.makedirs(s_path, exist_ok=True)
+
+        # perform migration
+        if migrate and os.path.exists(s_path_old) and s_path != s_path_old:
+            print("Migrating configs from {} to {}...".format(s_path_old, s_path))
+
+            def try_rename(old, new):
+                try:
+                    os.rename(old, new)
+                except Exception as e:
+                    print("Error renaming for migration {}".format(e))
+
+            try_rename(os.path.join(s_path_old, "tdm.cfg"),
+                       os.path.join(s_path, "tdm.ini"))
+            try_rename(os.path.join(s_path_old, "devices.cfg"),
+                       os.path.join(s_path, "tdm.ini"))
+            try_rename(os.path.join(s_path_old, "tdm.log"),
+                       os.path.join(s_path, "tdm.log"))
+            try:
+                os.rmdir(os.path.join(s_path_old))
+            except Exception as e:
+                print("Error removing old directory while migrating: {}".format(e))
+            print("Migration complete.")
+
         self.settings = QSettings(os.path.join(s_path, "tdm.ini"), QSettings.IniFormat)
         self.devices = QSettings(os.path.join(s_path, "devices.ini"), QSettings.IniFormat)
         self.setMinimumSize(QSize(1000, 600))
