@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import csv
+import platform
 from json import loads, JSONDecodeError
 
 import logging
@@ -56,16 +57,26 @@ class MainWindow(QMainWindow):
         self.mqtt_queue = []
         self.fulltopic_queue = []
 
-        # ensure TDM directory exists in the user directory
-        if not os.path.isdir("{}/TDM".format(QDir.homePath())):
-            os.mkdir("{}/TDM".format(QDir.homePath()))
+        s_path = "{}/TDM".format(QDir.homePath())
 
-        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
-        self.devices = QSettings("{}/TDM/devices.cfg".format(QDir.homePath()), QSettings.IniFormat)
+        if platform.system() == "Linux":
+            # proper config file storage for linux
+            s_path = os.environ.get("XDG_CONFIG_HOME", os.path.join(os.path.expanduser("~"), ".config"))
+            s_path = os.path.join(s_path, "tdm")
+
+        if platform.system() == "Windows":
+            # proper config file storage for windows
+            s_path = os.environ.get("APPDATA", os.path.join(os.path.expanduser("~"), "AppData\\Roaming"))
+            s_path = os.path.join(s_path, "tdm")
+
+        # check directory exists
+        os.makedirs(s_path, exist_ok=True)
+        self.settings = QSettings(os.path.join(s_path, "tdm.ini"), QSettings.IniFormat)
+        self.devices = QSettings(os.path.join(s_path, "devices.ini"), QSettings.IniFormat)
         self.setMinimumSize(QSize(1000, 600))
 
         # configure logging
-        logging.basicConfig(filename="{}/TDM/tdm.log".format(QDir.homePath()),
+        logging.basicConfig(filename=os.path.join(s_path, "tdm.log"),
                             level=self.settings.value("loglevel", "INFO"),
                             datefmt="%Y-%m-%d %H:%M:%S",
                             format='%(asctime)s [%(levelname)s] %(message)s')
