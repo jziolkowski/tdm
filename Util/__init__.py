@@ -28,7 +28,9 @@ commands = [
     "Display", "DisplayAddress", "DisplayDimmer", "DisplayMode", "DisplayModel", "DisplayRefresh", "DisplaySize", "DisplayRotate", "DisplayText", "DisplayCols", "DisplayRows", "DisplayFont",
 ]
 
-prefixes = ["tele", "stat", "cmnd"]
+prefix_tele = "tele"
+prefix_stat = "stat"
+prefix_cmd = "cmnd"
 default_patterns = [
     "%prefix%/%topic%/",    # = %prefix%/%topic% (Tasmota default)
     "%topic%/%prefix%/"     # = %topic%/%prefix% (Tasmota with SetOption19 enabled for HomeAssistant AutoDiscovery)
@@ -96,7 +98,7 @@ def parse_payload(payload):
     return {}
 
 
-def expand_fulltopic(fulltopic):
+def expand_fulltopic(fulltopic, prefixes):
     fulltopics = []
     for prefix in prefixes:
         topic = fulltopic.replace("%prefix%", prefix).replace("%topic%", "+") + "#"  # expand prefix and topic
@@ -120,7 +122,7 @@ class TasmotaEnvironment(object):
 class TasmotaDevice(QObject):
     update_telemetry = pyqtSignal()
 
-    def __init__(self, topic, fulltopic, friendlyname=""):
+    def __init__(self, topic, fulltopic, settings, friendlyname=""):
         super(TasmotaDevice, self).__init__()
         self.p = {
             "LWT": "undefined",
@@ -147,21 +149,25 @@ class TasmotaDevice(QObject):
         self.reply = ""
         self.prefix = ""
 
+        self.prefix_cmd = settings.value("prefix_cmnd", prefix_cmd)
+        self.prefix_stat = settings.value("prefix_stat", prefix_stat)
+        self.prefix_tele = settings.value("prefix_tele", prefix_tele)
+
     def build_topic(self, prefix):
         return self.p['FullTopic'].replace("%prefix%", prefix).replace("%topic%", self.p['Topic']).rstrip("/")
 
     def cmnd_topic(self, command=""):
         if command:
-            return "{}/{}".format(self.build_topic("cmnd"), command)
-        return self.build_topic("cmnd")
+            return "{}/{}".format(self.build_topic(self.prefix_cmd), command)
+        return self.build_topic(self.prefix_cmd)
 
     def stat_topic(self):
-        return self.build_topic("stat")
+        return self.build_topic(self.prefix_stat)
 
     def tele_topic(self, endpoint=""):
         if endpoint:
-            return "{}/{}".format(self.build_topic("tele"), endpoint)
-        return self.build_topic("tele")
+            return "{}/{}".format(self.build_topic(self.prefix_tele), endpoint)
+        return self.build_topic(self.prefix_tele)
 
     def is_default(self):
         return self.p['FullTopic'] in ["%prefix%/%topic%/", "%topic%/%prefix%/"]
@@ -190,7 +196,7 @@ class TasmotaDevice(QObject):
 
     def parse_message(self, topic, msg):
         parse_statuses = ["STATUS{}".format(s) for s in [1, 2, 3, 4, 5, 6, 7, 9]]
-        if self.prefix in ("stat", "tele"):
+        if self.prefix in (self.prefix_stat, self.prefix_tele):
             payload = None
 
             if self.reply == 'STATUS':

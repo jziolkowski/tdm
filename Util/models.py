@@ -4,6 +4,8 @@ from PyQt5.QtCore import QModelIndex, Qt, QAbstractTableModel, QSettings, QSize,
 from PyQt5.QtGui import QIcon, QColor, QPixmap, QFont, QPen
 from PyQt5.QtWidgets import QStyledItemDelegate, QStyle
 
+from Util import prefix_tele, prefix_stat, prefix_cmd
+
 LWTRole = Qt.UserRole
 RestartReasonRole = Qt.UserRole + 1
 RSSIRole = Qt.UserRole + 2
@@ -118,7 +120,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
                     return d.tele_topic()
 
                 elif col_name == "FallbackTopic":
-                    return "cmnd/{}_fb/".format(d.p.get('MqttClient'))
+                    return "{}/{}_fb/".format(self.settings.value("prefix_cmnd", prefix_cmd), d.p.get('MqttClient'))
 
                 elif col_name == "BSSId":
                     alias = self.settings.value("BSSId/{}".format(val))

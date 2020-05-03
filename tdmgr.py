@@ -31,8 +31,9 @@ from GUI.Rules import RulesWidget
 from GUI.Telemetry import TelemetryWidget
 from GUI.Devices import ListWidget
 from GUI.Patterns import PatternsDialog
-from Util import TasmotaDevice, TasmotaEnvironment, parse_topic, default_patterns, prefixes, custom_patterns, \
+from Util import TasmotaDevice, TasmotaEnvironment, parse_topic, default_patterns, custom_patterns, \
     expand_fulltopic, initial_commands
+from Util import prefix_tele, prefix_stat, prefix_cmd
 from Util.models import TasmotaDevicesModel
 from Util.mqtt import MqttClient
 
@@ -74,7 +75,7 @@ class MainWindow(QMainWindow):
         # load devices from the devices file, create TasmotaDevices and add the to the envvironment
         for mac in self.devices.childGroups():
             self.devices.beginGroup(mac)
-            device = TasmotaDevice(self.devices.value("topic"), self.devices.value("full_topic"), self.devices.value("friendly_name"))
+            device = TasmotaDevice(self.devices.value("topic"), self.devices.value("full_topic"), self.settings, self.devices.value("friendly_name"))
             device.debug = self.devices.value("debug", False, bool)
             device.p['Mac'] = mac.replace("-", ":")
             device.env = self.env
@@ -264,23 +265,27 @@ class MainWindow(QMainWindow):
             custom_patterns.append(self.settings.value(k))
         self.settings.endGroup()
 
+        prefixes = [
+            self.settings.value("prefix_tele", prefix_tele),
+            self.settings.value("prefix_stat", prefix_stat),
+            self.settings.value("prefix_cmnd", prefix_cmd)]
         # expand fulltopic patterns to subscribable topics
         for pat in default_patterns:    # tasmota default and SO19
-            self.topics += expand_fulltopic(pat)
+            self.topics += expand_fulltopic(pat, prefixes)
 
         # check if custom patterns can be matched by default patterns
         for pat in custom_patterns:
             if pat.startswith("%prefix%") or pat.split('/')[1] == "%prefix%":
                 continue  # do nothing, default subcriptions will match this topic
             else:
-                self.topics += expand_fulltopic(pat)
+                self.topics += expand_fulltopic(pat, prefixes)
 
         for d in self.env.devices:
             # if device has a non-standard pattern, check if the pattern is found in the custom patterns
             if not d.is_default() and d.p['FullTopic'] not in custom_patterns:
                 # if pattern is not found then add the device topics to subscription list.
                 # if the pattern is found, it will be matched without implicit subscription
-                self.topics += expand_fulltopic(d.p['FullTopic'])
+                self.topics += expand_fulltopic(d.p['FullTopic'], prefixes)
 
         # passing a list of tuples as recommended by paho
         self.mqtt.subscribe([(topic, 0) for topic in self.topics])
@@ -344,10 +349,10 @@ class MainWindow(QMainWindow):
                     if match:
                         # assume that the matched topic is the one configured in device settings
                         possible_topic = match.groupdict().get('topic')
-                        if possible_topic not in ('tele', 'stat'):
+                        if possible_topic not in (prefix_tele, prefix_stat):
                             # if the assumed topic is different from tele or stat, there is a chance that it's a valid topic
                             # query the assumed device for its FullTopic. False positives won't reply.
-                            possible_topic_cmnd = p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic) + "FullTopic"
+                            possible_topic_cmnd = p.replace("%prefix%", self.settings.value("prefix_cmnd", prefix_cmd)).replace("%topic%", possible_topic) + "FullTopic"
                             logging.debug("DISCOVERY: Asking an unknown device for FullTopic at %s", possible_topic_cmnd)
                             self.mqtt_queue.append([possible_topic_cmnd, ""])
 
@@ -367,7 +372,7 @@ class MainWindow(QMainWindow):
                             d.update_property("FullTopic", full_topic)
                         else:
                             logging.info("DISCOVERY: Discovered topic=%s with fulltopic=%s", parsed['topic'], full_topic)
-                            d = TasmotaDevice(parsed['topic'], full_topic)
+                            d = TasmotaDevice(parsed['topic'], full_topic, self.settings)
                             self.env.devices.append(d)
                             self.device_model.addDevice(d)
                             logging.debug("DISCOVERY: Sending initial query to topic %s", parsed['topic'])

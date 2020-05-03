@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QDockWidget, QPlainTextEdit, QLineEdit, QWidget, QCo
 
 from GUI import VLayout, GroupBoxV, HLayout, console_font
 from Util import commands
+from Util import prefix_tele, prefix_stat, prefix_cmd
 
 from datetime import datetime
 
@@ -36,7 +37,7 @@ class ConsoleWidget(QDockWidget):
         self.console.setReadOnly(True)
         self.console.setFont(console_font)
 
-        self.console_hl = JSONHighLighter(self.console.document())
+        self.console_hl = JSONHighLighter(self.console.document(), self.settings)
 
         hl_command_mqttlog = HLayout(0)
 
@@ -175,15 +176,15 @@ class JSONHighLighter(QSyntaxHighlighter):
         '\{', '\}'
     ]
 
-    def __init__(self, document):
+    def __init__(self, document, settings):
         QSyntaxHighlighter.__init__(self, document)
 
         rules = []
 
         rules += [
             (r'\[.*\] ', 0, self.STYLES['tstamp']),
-            (r'\s.*(stat|tele).*\s', 0, self.STYLES['brace']),
-            (r'\s.*cmnd.*\s', 0, self.STYLES['command']),
+            (r'\s.*(' + settings.value("prefix_stat", prefix_stat) + '|' + settings.value("prefix_tele", prefix_tele) + ').*\s', 0, self.STYLES['brace']),
+            (r'\s.*' + settings.value("prefix_cmnd", prefix_cmd) + '.*\s', 0, self.STYLES['command']),
             (r'\"\w*\"(?=:)', 0, self.STYLES['keyword']),
             (r':\"\w*\"', 0, self.STYLES['error']),
 
