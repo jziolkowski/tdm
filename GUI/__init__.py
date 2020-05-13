@@ -12,7 +12,8 @@ default_views = {
     "MQTT": base_view + ["Topic", "FullTopic", "CommandTopic", "StatTopic", "TeleTopic", "FallbackTopic", "GroupTopic"],
 }
 
-console_font = QFont("asd")
+# console_font = QFont("asd")
+console_font = QFont("Liberation Mono")
 console_font.setStyleHint(QFont.TypeWriter)
 
 class VLayout(QVBoxLayout):

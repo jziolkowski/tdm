@@ -310,11 +310,11 @@ class DeviceDelegate(QStyledItemDelegate):
 
                 p.save()
                 if rssi > 0 and rssi < 50:
-                    color = QColor("#ef4522")
+                    color = QColor("darkRed")
                 elif rssi > 75:
-                    color = QColor("#7eca27")
+                    color = QColor("darkGreen")
                 elif rssi > 0:
-                    color = QColor("#fcdd0f")
+                    color = QColor("#808000")
                 p.fillRect(rect.adjusted(2, 2, -1, -1), color)
 
                 p.drawText(rect, Qt.AlignCenter, str(rssi))

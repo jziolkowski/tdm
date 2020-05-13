@@ -1,6 +1,6 @@
 from PyQt5.QtCore import QSettings, QDir, QSize, Qt
 from PyQt5.QtGui import QFont, QFontInfo
-from PyQt5.QtWidgets import QDialog, QComboBox, QCheckBox, QButtonGroup, QLabel, QSizePolicy, QPushButton, \
+from PyQt5.QtWidgets import QDialog, QLineEdit, QComboBox, QCheckBox, QButtonGroup, QLabel, QSizePolicy, QPushButton, \
     QDialogButtonBox, QTreeWidget, QTableWidget, QGroupBox, QFormLayout, QFontDialog
 
 from GUI import VLayout, GroupBoxV, HLayout, GroupBoxH, console_font, SpinBox

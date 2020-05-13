@@ -7,7 +7,7 @@ from PyQt5.QtGui import QIcon, QFont, QSyntaxHighlighter, QTextCharFormat, QColo
 from PyQt5.QtWidgets import QDialog, QTableWidget, QHeaderView, QTableWidgetItem, QPushButton, QLabel, QWidget, \
     QMessageBox, QComboBox, QCheckBox, QPlainTextEdit, QGroupBox, QListWidget, QInputDialog
 
-from GUI import VLayout, HLayout, Toolbar, CheckableAction, GroupBoxV, GroupBoxH
+from GUI import VLayout, HLayout, Toolbar, CheckableAction, GroupBoxV, GroupBoxH, console_font
 
 import re
 
@@ -36,8 +36,14 @@ class RulesWidget(QWidget):
         self.rts = [0] * 8
         self.rt = None
 
-        fnt_mono = QFont("asd")
+        # fnt_mono = QFont("asd")
+        fnt_mono = console_font
         fnt_mono.setStyleHint(QFont.TypeWriter)
+
+        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
+
+        console_font_size = self.settings.value("console_font_size", 9, int)
+        fnt_mono.setPointSize(console_font_size)
 
         tb = Toolbar(iconsize=24, label_position=Qt.ToolButtonTextBesideIcon)
         vl = VLayout(margin=0, spacing=0)
@@ -274,7 +280,7 @@ class RuleHighLighter(QSyntaxHighlighter):
     control.setForeground(QColor("#fa8d33"))
 
     trigger = QTextCharFormat()
-    trigger.setForeground(QColor("#399ee6"))
+    trigger.setForeground(QColor("cyan"))
 
     command = QTextCharFormat()
     command.setBackground(QColor("red"))

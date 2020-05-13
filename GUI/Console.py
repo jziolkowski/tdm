@@ -147,13 +147,13 @@ class ConsoleWidget(QDockWidget):
 
 class JSONHighLighter(QSyntaxHighlighter):
     keyword = QTextCharFormat()
-    keyword.setForeground(QColor("darkCyan"))
+    keyword.setForeground(QColor("cyan"))
 
     braces = QTextCharFormat()
     braces.setFontWeight(QFont.Bold)
 
     error = QTextCharFormat()
-    error.setForeground(QColor("darkRed"))
+    error.setForeground(QColor("#FF7200"))
 
     command = QTextCharFormat()
     command.setForeground(QColor("darkMagenta"))
