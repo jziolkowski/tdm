@@ -1,3 +1,5 @@
+import subprocess
+
 from json import dumps
 
 from PyQt5.QtCore import Qt, QSettings, QSortFilterProxyModel, QUrl, QDir, pyqtSignal, QSize
@@ -121,6 +123,9 @@ class ListWidget(QWidget):
         actPower = self.tb.addAction(QIcon(":/power.png"), "Power", self.configurePower)
         actPower.setShortcut("Ctrl+P")
 
+        actPower = self.tb.addAction(QIcon("GUI/icons/backup.png"), "Backup All", self.backupAll)
+        actPower.setShortcut("Ctrl+P")
+
         # setopts = self.tb.addAction(QIcon(":/setoptions.png"), "SetOptions", self.configureSO)
         # setopts.setShortcut("Ctrl+S")
 
@@ -147,6 +152,7 @@ class ListWidget(QWidget):
         # self.ctx_menu_cfg.addAction("Logging", self.ctx_menu_teleperiod)
 
         self.ctx_menu.addMenu(self.ctx_menu_cfg)
+        self.ctx_menu.addAction(QIcon("GUI/icons/backup.png"), "Backup Device", self.ctx_menu_decode)
         self.ctx_menu.addSeparator()
 
         self.ctx_menu.addAction(QIcon(":/refresh.png"), "Refresh", self.ctx_menu_refresh)
@@ -241,6 +247,13 @@ class ListWidget(QWidget):
             if string.startswith('"') and string.endswith('"'):
                 string = string[1:-1]
             QApplication.clipboard().setText(string)
+
+    def ctx_menu_decode(self):
+        if self.device:
+            devIp = self.device.p['IPAddress']
+            cmd = subprocess.Popen(['python', 'decode-config.py', '--config', 'my.conf', '--device', devIp], cwd=self.settings.value("decode_config_path"))
+            out, err = cmd.communicate()
+            print (out)
 
     def ctx_menu_clear_retained(self):
         if self.device:
@@ -563,6 +576,31 @@ class ListWidget(QWidget):
                     backlog.append("status")
                     backlog.append("status 3")
                     self.mqtt.publish(self.device.cmnd_topic("backlog"), "; ".join(backlog))
+
+    def backupAll(self):
+        # table = waitForObject(":Item QTableView")
+        # model = table.model()
+        # columnCount = 
+        # self.device_list.sortByColumn(self.model.columnIndex("FriendlyName"), Qt.AscendingOrder)
+        # for row in range(self.model.rowCount(self.device_list.rootIndex())):
+        # for row in range(self.model.rowCount(self.device_list.rootIndex())):
+        #     deviceIp = self.model.text(row, 5, self.device_list.rootIndex().toString())
+        #     print(deviceIp)
+        # for i in range(self.device_list.count()):
+        #     print(self.item(i).toString())
+        #     yield self.item(i)
+        for d in self.env.devices:
+            mac = d.p.get('IPAddress')
+            if mac:
+                deviceIp = d.p['IPAddress']
+                cmd = subprocess.Popen(['python', 'decode-config.py', '--config', 'my.conf', '--device', deviceIp], cwd=self.settings.value("decode_config_path"))
+                out, err = cmd.communicate()
+                print (out)
+                # print(deviceIp)
+
+
+    # for value in backupAll()
+    #     print(value)
 
     def get_dump(self):
         self.backup += self.dl.readAll()
