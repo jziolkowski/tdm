@@ -578,17 +578,6 @@ class ListWidget(QWidget):
                     self.mqtt.publish(self.device.cmnd_topic("backlog"), "; ".join(backlog))
 
     def backupAll(self):
-        # table = waitForObject(":Item QTableView")
-        # model = table.model()
-        # columnCount = 
-        # self.device_list.sortByColumn(self.model.columnIndex("FriendlyName"), Qt.AscendingOrder)
-        # for row in range(self.model.rowCount(self.device_list.rootIndex())):
-        # for row in range(self.model.rowCount(self.device_list.rootIndex())):
-        #     deviceIp = self.model.text(row, 5, self.device_list.rootIndex().toString())
-        #     print(deviceIp)
-        # for i in range(self.device_list.count()):
-        #     print(self.item(i).toString())
-        #     yield self.item(i)
         for d in self.env.devices:
             mac = d.p.get('IPAddress')
             if mac:
@@ -597,10 +586,6 @@ class ListWidget(QWidget):
                 out, err = cmd.communicate()
                 print (out)
                 # print(deviceIp)
-
-
-    # for value in backupAll()
-    #     print(value)
 
     def get_dump(self):
         self.backup += self.dl.readAll()
