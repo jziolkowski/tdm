@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QSettings, QDir, QSize, Qt
 from PyQt5.QtGui import QFont, QFontInfo
 from PyQt5.QtWidgets import QDialog, QComboBox, QCheckBox, QButtonGroup, QLabel, QSizePolicy, QPushButton, \
-    QDialogButtonBox, QTreeWidget, QTableWidget, QGroupBox, QFormLayout, QFontDialog
+    QDialogButtonBox, QTreeWidget, QTableWidget, QGroupBox, QFormLayout, QFontDialog, QLineEdit
 
 from GUI import VLayout, GroupBoxV, HLayout, GroupBoxH, console_font, SpinBox
 
@@ -18,6 +18,9 @@ class PrefsDialog(QDialog):
 
         self.console_word_wrap = self.settings.value("console_word_wrap", True, bool)
         self.console_font_size = self.settings.value("console_font_size", 9, int)
+
+        self.device_username = self.settings.value("device_username", "admin", str)
+        self.device_password = self.settings.value("device_password", "admin", str)
 
         vl = VLayout()
 
@@ -50,10 +53,22 @@ class PrefsDialog(QDialog):
         fl_cons.setAlignment(self.cbConsWW, Qt.AlignTop | Qt.AlignRight)
         fl_cons.setAlignment(self.sbConsFontSize, Qt.AlignTop | Qt.AlignRight)
 
+        gbDevicePassword = QGroupBox("DevicePassword")
+        fl_devp = QFormLayout()
+
+        self.devusername = QLineEdit()
+        self.devusername.setText(self.settings.value("device_username", ""))
+        self.devpassword = QLineEdit()
+        # self.devpassword.setEchoMode(QLineEdit.PasswordEchoOnEdit)
+        self.devpassword.setText(self.settings.value("device_password", ""))
+        fl_devp.addRow("Username", self.devusername)
+        fl_devp.addRow("Password", self.devpassword)
+        gbDevicePassword.setLayout(fl_devp)
+
         btns = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Close)
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
 
-        vl.addWidgets([gbDevices, gbConsole, btns])
+        vl.addWidgets([gbDevices, gbConsole, gbDevicePassword, btns])
 
         self.setLayout(vl)

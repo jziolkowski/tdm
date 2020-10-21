@@ -295,8 +295,10 @@ class ListWidget(QWidget):
 
     def ctx_menu_config_backup(self):
         if self.device:
+            self.device_username = self.settings.value("device_username", "", str)
+            self.device_password = self.settings.value("device_password", "", str)
             self.backup = bytes()
-            self.dl = self.nam.get(QNetworkRequest(QUrl("http://{}/dl".format(self.device.p['IPAddress']))))
+            self.dl = self.nam.get(QNetworkRequest(QUrl("http://{}:{}@{}/dl".format(self.device_username, self.device_password,self.device.p['IPAddress']))))
             self.dl.readyRead.connect(self.get_dump)
             self.dl.finished.connect(self.save_dump)
 
