@@ -1,7 +1,7 @@
 from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTabWidget, QWidget
 
-from GUI import HLayout, VLayout, GroupBoxV, HTMLLabel, Command, CommandMultiSelect
+from GUI import HLayout, VLayout, GroupBoxV, HTMLLabel, Command, CommandMultiSelect, docs_url
 from Util import setoptions, commands_json as commands
 
 
@@ -51,5 +51,5 @@ class SwitchesDialog(QDialog):
         btns = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Close)
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
-        vl.addWidgets([HTMLLabel("<a href=https://github.com/arendst/Sonoff-Tasmota/wiki/Buttons-and-Switches>Buttons and Switches</a>"), btns])
+        vl.addWidgets([HTMLLabel("<a href={}/Buttons-and-Switches>Buttons and Switches</a>".format(docs_url)), btns])
         self.setLayout(vl)
