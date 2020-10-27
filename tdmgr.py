@@ -4,6 +4,7 @@ import re
 import sys
 import csv
 from json import loads, JSONDecodeError
+import urllib.parse
 
 import logging
 
@@ -85,7 +86,7 @@ class MainWindow(QMainWindow):
             for k in self.devices.childKeys():
                 device.history.append(self.devices.value(k))
             self.devices.endGroup()
-            
+
             self.devices.endGroup()
 
         self.device_model = TasmotaDevicesModel(self.env)
@@ -515,7 +516,8 @@ class MainWindow(QMainWindow):
         self.device_username = self.settings.value("device_username", "", str)
         self.device_password = self.settings.value("device_password", "", str)
         if self.device and self.device.p.get('IPAddress'):
-            url = QUrl("http://{}:{}@{}".format( self.device_username, self.device_password,self.device.p['IPAddress']))
+            url = QUrl("http://{}:{}@{}".format( self.device_username, \
+                        urllib.parse.quote(self.device_password),self.device.p['IPAddress']))
 
             try:
                 webui = QWebEngineView()
@@ -533,7 +535,7 @@ class MainWindow(QMainWindow):
                 frm_webui.setWindowState(Qt.WindowMaximized)
 
             except NameError:
-                QDesktopServices.openUrl(QUrl("http://{}:{}@{}".format( self.device_username, self.device_password,self.device.p['IPAddress'])))
+                QDesktopServices.openUrl(url)
 
     def updateMDI(self):
         if len(self.mdi.subWindowList()) == 1:

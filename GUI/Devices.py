@@ -1,4 +1,5 @@
 from json import dumps
+import urllib.parse
 
 from PyQt5.QtCore import Qt, QSettings, QSortFilterProxyModel, QUrl, QDir, pyqtSignal, QSize
 from PyQt5.QtGui import QIcon, QColor
@@ -298,7 +299,8 @@ class ListWidget(QWidget):
             self.device_username = self.settings.value("device_username", "", str)
             self.device_password = self.settings.value("device_password", "", str)
             self.backup = bytes()
-            self.dl = self.nam.get(QNetworkRequest(QUrl("http://{}:{}@{}/dl".format(self.device_username, self.device_password,self.device.p['IPAddress']))))
+            self.dl = self.nam.get(QNetworkRequest(QUrl("http://{}:{}@{}/dl".format( \
+                self.device_username, urllib.parse.quote(self.device_password),self.device.p['IPAddress']))))
             self.dl.readyRead.connect(self.get_dump)
             self.dl.finished.connect(self.save_dump)
 
