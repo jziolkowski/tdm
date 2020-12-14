@@ -15,6 +15,9 @@ default_views = {
 console_font = QFont("asd")
 console_font.setStyleHint(QFont.TypeWriter)
 
+docs_url = "https://tasmota.github.io/docs/"
+
+
 class VLayout(QVBoxLayout):
     def __init__(self, margin=3, spacing=3, label='', *args, **kwargs):
         super(VLayout, self).__init__(*args, **kwargs)
@@ -237,7 +240,7 @@ class CmdWikiUrl(QLabel):
         self.setTextFormat(Qt.RichText)
         self.setTextInteractionFlags(Qt.TextBrowserInteraction)
         self.setOpenExternalLinks(True)
-        self.setText("<a href=https://github.com/arendst/Sonoff-Tasmota/wiki/Commands#{}>{}</a>".format(cmd, title if title else cmd))
+        self.setText("<a href={}Commands/#{}>{}</a>".format(docs_url, cmd.lower(), title or cmd))
 
 
 class HTMLLabel(QLabel):
