@@ -38,7 +38,7 @@ from Util.mqtt import MqttClient
 
 # TODO: rework device export
 
-__version__ = "0.2.6"
+__version__ = "0.2.7"
 __tasmota_minimum__ = "6.6.0.17"
 
 class MainWindow(QMainWindow):
@@ -372,7 +372,9 @@ class MainWindow(QMainWindow):
                             self.device_model.addDevice(d)
                             logging.debug("DISCOVERY: Sending initial query to topic %s", parsed['topic'])
                             self.initial_query(d, True)
-                            self.env.lwts.remove(d.tele_topic("LWT"))
+                            tele_topic = d.tele_topic("LWT")
+                            if tele_topic in self.env.lwts:
+                                self.env.lwts.remove(tele_topic)
                         d.update_property("LWT", "Online")
 
     def export(self):
