@@ -35,6 +35,43 @@ setoptions = {
         }
     },
 
+    "15": {
+        "description": "Set PWM control for LED lights",
+        "type": "select",
+        "parameters": {
+            "0": {"description": "basic PWM Control"},
+            "1": {"description": "control with Color or Dimmer commands", "default": "True"}
+        }
+    },
+
+    "16": {
+        "description": "Set addressable LED Clock scheme parameter",
+        "type": "select",
+        "parameters": {
+            "0": {"description": "clock-wise mode", "default": "True"},
+            "1": {"description": "counter-clock-wise mode"}
+        }
+    },
+
+    "17": {
+        "description": "Show Color string as",
+        "type": "select",
+        "parameters": {
+            "0": {"description": "hex string", "default": "True"},
+            "1": {"description": "comma-separated decimal string"}
+        }
+    },
+
+    "20": {
+        "description": "Update of Dimmer/Color/CT without turning power on",
+        "type": "select",
+        "parameters": {
+            "0": {"description": "disabled (default)", "default": "True"},
+            "1": {"description": "enabled"}
+        }
+    },
+
+
     "26": {
         "description": "Use indexes even when only one relay is present",
         "type": "select",
@@ -79,6 +116,15 @@ setoptions = {
         "parameters": {
             "0": {"description": "Enabled", "default": "True"},
             "1": {"description": "Disabled"}
+        }
+    },
+
+    "68": {
+        "description": "Set PWM channel combinations",
+        "type": "select",
+        "parameters": {
+            "0": {"description": "Treat PWM as a single RGB(WW) light ", "default": "True"},
+            "1": {"description": "Treat every PWM as separate channel"}
         }
     }
 }

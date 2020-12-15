@@ -1,3 +1,7 @@
+## [0.2.7] - 2020-02-19
+### Added
+- lights settings dialog
+
 ## [0.2.6] - 2019-12-24
 ## Changed
 - support for 16 var/mem in rules editor
