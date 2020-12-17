@@ -41,6 +41,7 @@ from Util.mqtt import MqttClient
 __version__ = "0.2.7"
 __tasmota_minimum__ = "6.6.0.17"
 
+
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
@@ -74,7 +75,7 @@ class MainWindow(QMainWindow):
         # load devices from the devices file, create TasmotaDevices and add the to the envvironment
         for mac in self.devices.childGroups():
             self.devices.beginGroup(mac)
-            device = TasmotaDevice(self.devices.value("topic"), self.devices.value("full_topic"), self.devices.value("friendly_name"))
+            device = TasmotaDevice(self.devices.value("topic"), self.devices.value("full_topic"), self.devices.value("device_name"))
             device.debug = self.devices.value("debug", False, bool)
             device.p['Mac'] = mac.replace("-", ":")
             device.env = self.env
@@ -546,13 +547,13 @@ class MainWindow(QMainWindow):
             mac = d.p.get('Mac')
             topic = d.p['Topic']
             full_topic = d.p['FullTopic']
-            friendly_name = d.p['FriendlyName1']
+            device_name = d.name
 
             if mac:
                 self.devices.beginGroup(mac.replace(":", "-"))
                 self.devices.setValue("topic", topic)
                 self.devices.setValue("full_topic", full_topic)
-                self.devices.setValue("friendly_name", friendly_name)
+                self.devices.setValue("device_name", device_name)
 
                 for i, h in enumerate(d.history):
                     self.devices.setValue("history/{}".format(i), h)
@@ -580,3 +581,4 @@ if __name__ == '__main__':
         start()
     except Exception as e:
         logging.exception("EXCEPTION: %s", e)
+        print("TDM has crashed. Sorry for that. Check tdm.log for more information.")

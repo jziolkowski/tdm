@@ -85,7 +85,7 @@ class ListWidget(QWidget):
         self.device_list.setSortingEnabled(True)
         self.device_list.setWordWrap(True)
         self.device_list.setItemDelegate(DeviceDelegate())
-        self.device_list.sortByColumn(self.model.columnIndex("FriendlyName"), Qt.AscendingOrder)
+        self.device_list.sortByColumn(self.model.columnIndex("Device"), Qt.AscendingOrder)
         self.device_list.setContextMenuPolicy(Qt.CustomContextMenu)
         self.device_list.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.layout().addWidget(self.device_list)
@@ -282,7 +282,7 @@ class ListWidget(QWidget):
     def ctx_menu_delete_device(self):
         if self.device:
             if QMessageBox.question(self, "Confirm", "Do you want to remove the following device?\n'{}' ({})"
-                    .format(self.device.p['FriendlyName1'], self.device.p['Topic'])) == QMessageBox.Yes:
+                    .format(self.device.p['DeviceName'], self.device.p['Topic'])) == QMessageBox.Yes:
                 self.model.deleteDevice(self.idx)
 
     def ctx_menu_teleperiod(self):
