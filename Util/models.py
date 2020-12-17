@@ -262,7 +262,7 @@ class DeviceDelegate(QStyledItemDelegate):
         col = index.column()
         col_name = index.model().sourceModel().columns[col]
 
-        if col_name == "DeviceName":
+        if col_name == "Device":
             if index.data():
                 px = QPixmap(":/status_offline.png")
                 if index.data(LWTRole) == "Online":
