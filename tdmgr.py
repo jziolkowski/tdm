@@ -38,7 +38,7 @@ from Util.mqtt import MqttClient
 
 # TODO: rework device export
 
-__version__ = "0.2.7"
+__version__ = "0.2.8"
 __tasmota_minimum__ = "6.6.0.17"
 
 
@@ -513,7 +513,7 @@ class MainWindow(QMainWindow):
                 webui.load(url)
 
                 frm_webui = QFrame()
-                frm_webui.setWindowTitle("WebUI [{}]".format(self.device.p['FriendlyName1']))
+                frm_webui.setWindowTitle("WebUI [{}]".format(self.device.name))
                 frm_webui.setFrameShape(QFrame.StyledPanel)
                 frm_webui.setLayout(VLayout(0))
                 frm_webui.layout().addWidget(webui)

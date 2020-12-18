@@ -10,7 +10,7 @@ class SetOptionsDialog(QDialog):
 
     def __init__(self, device, *args, **kwargs):
         super(SetOptionsDialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle("SetOptions [{}]".format(device.p['FriendlyName1']))
+        self.setWindowTitle("SetOptions [{}]".format(device.name))
         self.setMinimumWidth(300)
         self.device = device
 

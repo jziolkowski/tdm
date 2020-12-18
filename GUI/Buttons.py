@@ -10,7 +10,7 @@ class ButtonsDialog(QDialog):
 
     def __init__(self, device, *args, **kwargs):
         super(ButtonsDialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle("Buttons settings [{}]".format(device.p['FriendlyName1']))
+        self.setWindowTitle("Buttons settings [{}]".format(device.name))
         self.setMinimumWidth(300)
         self.device = device
 

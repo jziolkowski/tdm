@@ -19,7 +19,7 @@ class TimersDialog(QDialog):
         self.device = device
         self.timers = {}
         self.armKey = "Arm"
-        self.setWindowTitle("Timers [{}]".format(self.device.p['FriendlyName1']))
+        self.setWindowTitle("Timers [{}]".format(self.device.name))
 
         vl = VLayout()
 

@@ -10,7 +10,7 @@ class ModuleDialog(QDialog):
 
     def __init__(self, device, *args, **kwargs):
         super(ModuleDialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle("Module [{}]".format(device.p['FriendlyName1']))
+        self.setWindowTitle("Module [{}]".format(device.name))
         self.setMinimumWidth(300)
         self.device = device
 

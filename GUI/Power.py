@@ -10,7 +10,7 @@ class PowerDialog(QDialog):
 
     def __init__(self, device, *args, **kwargs):
         super(PowerDialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle("Power settings [{}]".format(device.p['FriendlyName1']))
+        self.setWindowTitle("Power settings [{}]".format(device.name))
         self.setMinimumWidth(300)
         self.device = device
 

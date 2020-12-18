@@ -10,7 +10,7 @@ class SwitchesDialog(QDialog):
 
     def __init__(self, device, *args, **kwargs):
         super(SwitchesDialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle("Switches settings [{}]".format(device.p['FriendlyName1']))
+        self.setWindowTitle("Switches settings [{}]".format(device.name))
         self.setMinimumWidth(300)
         self.device = device
 

@@ -13,7 +13,7 @@ class TemplateDialog(QDialog):
 
     def __init__(self, device, *args, **kwargs):
         super(TemplateDialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle("Template [{}]".format(device.p['FriendlyName1']))
+        self.setWindowTitle("Template [{}]".format(device.name))
         self.setMinimumWidth(300)
         self.device = device
 
