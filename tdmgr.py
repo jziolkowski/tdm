@@ -72,7 +72,7 @@ class MainWindow(QMainWindow):
                             format='%(asctime)s [%(levelname)s] %(message)s')
         logging.info("### TDM START ###")
 
-        # load devices from the devices file, create TasmotaDevices and add the to the envvironment
+        # load devices from the devices file, create TasmotaDevices and add the to the environment
         for mac in self.devices.childGroups():
             self.devices.beginGroup(mac)
             device = TasmotaDevice(self.devices.value("topic"), self.devices.value("full_topic"), self.devices.value("device_name"))
