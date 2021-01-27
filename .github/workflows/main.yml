@@ -25,3 +25,24 @@ jobs:
         with:
           name: Windows_tdmgr
           path: dist/tdmgr_0.2.8.exe
+
+  build-windows-x86:
+    runs-on: windows-2019
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Install Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.7'
+          architecture: 'x86'
+      - name: Install requirements
+        run: |
+          pip install -r requirements.txt -r requirements_build.txt
+      - name: Run PyInstaller
+        run: |
+          python -m PyInstaller tdmgr32.spec
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Windows_tdmgr32
+          path: dist/tdmgr_0.2.8_x86.exe
