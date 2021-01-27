@@ -82,6 +82,7 @@ jobs:
       - name: Install requirements
         run: |
           pip install -r requirements.txt -r requirements_build.txt
+          npm install --global create-dmg
       - name: Run PyInstaller
         run: |
           python -m PyInstaller tdmgr_mac.spec
