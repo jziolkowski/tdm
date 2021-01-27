@@ -7,6 +7,7 @@ on:
 jobs:
   build-windows:
     runs-on: windows-2019
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v1
@@ -28,6 +29,7 @@ jobs:
 
   build-windows-x86:
     runs-on: windows-2019
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v1
@@ -49,6 +51,7 @@ jobs:
 
   build-ubuntu:
     runs-on: ubuntu-20.04
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v1
@@ -72,6 +75,7 @@ jobs:
 
   build-macos:
     runs-on: macOS-latest
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v1
