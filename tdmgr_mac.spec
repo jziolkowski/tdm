@@ -3,7 +3,7 @@
 block_cipher = None
 
 a = Analysis(['tdmgr.py'],
-             binaries=[],
+             binaries=None,
              datas=[('GUI', 'GUI'), ('Util', 'Util')],
              hiddenimports=[],
              hookspath=[],
@@ -11,8 +11,7 @@ a = Analysis(['tdmgr.py'],
              excludes=[],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
-             cipher=block_cipher,
-             noarchive=False)
+             cipher=block_cipher)
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 exe = EXE(pyz,
@@ -20,7 +19,6 @@ exe = EXE(pyz,
           a.binaries,
           a.zipfiles,
           a.datas,
-          [],
           name='tdmgr_0.2.8',
           debug=False,
           strip=False,
