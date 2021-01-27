@@ -17,12 +17,11 @@ jobs:
           architecture: 'x64'
       - name: Install requirements
         run: |
-          pip install -r requirements.txt
-          #pip install -e .
+          pip install -r requirements.txt -r requirements_build.txt
       - name: Run PyInstaller
         run: |
           python -m PyInstaller tdmgr.spec
       - uses: actions/upload-artifact@v2
         with:
-          name: Windows
+          name: Windows_tdmgr
           path: dist/tdmgr_0.2.8.exe
