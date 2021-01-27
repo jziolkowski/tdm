@@ -1,4 +1,2 @@
 paho_mqtt>=1.4
-PyQt5>=5.12
-pyinstaller
-wheel
+PyQt5==5.14.1
