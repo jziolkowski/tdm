@@ -18,7 +18,8 @@ class TimersDialog(QDialog):
         super(TimersDialog, self).__init__(*args, **kwargs)
         self.device = device
         self.timers = {}
-        self.setWindowTitle("Timers [{}]".format(self.device.p['FriendlyName1']))
+        self.armKey = "Arm"
+        self.setWindowTitle("Timers [{}]".format(self.device.name))
 
         vl = VLayout()
 
@@ -119,7 +120,12 @@ class TimersDialog(QDialog):
 
         if payload:
             self.blockSignals(True)
-            self.cbTimerArm.setChecked(payload['Arm'])
+            if 'Enable' in payload:
+                self.cbTimerArm.setChecked(payload['Enable'])
+                self.armKey = "Enable"
+            else:
+                self.cbTimerArm.setChecked(payload['Arm'])
+                self.armKey = "Arm"
             self.cbTimerRpt.setChecked(payload['Repeat'])
             self.cbxTimerAction.setCurrentIndex(payload['Action'])
 
@@ -203,7 +209,7 @@ class TimersDialog(QDialog):
 
     def saveTimer(self):
         payload = {
-            "Arm": int(self.cbTimerArm.isChecked()),
+            self.armKey: int(self.cbTimerArm.isChecked()),
             "Mode": self.TimerMode.checkedId(),
             "Time": self.teTimerTime.time().toString("hh:mm"),
             "Window": self.cbxTimerWnd.currentIndex(),

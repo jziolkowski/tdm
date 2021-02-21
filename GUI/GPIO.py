@@ -9,7 +9,7 @@ class GPIODialog(QDialog):
 
     def __init__(self, device, *args, **kwargs):
         super(GPIODialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle("GPIO [{}]".format(device.p['FriendlyName1']))
+        self.setWindowTitle("GPIO [{}]".format(device.name))
         self.setMinimumWidth(300)
         self.device = device
 

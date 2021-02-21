@@ -16,7 +16,7 @@ class ConsoleWidget(QDockWidget):
     def __init__(self, device, *args, **kwargs):
         super().__init__()
         self.setAllowedAreas(Qt.BottomDockWidgetArea)
-        self.setWindowTitle("Console [{}]".format(device.p["FriendlyName1"]))
+        self.setWindowTitle("Console [{}]".format(device.name))
         self.device = device
 
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
@@ -137,7 +137,7 @@ class ConsoleWidget(QDockWidget):
         self.sendCommand.emit(self.device.cmnd_topic("MqttLog"), str(idx))
 
     def save_console(self):
-        new_fname = "{}/TDM/{} {}.log".format(QDir.homePath(), self.device.p["FriendlyName1"], datetime.now().strftime("%Y%m%d-%H%M%S"))
+        new_fname = "{}/TDM/{} {}.log".format(QDir.homePath(), self.device.name, datetime.now().strftime("%Y%m%d-%H%M%S"))
         file, ok = QFileDialog.getSaveFileName(self, "Save console", new_fname, "Log files | *.log")
         if ok:
             with open(file, "w") as f:

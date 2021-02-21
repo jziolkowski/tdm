@@ -122,13 +122,13 @@ class TasmotaEnvironment(object):
 class TasmotaDevice(QObject):
     update_telemetry = pyqtSignal()
 
-    def __init__(self, topic, fulltopic, settings, friendlyname=""):
+    def __init__(self, topic, fulltopic, settings, devicename=""):
         super(TasmotaDevice, self).__init__()
         self.p = {
             "LWT": "undefined",
             "Topic": topic,
             "FullTopic": fulltopic,
-            "FriendlyName1": friendlyname if friendlyname else topic,
+            "DeviceName": devicename,
             "Template": {},
         }
 
@@ -356,8 +356,9 @@ class TasmotaDevice(QObject):
             return state
         return -1
 
-    def __repr__(self):
-        fname = self.p.get('FriendlyName1')
-        fname = fname if fname else self.p['Topic']
+    @property
+    def name(self):
+        return self.p.get('DeviceName') or self.p.get('FriendlyName1', self.p['Topic'])
 
-        return "<TasmotaDevice {}: {}>".format(fname, self.p['Topic'])
+    def __repr__(self):
+        return "<TasmotaDevice {}: {}>".format(self.name, self.p['Topic'])

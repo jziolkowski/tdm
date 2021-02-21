@@ -21,7 +21,7 @@ class RulesWidget(QWidget):
     def __init__(self, device, *args, **kwargs):
         super(RulesWidget, self).__init__(*args, **kwargs)
         self.device = device
-        self.setWindowTitle("Rules [{}]".format(self.device.p['FriendlyName1']))
+        self.setWindowTitle("Rules [{}]".format(self.device.name))
 
         self.poll_timer = QTimer()
         self.poll_timer.timeout.connect(self.poll)
