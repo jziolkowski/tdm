@@ -200,7 +200,7 @@ class TasmotaDevice(QObject):
                     logging.critical("PARSER: Can't parse STATUS (%s)", e)
 
                 if payload:
-                    payload = payload['Status']
+                    payload = payload.get('Status', None)
                     for k, v in payload.items():
                         if k == "FriendlyName":
                             for fnk, fnv in enumerate(v, start=1):
