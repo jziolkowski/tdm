@@ -96,6 +96,7 @@ jobs:
         run: |
           #create-dmg dist/tdmgr_0.2.9.app
           #mv "tdmgr_0.2.9 0.0.0.dmg" dist/tdmgr_0.2.9.dmg
+          chmod a+x dist/tdmgr_0.2.9.app
           mv dist/tdmgr_0.2.9.app dist/tdmgr_0.2.9-dev-macOS.app
       - uses: actions/upload-artifact@v2
         with:
