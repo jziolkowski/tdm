@@ -25,7 +25,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: Windows_tdmgr
-          path: dist/tdmgr_0.2.8.exe
+          path: dist/tdmgr_0.2.9.exe
 
   build-windows-x86:
     runs-on: windows-2019
@@ -47,7 +47,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: Windows_tdmgr32
-          path: dist/tdmgr_0.2.8_x86.exe
+          path: dist/tdmgr_0.2.9_x86.exe
 
   build-ubuntu:
     runs-on: ubuntu-20.04
@@ -70,7 +70,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: Ubuntu
-          path: dist/tdmgr_0.2.8
+          path: dist/tdmgr_0.2.9
 
 
   build-macos:
@@ -94,9 +94,9 @@ jobs:
         run: ls dist
       - name: Move app
         run: |
-          #create-dmg dist/tdmgr_0.2.8.app
-          #mv "tdmgr_0.2.8 0.0.0.dmg" dist/tdmgr_0.2.8.dmg
-          mv dist/tdmgr_0.2.8.app dist/tdmgr_0.2.8-dev-macOS.app
+          #create-dmg dist/tdmgr_0.2.9.app
+          #mv "tdmgr_0.2.9 0.0.0.dmg" dist/tdmgr_0.2.9.dmg
+          mv dist/tdmgr_0.2.9.app dist/tdmgr_0.2.9-dev-macOS.app
       - uses: actions/upload-artifact@v2
         with:
           name: macOS
