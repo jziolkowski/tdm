@@ -1,13 +1,19 @@
 import paho.mqtt.client as mqtt
+
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSlot
 
+import ssl
 import logging
+
+from Util import initial_commands
 
 class MqttClient(QtCore.QObject):
     Disconnected = 0
     Connecting = 1
     Connected = 2
+
+    tlsSetEnabled = False
 
     MQTT_3_1 = mqtt.MQTTv31
     MQTT_3_1_1 = mqtt.MQTTv311
@@ -20,6 +26,15 @@ class MqttClient(QtCore.QObject):
     stateChanged = QtCore.pyqtSignal(int)
     hostnameChanged = QtCore.pyqtSignal(str)
     portChanged = QtCore.pyqtSignal(int)
+    
+    sslEnabledChanged = QtCore.pyqtSignal(bool)
+    caFileChanged = QtCore.pyqtSignal(str)
+    clientCertificateFileChanged = QtCore.pyqtSignal(str)
+    clientKeyFileChanged = QtCore.pyqtSignal(str)
+    transportChanged = QtCore.pyqtSignal(str)
+
+    clientIdChanged = QtCore.pyqtSignal(str)
+    
     keepAliveChanged = QtCore.pyqtSignal(int)
     cleanSessionChanged = QtCore.pyqtSignal(bool)
     protocolVersionChanged = QtCore.pyqtSignal(int)
@@ -28,23 +43,32 @@ class MqttClient(QtCore.QObject):
 
     def __init__(self, parent=None):
         super(MqttClient, self).__init__(parent)
-
+        
         self.m_hostname = ""
         self.m_port = 1883
-        self.ssl = False
+        
+        self.m_clientId = ""
+
+        self.m_sslEnabled = False
+        self.m_caFile = ""
+        self.m_clientCertificateFile = ""
+        self.m_clientKeyFile = ""
+        self.m_transport = "tcp"
+
         self.m_keepAlive = 60
         self.m_cleanSession = True
-        self.m_protocolVersion = MqttClient.MQTT_3_1
+        self.m_protocolVersion = MqttClient.MQTT_3_1_1
 
         self.m_state = MqttClient.Disconnected
 
-        self.m_client = mqtt.Client(clean_session=self.m_cleanSession,
-            protocol=self.protocolVersion)
+        self.m_client = mqtt.Client(client_id=self.m_clientId,
+            clean_session=self.m_cleanSession,
+            protocol=self.protocolVersion,
+            transport=self.m_transport)
 
         self.m_client.on_connect = self.on_connect
         self.m_client.on_message = self.on_message
         self.m_client.on_disconnect = self.on_disconnect
-
 
     @QtCore.pyqtProperty(int, notify=stateChanged)
     def state(self):
@@ -73,8 +97,69 @@ class MqttClient(QtCore.QObject):
     @port.setter
     def port(self, port):
         if self.m_port == port: return
-        self.m_port = port
-        self.portChanged.emit(port)
+        if port in (443, 1883, 8883):
+            self.m_port = port
+            self.portChanged.emit(port)
+
+    @QtCore.pyqtProperty(bool, notify=sslEnabledChanged)
+    def sslEnabled(self):
+        return self.m_sslEnabled
+
+    @sslEnabled.setter
+    def sslEnabled(self, sslEnabled):
+        if self.m_sslEnabled == sslEnabled: return
+        self.m_sslEnabled = sslEnabled
+        self.sslEnabledChanged.emit(sslEnabled)
+
+    @QtCore.pyqtProperty(str, notify=caFileChanged)
+    def caFile(self):
+        return self.m_caFile
+
+    @caFile.setter
+    def caFile(self, caFile):
+        if self.m_caFile == caFile: return
+        self.m_caFile = caFile
+        self.caFileChanged.emit(caFile)
+
+    @QtCore.pyqtProperty(str, notify=clientCertificateFileChanged)
+    def clientCertificateFile(self):
+        return self.m_clientCertificateFile
+
+    @clientCertificateFile.setter
+    def clientCertificateFile(self, clientCertificateFile):
+        if self.m_clientCertificateFile == clientCertificateFile: return
+        self.m_clientCertificateFile = clientCertificateFile
+        self.clientCertificateFileChanged.emit(clientCertificateFile)
+
+    @QtCore.pyqtProperty(str, notify=clientKeyFileChanged)
+    def clientKeyFile(self):
+        return self.m_clientKeyFile
+
+    @clientKeyFile.setter
+    def clientKeyFile(self, clientKeyFile):
+        if self.m_clientKeyFile == clientKeyFile: return
+        self.m_clientKeyFile = clientKeyFile
+        self.clientKeyFileChanged.emit(clientKeyFile)
+
+    @QtCore.pyqtProperty(str, notify=transportChanged)
+    def transport(self):
+        return self.m_transport
+
+    @transport.setter
+    def transport(self, transport):
+        if self.m_transport == transport: return
+        self.m_transport = transport
+        self.clientIdChanged.emit(transport)
+        
+    @QtCore.pyqtProperty(str, notify=clientIdChanged)
+    def clientId(self):
+        return self.m_clientId
+
+    @clientId.setter
+    def clientId(self, clientId):
+        if self.m_clientId == clientId: return
+        self.m_clientId = clientId
+        self.clientIdChanged.emit(clientId)
 
     def setAuth(self, username, password):
         self.m_client.username_pw_set(username, password)
@@ -115,7 +200,23 @@ class MqttClient(QtCore.QObject):
     def connectToHost(self):
         if self.m_hostname:
             self.connecting.emit()
+
             try:
+                if self.m_sslEnabled:
+                    if not MqttClient.tlsSetEnabled:
+                        self.ssl = True
+                        if self.m_port == 8883:
+                            self.m_client.tls_set(ca_certs=self.m_caFile,
+                                certfile=self.m_clientCertificateFile,
+                                keyfile=self.m_clientKeyFile,
+                                cert_reqs=ssl.CERT_REQUIRED,
+                                tls_version=ssl.PROTOCOL_TLS,
+                                ciphers=None)
+                        MqttClient.tlsSetEnabled = True
+                else:
+                    self.ssl = False
+                    MqttClient.tlsSetEnabled = False
+
                 self.m_client.connect(self.m_hostname,
                     port=self.port,
                     keepalive=self.keepAlive)
@@ -156,6 +257,7 @@ class MqttClient(QtCore.QObject):
         if rc == 0:
             self.state = MqttClient.Connected
             self.connected.emit()
+
         else:
             self.state = MqttClient.Disconnected
             self.connectError.emit(rc)
@@ -163,4 +265,3 @@ class MqttClient(QtCore.QObject):
     def on_disconnect(self, *args):
         self.state = MqttClient.Disconnected
         self.disconnected.emit()
-
