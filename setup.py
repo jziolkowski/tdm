@@ -40,7 +40,7 @@ setup(
     python_requires='>=3.6',
     install_requires=[
         "paho_mqtt>=1.4",
-        "PyQt5>=5.12"
+        "PyQt5==5.14.2"
     ],
     packages=['GUI', 'Util'],
     entry_points=entry_points,

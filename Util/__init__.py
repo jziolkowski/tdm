@@ -197,7 +197,7 @@ class TasmotaDevice(QObject):
                 try:
                     payload = loads(msg)
                 except JSONDecodeError as e:
-                    logging.critical("PARSER: Can't parse STATUS (%s)", e)
+                    logging.critical("PARSER: Can't parse STATUS (%s): %s", e, msg)
 
                 if payload:
                     payload = payload.get('Status', {})
@@ -212,7 +212,7 @@ class TasmotaDevice(QObject):
                 try:
                     payload = loads(msg)
                 except JSONDecodeError as e:
-                    logging.critical("PARSER: Can't parse %s (%s)", self.reply, e)
+                    logging.critical("PARSER: Can't parse %s (%s): %s", self.reply, e, msg)
 
                 if payload:
                     payload = payload[list(payload.keys())[0]]
@@ -223,7 +223,7 @@ class TasmotaDevice(QObject):
                 try:
                     payload = loads(msg)
                 except JSONDecodeError as e:
-                    logging.critical("PARSER: Can't parse %s (%s)", self.reply, e)
+                    logging.critical("PARSER: Can't parse %s (%s): %s", self.reply, e, msg)
 
                 if payload:
                     if self.reply == 'STATUS11':
@@ -240,7 +240,7 @@ class TasmotaDevice(QObject):
                 try:
                     payload = loads(msg)
                 except JSONDecodeError as e:
-                    logging.critical("PARSER: Can't parse %s (%s)", self.reply, e)
+                    logging.critical("PARSER: Can't parse %s (%s): %s", self.reply, e, msg)
 
                 if payload:
                     if self.reply in ('STATUS8', 'STATUS10'):
@@ -253,7 +253,7 @@ class TasmotaDevice(QObject):
                 try:
                     payload = loads(msg)
                 except JSONDecodeError as e:
-                    logging.critical("PARSER: Can't parse %s (%s)", self.reply, e)
+                    logging.critical("PARSER: Can't parse %s (%s): %s", self.reply, e, msg)
 
                 if payload:
                     keys = list(payload.keys())
