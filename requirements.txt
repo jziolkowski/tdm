@@ -1,2 +1,3 @@
 paho_mqtt>=1.4
 PyQt5==5.14.2
+PyQtWebEngine
