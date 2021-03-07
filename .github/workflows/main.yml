@@ -92,13 +92,10 @@ jobs:
           python -m PyInstaller tdmgr_mac.spec
       - name: See dist directory
         run: ls dist
-      - name: Move app
+      - name: Rename app
         run: |
-          #create-dmg dist/tdmgr_0.2.9.app
-          #mv "tdmgr_0.2.9 0.0.0.dmg" dist/tdmgr_0.2.9.dmg
-          chmod a+x dist/tdmgr_0.2.9.app
-          chmod a+x dist/tdmgr_0.2.9
-          mv dist/tdmgr_0.2.9.app dist/tdmgr_0.2.9-dev-macOS.app
+          #chmod a+x dist/tdmgr_0.2.9.app
+          #mv dist/tdmgr_0.2.9.app dist/tdmgr_0.2.9-macOS.app
       - uses: actions/upload-artifact@v2
         with:
           name: macOS
