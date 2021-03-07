@@ -99,4 +99,4 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: macOS
-          path: dist/
+          path: dist/tdmgr_0.2.9.app
