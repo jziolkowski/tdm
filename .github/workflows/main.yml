@@ -94,9 +94,11 @@ jobs:
         run: ls dist
       - name: Rename app
         run: |
-          #chmod a+x dist/tdmgr_0.2.9.app
-          #mv dist/tdmgr_0.2.9.app dist/tdmgr_0.2.9-macOS.app
-      - uses: actions/upload-artifact@v2
+          mv dist/tdmgr_0.2.9.app dist/tdmgr_0.2.9-macOS.app
+      - name: 'Tar files'
+        run: tar -cvf dist.tar dist/*
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v2
         with:
           name: macOS
-          path: dist/tdmgr_0.2.9.app
+          path: dist.tar
