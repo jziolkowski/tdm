@@ -1,5 +1,6 @@
 from PyQt5.QtCore import QSize, QSettings, QDir
 from PyQt5.QtWidgets import QDialog, QTableWidget, QHeaderView, QTableWidgetItem, QPushButton, QLabel
+from PyQt5.QtGui import QIcon
 
 from GUI import VLayout, HLayout
 
@@ -7,8 +8,10 @@ from GUI import VLayout, HLayout
 class PatternsDialog(QDialog):
     def __init__(self, *args, **kwargs):
         super(PatternsDialog, self).__init__(*args, **kwargs)
+        
         self.setMinimumHeight(400)
         self.setMinimumWidth(400)
+        self.setWindowIcon(QIcon("icons/compass--plus.png"))
         self.setWindowTitle("Autodiscovery patterns")
 
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)

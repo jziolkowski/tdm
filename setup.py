@@ -14,27 +14,27 @@ if os.name == "nt":
     scripts = None
     entry_points = {
         {
-        'console_scripts': ['tdmgr=tdmgr:main'],
+        'console_scripts': ['cwiotmgr=cwiotmgr:main'],
         }
     }
 else:
-    scripts = ['tdmgr.py']
+    scripts = ['cwiotmgr.py']
     entry_points = None
 
 def get_version():
-    with open("tdmgr.py", "r") as tdmgr:
+    with open("cwiotmgr.py", "r") as tdmgr:
         version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
                                   tdmgr.read(), re.M)
         return version_match.group(1)
 
 setup(
-    name='tdmgr',
+    name='cwiotmgr',
     version=get_version(),
     url='https://github.com/jziolkowski/tdm',
     license='GPLv3',
-    author='jziolkowski',
-    author_email='jacek@ziolkowscy.com',
-    description='Tasmota Device Manager is able to find, monitor and do magic things. The easy way. Like a Superhero.',
+    author='Stephen Harris',
+    author_email='stephen.harris@cricketwireless.com',
+    description='Cricket Wireless IOT Device Manager is able to find, monitor and do magic things with IOT devices. The easy way. Like a Superhero.',
     long_description=long_description,
     long_description_content_type='text/markdown',
     python_requires='>=3.6',

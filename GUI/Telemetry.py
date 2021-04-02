@@ -24,7 +24,9 @@ item_units = {
 class TelemetryWidget(QDockWidget):
     def __init__(self, device, *args, **kwargs):
         super(TelemetryWidget, self).__init__(*args, **kwargs)
+        
         self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        self.setWindowIcon(QIcon(":/auto_telemetry.png"))
         self.setWindowTitle(device.name)
 
         self.tree_items = {}

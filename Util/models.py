@@ -235,7 +235,6 @@ class TasmotaDevicesModel(QAbstractTableModel):
     def columnIndex(self, column):
         return self.columns.index(column)
 
-
 class DeviceDelegate(QStyledItemDelegate):
     def __init__(self):
         super(DeviceDelegate, self).__init__()

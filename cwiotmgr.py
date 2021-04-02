@@ -4,7 +4,7 @@ import re
 import sys
 import csv
 import json
-import datetime
+from datetime import datetime, timedelta
 from json import loads, JSONDecodeError
 
 # Importing the Timer subclass from the threading Class
@@ -64,7 +64,6 @@ class MainWindow(QMainWindow):
         self.unknown = []
         self.env = TasmotaEnvironment()
         self.device = None
-        self.myTime = datetime.datetime.now() + datetime.timedelta(0,30)
 
         self.topics = []
         self.mqtt_queue = []
@@ -218,7 +217,6 @@ class MainWindow(QMainWindow):
     def onConnectedDevices(self):
         for d in self.env.devices:
             self.initial_query(d, True)
-            d.update_property("LWT", "Online")
 
     def onDisconnectedDevices(self):
         for d in self.env.devices:
@@ -243,8 +241,11 @@ class MainWindow(QMainWindow):
         if state and self.mqtt.state == self.mqtt.Disconnected:
             self.broker_hostname = self.settings.value('hostname', 'localhost')
             self.broker_port = self.settings.value('port', 1883, int)
-            self.broker_clientId = self.settings.value('clientId')
-            
+            self.broker_clientId = self.settings.value('clientId', '')
+            self.broker_cleanSession = self.settings.value("cleansession", "True", bool)
+            self.broker_transport = self.settings.value("transport", 'tcp')
+            self.broker_keepAlive = self.settings.value("keepalive", 60, int)
+
             self.broker_sslEnabled = self.settings.value('sslEnabled', False, bool)
             self.broker_caFile = self.settings.value('caFile')
             self.broker_clientCertificateFile = self.settings.value('clientCertificateFile')
@@ -256,12 +257,26 @@ class MainWindow(QMainWindow):
             self.mqtt.hostname = self.broker_hostname
             self.mqtt.port = self.broker_port
             self.mqtt.clientId = self.broker_clientId
+            self.mqtt.cleanSession = self.broker_cleanSession
+            self.mqtt.transport = self.broker_transport
+            self.mqtt.keepAlive = self.broker_keepAlive
             
             self.mqtt.sslEnabled = self.broker_sslEnabled
-            self.mqtt.caFile = self.broker_caFile
-            self.mqtt.clientCertificateFile = self.broker_clientCertificateFile
-            self.mqtt.clientKeyFile = self.broker_clientKeyFile
- 
+            if self.broker_caFile in ("","None"):
+                self.mqtt.caFile = None
+            else:
+                self.mqtt.caFile = self.broker_caFile
+                            
+            if self.broker_clientCertificateFile in ("","None"):
+                self.mqtt.clientCertificateFile = None
+            else:
+                self.mqtt.clientCertificateFile = self.broker_clientCertificateFile
+                            
+            if self.broker_clientKeyFile in ("","None"):
+                self.mqtt.clientKeyFile = None
+            else:
+                self.mqtt.clientKeyFile = self.broker_clientKeyFile
+    
             if self.broker_username:
                 self.mqtt.setAuth(self.broker_username, self.broker_password)
             self.mqtt.connectToHost()
@@ -273,10 +288,13 @@ class MainWindow(QMainWindow):
             for d in self.env.devices:
                 self.mqtt.publish(d.cmnd_topic('STATUS'), payload=8)
 
-    def mqtt_connect(self):
+    """ def mqtt_connect(self):
         self.broker_hostname = self.settings.value('hostname', 'localhost')
-        self.broker_port = self.settings.value('port', 8883, int)
+        self.broker_port = self.settings.value('port', 1883, int)
         self.broker_clientId = self.settings.value('clientId', '')
+        self.broker_cleanSession = self.settings.value("cleansession", "True", bool)
+        self.broker_transport = self.settings.value("transport", 'tcp')
+        self.broker_keepAlive = self.settings.value("keepalive", 60, int)
 
         self.broker_sslEnabled = self.settings.value('sslEnabled', False, bool)
         self.broker_caFile = self.settings.value('caFile')
@@ -289,18 +307,33 @@ class MainWindow(QMainWindow):
         self.mqtt.hostname = self.broker_hostname
         self.mqtt.port = self.broker_port
         self.mqtt.clientId = self.broker_clientId
+        self.mqtt.cleanSession = self.broker_cleanSession
+        self.mqtt.transport = self.broker_transport
+        self.mqtt.keepAlive = self.broker_keepAlive
         
         self.mqtt.sslEnabled = self.broker_sslEnabled
-        self.mqtt.caFile = self.broker_caFile
-        self.mqtt.clientCertificateFile = self.broker_clientCertificateFile
-        self.mqtt.clientKeyFile = self.broker_clientKeyFile
+        if self.broker_caFile in ("","None"):
+            selcaFile = None
+        else:
+            self.mqtt.caFile = self.broker_caFile
+                        
+        if self.broker_clientCertificateFile in ("","None"):
+            self.mqtt.clientCertificateFile = None
+        else:
+            self.mqtt.clientCertificateFile = self.broker_clientCertificateFile
+                        
+        if self.broker_clientKeyFile in ("","None"):
+            self.mqtt.clientKeyFile = None
+        else:
+            self.mqtt.clientKeyFile = self.broker_clientKeyFile
  
         if self.broker_username:
             self.mqtt.setAuth(self.broker_username, self.broker_password)
 
         if self.mqtt.state == self.mqtt.Disconnected:
             self.mqtt.connectToHost()
-
+    """
+    
     def mqtt_disconnect(self):
         self.mqtt.disconnectFromHost()
 
@@ -317,8 +350,6 @@ class MainWindow(QMainWindow):
         # After connecting to broker query all devices to get latest status
         self.onConnectedDevices()
         self.mUtilities.setEnabled(True)
-
-        self.myTime = datetime.datetime.now() + datetime.timedelta(0,30)
 
     def mqtt_subscribe(self):
         # clear old topics
@@ -383,36 +414,43 @@ class MainWindow(QMainWindow):
         self.actToggleConnect.setChecked(False)
 
     def mqtt_message(self, topic, msg):
-        # Checks within 30 on connecting to MQTT Broker to determine if device has recevied any messages
-        # If not then flag device as LWT offline
-
-        for idx in range(self.device_model.rowCount()):
-            theDevice = self.env.find_device(self.device_model.tasmota_env.devices[idx].p['Topic'])
-            if 'UTC' in self.device_model.tasmota_env.devices[idx].p:
-                lastupdatedelta = datetime.datetime.strptime(self.device_model.tasmota_env.devices[idx].p['UTC'], "%Y-%m-%dT%H:%M:%S") + datetime.timedelta(0,300)      
-                if lastupdatedelta < datetime.datetime.utcnow():
-                    if str(self.device_model.tasmota_env.devices[idx].p['LWT']) != "Offline":
-                        theDevice.update_property("LWT", "Offline")
-                else:
-                    if str(self.device_model.tasmota_env.devices[idx].p['LWT']) != "Online":
-                        theDevice.update_property("LWT", "Online")
-            else:
-                if self.myTime < datetime.datetime.now():
-                    theDevice.update_property("LWT", "Offline")
-
-        # try to find a device by matching known FullTopics against the MQTT topic of the message
+         # try to find a device by matching known FullTopics against the MQTT topic of the message
         device = self.env.find_device(topic)
         if device:
             if topic.endswith("LWT"):
                 if not msg:
                     msg = "Offline"
-                device.update_property("LWT", msg)
+                
+                # Device goes offline with an LWT message then clear out device model data to
+                # reset the data in the device data grid view    
+                if msg == "Offline":
+                    for key in device.p:
+                        if key not in ('LWT','Topic','FullTopic','DeviceName','Mac','LastMessage','TelePeriod','RSSI','MqttLog'):
+                            if type(device.p[key]) == str:
+                                device.update_property(key, "")
+                            elif type(device.p[key]) in (int, float):
+                                device.update_property(key, None)
+                            elif type(device.p[key]) == list:
+                                device.update_property(key, [])
+                            elif type(device.p[key]) == dict:
+                                device.update_property(key, {})
+                                
+                    device.update_property("LWT", "Offline")
+                else:
+                    # Known device came online with an LWT message so ensure device model LWT is 
+                    # updated to online then query for the device initial state
+                    device.update_property("LWT", "Online")
 
-                if msg == 'Online':
-                    # known device came online, query initial state
+                    # query initial state
                     self.initial_query(device, True)
-
             else:
+                # Known device sent current message but was offline in model 
+                # so ensure device model LWT is updated to online 
+
+                if device.p['LWT'] in ('Offline','undefined'):
+                    if msg and msg not in ('0','255'):
+                        device.update_property("LWT", "Online")
+                    
                 # forward the message for processing
                 device.parse_message(topic, msg)
                 if device.debug:
@@ -483,7 +521,6 @@ class MainWindow(QMainWindow):
                     
                     # append new device to and complete model
                     self.env.devices.append(d)
-
                     self.device_model.addDevice(d)
                     
                     # unknown device came online, query initial state
@@ -502,14 +539,15 @@ class MainWindow(QMainWindow):
                         fname += ".csv"
                                             
                     with open(fname, "w", encoding='utf8', newline='') as f:
-                        column_titles = ['DeviceName','Device']
+                        column_titles = ['DeviceName','Device','State']
                         c = csv.writer(f)
                         c.writerow(column_titles)
                         
-                        for idx in range(self.device_model.rowCount()):
+                        for d in self.env.devices:
                             c.writerow([
-                                self.device_model.tasmota_env.devices[idx].p['DeviceName'],
-                                self.device_model.tasmota_env.devices[idx].p['Topic']
+                                d.p['DeviceName'],
+                                d.p['Topic'],
+                                d.p['LWT']
                             ])                     
                         
                 elif selection == "2":
@@ -517,34 +555,22 @@ class MainWindow(QMainWindow):
                         fname += ".csv"
                     
                     with open(fname, "w", encoding='utf8', newline='') as f:
-                        column_titles = ['DeviceName', 'Topic', 'Mac', 'Hostname', 'SSId', 'IPAddress', 'Gateway', 'Subnetmask', 'RSSI', 'Signal', 'Channel', 'Version', 'Core', 'Uptime', 'OtaUrl']
+                        column_titles = ['DeviceName', 'Topic', 'Mac', 'Hostname', 'SSId', 
+                                         'IPAddress', 'Gateway', 'Subnetmask', 'RSSI', 'Signal', 
+                                         'Channel', 'Version', 'Core', 'Uptime', 'OtaUrl']
                         c = csv.writer(f)
                         c.writerow(column_titles)
                         
-                        for idx in range(self.device_model.rowCount()):
-                            if 'Hostname' in self.device_model.tasmota_env.devices[idx].p:
+                        for d in self.env.devices:
+                            if d.p['LWT'] == "Online":
                                 c.writerow([
-                                    self.device_model.tasmota_env.devices[idx].p['DeviceName'],
-                                    self.device_model.tasmota_env.devices[idx].p['Topic'],
-                                    self.device_model.tasmota_env.devices[idx].p['Mac'],
-                                    self.device_model.tasmota_env.devices[idx].p['Hostname'],
-                                    self.device_model.tasmota_env.devices[idx].p['SSId'],
-                                    self.device_model.tasmota_env.devices[idx].p['IPAddress'],
-                                    self.device_model.tasmota_env.devices[idx].p['Gateway'],
-                                    self.device_model.tasmota_env.devices[idx].p['Subnetmask'],
-                                    self.device_model.tasmota_env.devices[idx].p['RSSI'],
-                                    self.device_model.tasmota_env.devices[idx].p['Signal'],
-                                    self.device_model.tasmota_env.devices[idx].p['Channel'],
-                                    self.device_model.tasmota_env.devices[idx].p['Version'],
-                                    self.device_model.tasmota_env.devices[idx].p['Core'],
-                                    self.device_model.tasmota_env.devices[idx].p['Uptime'],
-                                    self.device_model.tasmota_env.devices[idx].p['OtaUrl']
+                                    d.p['DeviceName'], d.p['Topic'], d.p['Mac'], d.p['Hostname'], d.p['SSId'],
+                                    d.p['IPAddress'], d.p['Gateway'], d.p['Subnetmask'], d.p['RSSI'], d.p['Signal'],
+                                    d.p['Channel'], d.p['Version'], d.p['Core'], d.p['Uptime'], d.p['OtaUrl']
                                 ])
                             else:
                                 c.writerow([
-                                    self.device_model.tasmota_env.devices[idx].p['DeviceName'],
-                                    self.device_model.tasmota_env.devices[idx].p['Topic'],
-                                    self.device_model.tasmota_env.devices[idx].p['Mac'],
+                                    d.p['DeviceName'], d.p['Topic'], d.p['Mac'],
                                     "Offline","Offline","Offline","Offline","Offline","Offline",
                                     "Offline","Offline","Offline","Offline","Offline","Offline"
                                 ])
@@ -555,10 +581,10 @@ class MainWindow(QMainWindow):
                                 
                     with open(fname, 'w') as f:
                         f.write("{")
-                        for idx in range(self.device_model.rowCount()):
-                            f.write('"' + self.device_model.tasmota_env.devices[idx].p['Topic'] + '" :')
-                            json.dump(self.device_model.tasmota_env.devices[idx].p, f)
-                            if idx != self.device_model.rowCount() - 1:
+                        for d in self.env.devices:
+                            f.write('"' + d.p['Topic'] + '" :')
+                            json.dump(d.p, f)
+                            if len(self.env.devices) - 1:
                                 f.write(",")
                             else:
                                 f.write("}")
@@ -570,8 +596,8 @@ class MainWindow(QMainWindow):
                     with open(fname, "w", encoding='utf8', newline='') as f:
                         c = csv.writer(f)
                         
-                        for idx in range(self.device_model.rowCount()):
-                            c.writerow([self.device_model.tasmota_env.devices[idx].p['Topic']])                
+                        for d in self.env.devices:
+                            c.writerow([d.p['Topic']])                
                 
                 QMessageBox.information(self, "Export Device Data", "Device data was successfully exported to " + fname)
                                         
@@ -739,7 +765,7 @@ class MainWindow(QMainWindow):
 def start():
     app = QApplication(sys.argv)
     app.setOrganizationName("CricketWireless")
-    app.setApplicationName("TDM")
+    app.setApplicationName("CWIOTMGR")
     app.lastWindowClosed.connect(app.quit)
     app.setStyle("Fusion")
 
@@ -754,4 +780,4 @@ if __name__ == '__main__':
         start()
     except Exception as e:
         logging.exception("EXCEPTION: %s", e)
-        print("TDM has crashed. Sorry for that. Check tdm.log for more information.")
+        print("Application has crashed. Sorry for that. Check tdm.log for more information.")

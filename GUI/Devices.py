@@ -17,7 +17,7 @@ from GUI.Switches import SwitchesDialog
 from GUI.Templates import TemplateDialog
 from GUI.Timers import TimersDialog
 
-from Util import TasmotaDevice, resets, initial_commands
+from Util import TasmotaDevice, resets, cwdefaults, initial_commands
 from Util.models import DeviceDelegate
 
 
@@ -59,14 +59,14 @@ class ListWidget(QWidget):
 
         self.tb = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonTextBesideIcon)
         self.tb_relays = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonIconOnly)
-        # self.tb_filter = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonTextBesideIcon)
+        self.tb_filter = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonTextBesideIcon)
         self.tb_views = Toolbar(Qt.Horizontal, 24, Qt.ToolButtonTextBesideIcon)
 
         self.pwm_sliders = []
 
         self.layout().addWidget(self.tb)
-        self.layout().addWidget(self.tb_relays)
-        # self.layout().addWidget(self.tb_filter)
+        # self.layout().addWidget(self.tb_relays)
+        self.layout().addWidget(self.tb_filter)
 
         self.device_list = TableView()
         self.device_list.setIconSize(QSize(24, 24))
@@ -99,7 +99,7 @@ class ListWidget(QWidget):
 
         self.create_actions()
         self.create_view_buttons()
-        # self.create_view_filter()
+        self.create_view_filter()
 
         self.device_list.doubleClicked.connect(lambda: self.openConsole.emit())
 
@@ -107,44 +107,56 @@ class ListWidget(QWidget):
         actConsole = self.tb.addAction(QIcon(":/console.png"), "Console", self.openConsole.emit)
         actConsole.setShortcut("Ctrl+E")
 
-        actRules = self.tb.addAction(QIcon(":/rules.png"), "Rules", self.openRulesEditor.emit)
-        actRules.setShortcut("Ctrl+R")
+        # actRules = self.tb.addAction(QIcon(":/rules.png"), "Rules", self.openRulesEditor.emit)
+        # actRules.setShortcut("Ctrl+R")
 
-        actTimers = self.tb.addAction(QIcon(":/timers.png"), "Timers", self.configureTimers)
+        # actTimers = self.tb.addAction(QIcon(":/timers.png"), "Timers", self.configureTimers)
 
-        actButtons = self.tb.addAction(QIcon(":/buttons.png"), "Buttons", self.configureButtons)
-        actButtons.setShortcut("Ctrl+B")
+        # actButtons = self.tb.addAction(QIcon(":/buttons.png"), "Buttons", self.configureButtons)
+        # actButtons.setShortcut("Ctrl+B")
 
-        actSwitches = self.tb.addAction(QIcon(":/switches.png"), "Switches", self.configureSwitches)
-        actSwitches.setShortcut("Ctrl+S")
+        # actSwitches = self.tb.addAction(QIcon(":/switches.png"), "Switches", self.configureSwitches)
+        # actSwitches.setShortcut("Ctrl+S")
 
-        actPower = self.tb.addAction(QIcon(":/power.png"), "Power", self.configurePower)
-        actPower.setShortcut("Ctrl+P")
+        # actPower = self.tb.addAction(QIcon(":/power.png"), "Power", self.configurePower)
+        # actPower.setShortcut("Ctrl+P")
 
         # setopts = self.tb.addAction(QIcon(":/setoptions.png"), "SetOptions", self.configureSO)
         # setopts.setShortcut("Ctrl+S")
 
-        self.tb.addSpacer()
+        # self.tb.addSpacer()
 
         actTelemetry = self.tb.addAction(QIcon(":/telemetry.png"), "Telemetry", self.openTelemetry.emit)
         actTelemetry.setShortcut("Ctrl+T")
 
-        actWebui = self.tb.addAction(QIcon(":/web.png"), "WebUI", self.openWebUI.emit)
-        actWebui.setShortcut("Ctrl+U")
+        # actWebui = self.tb.addAction(QIcon(":/web.png"), "WebUI", self.openWebUI.emit)
+        # actWebui.setShortcut("Ctrl+U")
 
-        self.ctx_menu.addActions([actRules, actTimers, actButtons, actSwitches, actPower, actTelemetry, actWebui])
+        self.ctx_menu.addActions([actTelemetry])
+        self.tb.addSeparator()
+
+        #self.ctx_menu.addActions([actRules, actTimers, actButtons, actSwitches, actPower, actTelemetry, actWebui])
         self.ctx_menu.addSeparator()
 
         self.ctx_menu_cfg = QMenu("Configure")
         self.ctx_menu_cfg.setIcon(QIcon(":/settings.png"))
+
+        self.ctx_menu_cfg.addAction("Telemetry", self.ctx_menu_teleperiod)
+        self.ctx_menu_cfg.addSeparator()
+
         self.ctx_menu_cfg.addAction("Module", self.configureModule)
         self.ctx_menu_cfg.addAction("GPIO", self.configureGPIO)
         self.ctx_menu_cfg.addAction("Template", self.configureTemplate)
-        # self.ctx_menu_cfg.addAction("Wifi", self.ctx_menu_teleperiod)
+        self.ctx_menu_cfg.addSeparator()
+      
+        self.ctx_menu_cfg.addAction("Update OTA URL", self.ctx_menu_ota_set_url)
+        self.ctx_menu_cfg.addAction("Firmware Upgrade", self.ctx_menu_ota_set_upgrade)
+        self.ctx_menu_cfg.addSeparator()
+        
+        self.ctx_menu_cfg.addAction("Cricket Wireless Defaults", self.ctx_menu_cwconfig)
+    
+        # self.ctx_menu_cfg.addAction("Backup Config", self.ctx_menu_config_backup)
         # self.ctx_menu_cfg.addAction("Time", self.cfgTime.emit)
-        # self.ctx_menu_cfg.addAction("MQTT", self.ctx_menu_teleperiod)
-
-        # self.ctx_menu_cfg.addAction("Logging", self.ctx_menu_teleperiod)
 
         self.ctx_menu.addMenu(self.ctx_menu_cfg)
         self.ctx_menu.addSeparator()
@@ -170,7 +182,8 @@ class ListWidget(QWidget):
         self.agAllPower.setEnabled(False)
         self.agAllPower.setExclusive(False)
         self.agAllPower.triggered.connect(self.toggle_power_all)
-        self.tb_relays.addActions(self.agAllPower.actions())
+        self.tb.addActions(self.agAllPower.actions())
+        # self.tb_relays.addActions(self.agAllPower.actions())
 
         self.agRelays = QActionGroup(self)
         self.agRelays.setVisible(False)
@@ -182,17 +195,18 @@ class ListWidget(QWidget):
             self.agRelays.addAction(act)
 
         self.agRelays.triggered.connect(self.toggle_power)
-        self.tb_relays.addActions(self.agRelays.actions())
+        self.tb.addActions(self.agRelays.actions())
+        # self.tb_relays.addActions(self.agRelays.actions())
 
-        self.tb_relays.addSeparator()
-        self.actColor = self.tb_relays.addAction(QIcon(":/color.png"), "Color", self.set_color)
-        self.actColor.setEnabled(False)
+        # self.tb_relays.addSeparator()
+        # self.actColor = self.tb_relays.addAction(QIcon(":/color.png"), "Color", self.set_color)
+        # self.actColor.setEnabled(False)
 
-        self.actChannels = self.tb_relays.addAction(QIcon(":/sliders.png"), "Channels")
-        self.actChannels.setEnabled(False)
-        self.mChannels = QMenu()
-        self.actChannels.setMenu(self.mChannels)
-        self.tb_relays.widgetForAction(self.actChannels).setPopupMode(QToolButton.InstantPopup)
+        # self.actChannels = self.tb_relays.addAction(QIcon(":/sliders.png"), "Channels")
+        # self.actChannels.setEnabled(False)
+        # self.mChannels = QMenu()
+        # self.actChannels.setMenu(self.mChannels)
+        # self.tb_relays.widgetForAction(self.actChannels).setPopupMode(QToolButton.InstantPopup)
 
     def create_view_buttons(self):
         self.tb_views.addWidget(QLabel("View mode: "))
@@ -209,26 +223,26 @@ class ListWidget(QWidget):
         stretch = QWidget()
         stretch.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum))
         self.tb_views.addWidget(stretch)
-        # actEditView = self.tb_views.addAction("Edit views...")
+        actEditView = self.tb_views.addAction("Edit views...")
 
-    # def create_view_filter(self):
-    #     # self.tb_filter.addWidget(QLabel("Show devices: "))
-    #     # self.cbxLWT = QComboBox()
-    #     # self.cbxLWT.addItems(["All", "Online"d, "Offline"])
-    #     # self.cbxLWT.currentTextChanged.connect(self.build_filter_regex)
-    #     # self.tb_filter.addWidget(self.cbxLWT)
-    #
-    #     self.tb_filter.addWidget(QLabel(" Search: "))
-    #     self.leSearch = QLineEdit()
-    #     self.leSearch.setClearButtonEnabled(True)
-    #     self.leSearch.textChanged.connect(self.build_filter_regex)
-    #     self.tb_filter.addWidget(self.leSearch)
-    #
-    # def build_filter_regex(self, txt):
-    #     query = self.leSearch.text()
-    #     # if self.cbxLWT.currentText() != "All":
-    #     #     query = "{}|{}".format(self.cbxLWT.currentText(), query)
-    #     self.sorted_device_model.setFilterRegExp(query)
+    def create_view_filter(self):
+        # self.tb_filter.addWidget(QLabel("Show devices: "))
+        # self.cbxLWT = QComboBox()
+        # self.cbxLWT.addItems(["All", "Online", "Offline"])
+        # self.cbxLWT.currentTextChanged.connect(self.build_filter_regex)
+        # self.tb_filter.addWidget(self.cbxLWT)
+    
+        self.tb_filter.addWidget(QLabel(" Filter Devices: "))
+        self.leSearch = QLineEdit()
+        self.leSearch.setClearButtonEnabled(True)
+        self.leSearch.textChanged.connect(self.build_filter_regex)
+        self.tb_filter.addWidget(self.leSearch)
+    
+    def build_filter_regex(self, txt):
+        query = self.leSearch.text()
+        # if self.cbxLWT.currentText() != "All":
+        #     query = "{}|{}".format(self.cbxLWT.currentText(), query)
+        self.sorted_device_model.setFilterRegExp(query)
 
     def change_view(self, a=None):
         view = self.views[self.sender().text()]
@@ -310,6 +324,28 @@ class ListWidget(QWidget):
         if self.device:
             if QMessageBox.question(self, "OTA Upgrade", "Are you sure to OTA upgrade from\n{}".format(self.device.p['OtaUrl']), QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
                 self.mqtt.publish(self.device.cmnd_topic("upgrade"), payload="1")
+                
+    def ctx_menu_cwconfig(self):
+        if self.device:
+            cwdefault, ok = QInputDialog.getItem(self, "Set Cricket Wireless Defaults", "Select defaults to Set", cwdefaults, editable=False)
+            if ok:
+                selection = cwdefault.split(":")[0]
+                if selection == "1":
+                    self.mqtt.publish(self.device.cmnd_topic("Sleep"), payload="0")
+                elif selection == "2":
+                    self.mqtt.publish(self.device.cmnd_topic("DeepSleepTime"), payload="0")
+                elif selection == "3":
+                    self.mqtt.publish(self.device.cmnd_topic("Timezone"), payload="0")
+                elif selection == "4":
+                    self.mqtt.publish(self.device.cmnd_topic("Webserver"), payload="0")
+                elif selection == "5":
+                    self.mqtt.publish(self.device.cmnd_topic("Teleperiod"), payload="300")
+                else:
+                    self.mqtt.publish(self.device.cmnd_topic("Sleep"), payload="0")
+                    self.mqtt.publish(self.device.cmnd_topic("DeepSleepTime"), payload="0")
+                    self.mqtt.publish(self.device.cmnd_topic("Timezone"), payload="0")
+                    self.mqtt.publish(self.device.cmnd_topic("Webserver"), payload="0")
+                    self.mqtt.publish(self.device.cmnd_topic("Teleperiod"), payload="300")
 
     def show_list_ctx_menu(self, at):
         self.select_device(self.device_list.indexAt(at))
@@ -327,32 +363,32 @@ class ListWidget(QWidget):
         for i, a in enumerate(self.agRelays.actions()):
             a.setVisible(len(relays) > 1 and i < len(relays))
 
-        color = self.device.color().get("Color", False)
-        has_color = bool(color)
-        self.actColor.setEnabled(has_color and not self.device.setoption(68))
+        # color = self.device.color().get("Color", False)
+        # has_color = bool(color)
+        # self.actColor.setEnabled(has_color and not self.device.setoption(68))
 
-        self.actChannels.setEnabled(has_color)
+        # self.actChannels.setEnabled(has_color)
 
-        if has_color:
-            self.actChannels.menu().clear()
+        # if has_color:
+        #    self.actChannels.menu().clear()
 
-            max_val = 100
-            if self.device.setoption(15) == 0:
-                max_val = 1023
+        #   max_val = 100
+        #    if self.device.setoption(15) == 0:
+        #        max_val = 1023
 
-            for k, v in self.device.pwm().items():
-                channel = SliderAction(self, k)
-                channel.slider.setMaximum(max_val)
-                channel.slider.setValue(int(v))
-                self.mChannels.addAction(channel)
-                channel.slider.valueChanged.connect(self.set_channel)
+        #    for k, v in self.device.pwm().items():
+        #        channel = SliderAction(self, k)
+        #        channel.slider.setMaximum(max_val)
+        #        channel.slider.setValue(int(v))
+        #        self.mChannels.addAction(channel)
+        #        channel.slider.valueChanged.connect(self.set_channel)
 
-            dimmer = self.device.color().get("Dimmer")
-            if dimmer:
-                saDimmer = SliderAction(self, "Dimmer")
-                saDimmer.slider.setValue(int(dimmer))
-                self.mChannels.addAction(saDimmer)
-                saDimmer.slider.valueChanged.connect(self.set_channel)
+        #    dimmer = self.device.color().get("Dimmer")
+        #    if dimmer:
+        #        saDimmer = SliderAction(self, "Dimmer")
+        #        saDimmer.slider.setValue(int(dimmer))
+        #        self.mChannels.addAction(saDimmer)
+        #        saDimmer.slider.valueChanged.connect(self.set_channel)
 
     def toggle_power(self, action):
         if self.device:

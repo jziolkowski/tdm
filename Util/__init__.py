@@ -1,5 +1,6 @@
 import re
 from json import loads, JSONDecodeError, load
+from datetime import datetime
 
 import logging
 
@@ -44,6 +45,15 @@ resets = [
     "5: erase flash, reset parameters to firmware defaults, keep Wi-Fi settings",
     "6: erase flash, reset parameters to firmware defaults, keep Wi-Fi and MQTT settings",
     "99: reset device bootcount to zero"
+]
+
+cwdefaults = [
+    "1: Set sleep to zero or no sleep",
+    "2: Set Deepsleep to zero or no deepsleep",
+    "3: Set timezone offset to zero or no offset",
+    "4: Set webserver zero or no webserver",
+    "5: Set telemetry to 300 or every 5 minutes",
+    "6: Set all Cricket Wireless defaults"
 ]
 
 template_adc = {
@@ -122,12 +132,14 @@ class TasmotaDevice(QObject):
 
     def __init__(self, topic, fulltopic, devicename=""):
         super(TasmotaDevice, self).__init__()
+        
+
         self.p = {
             "LWT": "undefined",
             "Topic": topic,
             "FullTopic": fulltopic,
             "DeviceName": devicename,
-            "Template": {},
+            "Template": {}
         }
 
         self.debug = False

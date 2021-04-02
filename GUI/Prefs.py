@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QSettings, QDir, QSize, Qt
-from PyQt5.QtGui import QFont, QFontInfo
+from PyQt5.QtGui import QIcon, QFont, QFontInfo
 from PyQt5.QtWidgets import QDialog, QComboBox, QCheckBox, QButtonGroup, QLabel, QSizePolicy, QPushButton, \
     QDialogButtonBox, QTreeWidget, QTableWidget, QGroupBox, QFormLayout, QFontDialog
 
@@ -9,8 +9,10 @@ from GUI import VLayout, GroupBoxV, HLayout, GroupBoxH, console_font, SpinBox
 class PrefsDialog(QDialog):
     def __init__(self, *args, **kwargs):
         super(PrefsDialog, self).__init__(*args, **kwargs)
+        
+        self.setWindowIcon(QIcon("icons/hammer-screwdriver.png"))
         self.setWindowTitle("Preferences")
-        # self.setMinimumSize(QSize(300, 200))
+        self.setMinimumSize(QSize(300, 200))
 
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
 

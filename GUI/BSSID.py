@@ -1,5 +1,6 @@
 from PyQt5.QtCore import QSize, QSettings, QDir
 from PyQt5.QtWidgets import QDialog, QTableWidget, QHeaderView, QTableWidgetItem, QPushButton
+from PyQt5.QtGui import QIcon
 
 from GUI import VLayout, HLayout
 
@@ -9,6 +10,8 @@ class BSSIdDialog(QDialog):
         super(BSSIdDialog, self).__init__(*args, **kwargs)
         self.setMinimumHeight(400)
         self.setMinimumWidth(400)
+
+        self.setWindowIcon(QIcon("icons/wi-fi-zone.png"))
         self.setWindowTitle("BSSId aliases")
 
         self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)

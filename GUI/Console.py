@@ -51,7 +51,7 @@ class ConsoleWidget(QDockWidget):
         command_cpl.setCaseSensitivity(Qt.CaseInsensitive)
         command_cpl.setCompletionMode(QCompleter.UnfilteredPopupCompletion)
         self.command.setCompleter(command_cpl)
-        # command_cpl.popup().installEventFilter(self)
+        command_cpl.popup().installEventFilter(self)
 
         command_cpl.activated.connect(self.command.clear, Qt.QueuedConnection)
 
