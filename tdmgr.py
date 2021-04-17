@@ -49,6 +49,8 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(QIcon(":/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
 
+        self.menuBar().setNativeMenuBar(False)
+
         self.unknown = []
         self.env = TasmotaEnvironment()
         self.device = None
