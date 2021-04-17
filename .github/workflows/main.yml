@@ -25,7 +25,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: Windows_tdmgr
-          path: dist/tdmgr_0.2.9.exe
+          path: dist/tdmgr_0.2.10.exe
 
   build-windows-x86:
     runs-on: windows-2019
@@ -47,7 +47,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: Windows_tdmgr32
-          path: dist/tdmgr_0.2.9_x86.exe
+          path: dist/tdmgr_0.2.10_x86.exe
 
   build-ubuntu:
     runs-on: ubuntu-20.04
@@ -70,7 +70,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: Ubuntu
-          path: dist/tdmgr_0.2.9
+          path: dist/tdmgr_0.2.10
 
 
   build-macos:
@@ -94,7 +94,7 @@ jobs:
         run: ls dist
       - name: Rename app
         run: |
-          mv dist/tdmgr_0.2.9.app dist/tdmgr_0.2.9-macOS.app
+          mv dist/tdmgr_0.2.10.app dist/tdmgr_0.2.10-macOS.app
       - name: 'Tar files'
         run: tar -cvf dist.tar dist/*
       - name: 'Upload Artifact'
