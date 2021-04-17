@@ -149,7 +149,7 @@ class MqttClient(QtCore.QObject):
             retained = msg.retain
             self.messageSignal.emit(topic, mstr, retained)
         except UnicodeDecodeError as e:
-            logging.error('MQTT MESSAGE DECODE ERROR: %s', e)
+            logging.error('MQTT MESSAGE DECODE ERROR: %s (%s=%s)', e, msg.topic,msg.payload.__repr__())
 
     def on_connect(self, *args):
         rc = args[3]

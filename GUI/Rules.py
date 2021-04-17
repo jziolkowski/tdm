@@ -209,7 +209,7 @@ class RulesWidget(QWidget):
 
     def select_rt(self, idx):
         self.rt = idx.row()
-        
+
     def set_rt(self, idx):
         curr = self.rts[self.rt]
         new, ok = QInputDialog.getInt(self, "Set ruletimer", "Set ruletimer{} value.".format(self.rt+1), value=curr)
@@ -217,12 +217,16 @@ class RulesWidget(QWidget):
             self.sendCommand.emit(self.device.cmnd_topic("ruletimer{}".format(self.rt+1)), str(new))
 
     def display_rule(self, payload, rule):
+            if type(payload[rule]) is dict:
+                payload = payload[rule]
+                self.actEnabled.setChecked(payload['State'] == "ON")
+            else:
+                self.actEnabled.setChecked(payload[rule] == "ON")
             rules = payload['Rules'].replace(" on ", "\non ").replace(" do ", " do\n\t").replace(" endon", "\nendon ").rstrip(" ")
             if len(rules) == 0:
                 self.editor.setPlaceholderText("rule buffer is empty")
             self.editor.setPlainText(rules)
 
-            self.actEnabled.setChecked(payload[rule] == "ON")
             self.actOnce.setChecked(payload['Once'] == 'ON')
             self.actStopOnError.setChecked(payload['StopOnError'] == 'ON')
 
