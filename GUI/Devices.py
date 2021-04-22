@@ -140,6 +140,7 @@ class ListWidget(QWidget):
         self.ctx_menu_cfg.addAction("Module", self.configureModule)
         self.ctx_menu_cfg.addAction("GPIO", self.configureGPIO)
         self.ctx_menu_cfg.addAction("Template", self.configureTemplate)
+        self.ctx_menu_cfg.addAction("OTA Url", self.configureOtaUrl)
         # self.ctx_menu_cfg.addAction("Wifi", self.ctx_menu_teleperiod)
         # self.ctx_menu_cfg.addAction("Time", self.cfgTime.emit)
         # self.ctx_menu_cfg.addAction("MQTT", self.ctx_menu_teleperiod)
@@ -158,6 +159,7 @@ class ListWidget(QWidget):
         self.ctx_menu.addAction(QIcon(":/copy.png"), "Copy", self.ctx_menu_copy)
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon(":/restart.png"), "Restart", self.ctx_menu_restart)
+        self.ctx_menu.addAction("OTA Upgrade", self.ctx_menu_ota_upgrade)
         self.ctx_menu.addAction(QIcon(), "Reset", self.ctx_menu_reset)
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon(":/delete.png"), "Delete", self.ctx_menu_delete_device)
@@ -300,15 +302,11 @@ class ListWidget(QWidget):
             self.dl.readyRead.connect(self.get_dump)
             self.dl.finished.connect(self.save_dump)
 
-    def ctx_menu_ota_set_url(self):
+    def ctx_menu_ota_upgrade(self):
         if self.device:
-            url, ok = QInputDialog.getText(self, "Set OTA URL", '100 chars max. Set to "1" to reset to default.', text=self.device.p['OtaUrl'])
-            if ok:
-                self.mqtt.publish(self.device.cmnd_topic("otaurl"), payload=url)
-
-    def ctx_menu_ota_set_upgrade(self):
-        if self.device:
-            if QMessageBox.question(self, "OTA Upgrade", "Are you sure to OTA upgrade from\n{}".format(self.device.p['OtaUrl']), QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            reply = QMessageBox.question(self, "OTA Upgrade", "Are you sure to OTA upgrade from\n{}".format(
+                                         self.device.p['OtaUrl']), QMessageBox.Yes | QMessageBox.No)
+            if reply == QMessageBox.Yes:
                 self.mqtt.publish(self.device.cmnd_topic("upgrade"), payload="1")
 
     def show_list_ctx_menu(self, at):
@@ -406,6 +404,13 @@ class ListWidget(QWidget):
             dlg = TemplateDialog(self.device)
             dlg.sendCommand.connect(self.mqtt.publish)
             dlg.exec_()
+
+    def configureOtaUrl(self):
+        if self.device:
+            url, ok = QInputDialog.getText(self, "Set OTA URL", '100 chars max. Set to "1" to reset to default.',
+                                           text=self.device.p['OtaUrl'])
+            if ok:
+                self.mqtt.publish(self.device.cmnd_topic("otaurl"), payload=url)
 
     def configureTimers(self):
         if self.device:
