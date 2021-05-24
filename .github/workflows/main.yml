@@ -67,10 +67,14 @@ jobs:
           python -m PyInstaller tdmgr.spec
       - name: See dist directory
         run: ls dist
+      - name: 'gzip file'
+        run: gzip dist/tdmgr_0.2.10
+      - name: 'show gzip'
+        run: ls dist
       - uses: actions/upload-artifact@v2
         with:
           name: Ubuntu
-          path: dist/tdmgr_0.2.10
+          path: dist/tdmgr_0.2.10.gz
 
 
   build-macos:
