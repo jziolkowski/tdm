@@ -47,7 +47,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: Windows_tdmgr32
-          path: dist/tdmgr_0.2.10_x86.exe
+          path: dist/tdmgr_*.exe
 
   build-ubuntu:
     runs-on: ubuntu-20.04
@@ -68,13 +68,13 @@ jobs:
       - name: See dist directory
         run: ls dist
       - name: 'gzip file'
-        run: gzip dist/tdmgr_0.2.10
+        run: gzip dist/tdmgr_*
       - name: 'show gzip'
         run: ls dist
       - uses: actions/upload-artifact@v2
         with:
           name: Ubuntu
-          path: dist/tdmgr_0.2.10.gz
+          path: dist/tdmgr_*.gz
 
 
   build-macos:
@@ -98,7 +98,7 @@ jobs:
         run: ls dist
       - name: Rename app
         run: |
-          mv dist/tdmgr_0.2.10.app dist/tdmgr_0.2.10-macOS.app
+          mv dist/tdmgr_*.app dist/tdmgr_*-macOS.app
       - name: 'Tar files'
         run: tar -cvf dist.tar dist/*
       - name: 'Upload Artifact'
