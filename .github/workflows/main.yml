@@ -98,7 +98,7 @@ jobs:
         run: ls dist
       - name: Rename app
         run: |
-          mv dist/tdmgr_*.app dist/tdmgr_*-macOS.app
+          mv dist/tdmgr*.app dist/tdmgr-macOS.app
       - name: 'Tar files'
         run: tar -cvf dist.tar dist/*
       - name: 'Upload Artifact'
