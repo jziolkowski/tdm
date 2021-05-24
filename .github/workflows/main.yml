@@ -25,7 +25,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: Windows_tdmgr
-          path: dist/tdmgr_0.2.10.exe
+          path: dist/tdmgr_*.exe
 
   build-windows-x86:
     runs-on: windows-2019
