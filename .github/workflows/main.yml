@@ -2,7 +2,7 @@ name: Build Workflow
 
 on:
   push:
-    branches: master
+    branches: build_pi
 
 jobs:
   build-windows:
@@ -106,3 +106,29 @@ jobs:
         with:
           name: macOS
           path: dist.tar
+
+  build-pypi:
+    runs-on: ubuntu-20.04
+    steps:
+     - name: Checkout
+       uses: actions/checkout@v1
+     - name: Install Python
+       uses: actions/setup-python@v1
+       with:
+         python-version: '3.9'
+     - name: Install requirements
+       run: |
+         pip install -r requirements.txt -r requirements_build.txt
+         pip install -e.
+     - name: Run sdist
+       run: python setup.py sdist bdist_wheel
+     - name: See dist directory
+       run: ls dist
+     - uses: actions/upload-artifact@v2
+       with:
+         name: sdist
+         path: dist/*.tar.gz
+     - uses: actions/upload-artifact@v2
+       with:
+         name: bdist_wheel
+         path: dist/*.whl
