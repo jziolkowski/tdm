@@ -453,6 +453,15 @@ class MainWindow(QMainWindow):
                 update_consoles = True
                 self.settings.setValue("console_word_wrap", dlg.cbConsWW.isChecked())
 
+            device_username = self.settings.value("device_username", "admin")
+            if device_username != dlg.cbConsWW.isChecked():
+                update_consoles = True
+                self.settings.setValue("device_username", dlg.devusername.text())
+
+            device_password = self.settings.value("device_password", "admin")
+            if device_password != dlg.cbConsWW.isChecked():
+                update_consoles = True
+                self.settings.setValue("device_password", dlg.devpassword.text())
             if update_consoles:
                 for c in self.consoles:
                     c.console.setWordWrapMode(dlg.cbConsWW.isChecked())
@@ -507,8 +516,10 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot()
     def openWebUI(self):
+        self.device_username = self.settings.value("device_username", "", str)
+        self.device_password = self.settings.value("device_password", "", str)
         if self.device and self.device.p.get('IPAddress'):
-            url = QUrl("http://{}".format(self.device.p['IPAddress']))
+            url = QUrl("http://{}:{}@{}".format( self.device_username, self.device_password,self.device.p['IPAddress']))
 
             try:
                 webui = QWebEngineView()
@@ -526,7 +537,7 @@ class MainWindow(QMainWindow):
                 frm_webui.setWindowState(Qt.WindowMaximized)
 
             except NameError:
-                QDesktopServices.openUrl(QUrl("http://{}".format(self.device.p['IPAddress'])))
+                QDesktopServices.openUrl(QUrl("http://{}:{}@{}".format( self.device_username, self.device_password,self.device.p['IPAddress'])))
 
     def updateMDI(self):
         if len(self.mdi.subWindowList()) == 1:
