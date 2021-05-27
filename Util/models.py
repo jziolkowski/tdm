@@ -9,6 +9,7 @@ RestartReasonRole = Qt.UserRole + 1
 RSSIRole = Qt.UserRole + 2
 FirmwareRole = Qt.UserRole + 3
 
+
 class TasmotaDevicesModel(QAbstractTableModel):
     def __init__(self, tasmota_env):
         super().__init__()
@@ -40,9 +41,8 @@ class TasmotaDevicesModel(QAbstractTableModel):
             idx = self.index(row, power_idx)
             self.dataChanged.emit(idx, idx)
 
-        elif key in ("RSSI", "LWT"):
-            fname_idx = self.columns.index("FriendlyName")
-            idx = self.index(row, fname_idx)
+        elif key in ("RSSI", "LWT", "DeviceName", 'FriendlyName1'):
+            idx = self.index(row, self.columns.index("Device"))
             self.dataChanged.emit(idx, idx)
 
         elif key in self.columns:
@@ -76,8 +76,8 @@ class TasmotaDevicesModel(QAbstractTableModel):
             if role in [Qt.DisplayRole, Qt.EditRole]:
                 val = d.p.get(col_name, "")
 
-                if col_name == "FriendlyName":
-                    val = d.p.get("FriendlyName1", d.p['Topic'])
+                if col_name == "Device":
+                    val = d.name
 
                 elif col_name == "Module":
                     if val == 0:
@@ -149,7 +149,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
             elif role == Qt.TextAlignmentRole:
                 # Left-aligned columns
-                if col_name in ("FriendlyName", "Module", "RestartReason", "OtaUrl", "Hostname") or col_name.endswith("Topic"):
+                if col_name in ("Device", "Module", "RestartReason", "OtaUrl", "Hostname") or col_name.endswith("Topic"):
                     return Qt.AlignLeft | Qt.AlignVCenter | Qt.TextWordWrap
 
                 # Right-aligned columns
@@ -159,7 +159,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 else:
                     return Qt.AlignCenter
 
-            elif role == Qt.DecorationRole and col_name == "FriendlyName":
+            elif role == Qt.DecorationRole and col_name == "Device":
                 if d.p['LWT'] == "Online":
                     rssi = int(d.p.get("RSSI", 0))
 
@@ -194,8 +194,8 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 elif col_name == "BSSId":
                     return d.p.get('BSSId')
 
-                elif col_name == "FriendlyName":
-                    fns = [d.p['FriendlyName1']]
+                elif col_name == "Device":
+                    fns = [d.name]
 
                     for i in range(2, 5):
                         fn = d.p.get("FriendlyName{}".format(i))
@@ -262,7 +262,7 @@ class DeviceDelegate(QStyledItemDelegate):
         col = index.column()
         col_name = index.model().sourceModel().columns[col]
 
-        if col_name == "FriendlyName":
+        if col_name == "Device":
             if index.data():
                 px = QPixmap(":/status_offline.png")
                 if index.data(LWTRole) == "Online":

@@ -133,7 +133,7 @@ class MqttClient(QtCore.QObject):
     def subscribe(self, path):
         if self.state == MqttClient.Connected:
             self.m_client.subscribe(path)
-            logging.debug("MQTT: Subscribed to %s", ", ".join([p[0] for p in path]))
+            logging.info("MQTT: Subscribed to %s", ", ".join([p[0] for p in path]))
 
     @pyqtSlot(str, str)
     def publish(self, topic, payload = None, qos=0, retain=False):
@@ -144,9 +144,12 @@ class MqttClient(QtCore.QObject):
     # callbacks
     def on_message(self, mqttc, obj, msg):
         topic = msg.topic
-        mstr = msg.payload.decode("utf8")
-        retained = msg.retain
-        self.messageSignal.emit(topic, mstr, retained)
+        try:
+            mstr = msg.payload.decode("utf8")
+            retained = msg.retain
+            self.messageSignal.emit(topic, mstr, retained)
+        except UnicodeDecodeError as e:
+            logging.error('MQTT MESSAGE DECODE ERROR: %s (%s=%s)', e, msg.topic,msg.payload.__repr__())
 
     def on_connect(self, *args):
         rc = args[3]

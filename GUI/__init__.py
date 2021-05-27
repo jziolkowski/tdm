@@ -3,7 +3,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableView, QSpinBox, QAction, QToolBar, \
     QHeaderView, QComboBox, QDoubleSpinBox, QWidget, QSizePolicy, QSlider, QWidgetAction, QFrame, QLineEdit
 
-base_view = ["FriendlyName"]
+base_view = ["Device"]
 default_views = {
     "Home": base_view + ["Module", "Power", "Color", "LoadAvg", "LinkCount", "Uptime"],
     "Health": base_view + ["Uptime", "BootCount", "RestartReason", "LoadAvg", "Sleep", "MqttCount", "LinkCount", "Downtime", "RSSI"],
@@ -15,6 +15,9 @@ default_views = {
 # console_font = QFont("asd")
 console_font = QFont("Liberation Mono")
 console_font.setStyleHint(QFont.TypeWriter)
+
+docs_url = "https://tasmota.github.io/docs/"
+
 
 class VLayout(QVBoxLayout):
     def __init__(self, margin=3, spacing=3, label='', *args, **kwargs):
@@ -147,7 +150,7 @@ class TableView(QTableView):
 
     def setupView(self, view):
         for i, c in enumerate(view):
-            if c in ("FriendlyName", "Module", "Topic", "FullTopic"):
+            if c in ("Device", "Module", "Topic", "FullTopic"):
                 self.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
             else:
                 self.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
@@ -238,7 +241,7 @@ class CmdWikiUrl(QLabel):
         self.setTextFormat(Qt.RichText)
         self.setTextInteractionFlags(Qt.TextBrowserInteraction)
         self.setOpenExternalLinks(True)
-        self.setText("<a href=https://github.com/arendst/Sonoff-Tasmota/wiki/Commands#{}>{}</a>".format(cmd, title if title else cmd))
+        self.setText("<a href={}Commands/#{}>{}</a>".format(docs_url, cmd.lower(), title or cmd))
 
 
 class HTMLLabel(QLabel):

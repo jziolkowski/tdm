@@ -18,7 +18,8 @@ class TimersDialog(QDialog):
         super(TimersDialog, self).__init__(*args, **kwargs)
         self.device = device
         self.timers = {}
-        self.setWindowTitle("Timers [{}]".format(self.device.p['FriendlyName1']))
+        self.armKey = "Arm"
+        self.setWindowTitle("Timers [{}]".format(self.device.name))
 
         vl = VLayout()
 
@@ -119,17 +120,12 @@ class TimersDialog(QDialog):
 
         if payload:
             self.blockSignals(True)
-            version = self.device.p['Version'].split("(")
-            version = version[0].split(".")
-            armValue = "Arm"
-            if 8 >= int(version[0]):
-                if 3 < int(version[1]):
-                    armValue = "Enable"
-                elif 3 == int(version[1]) and 1 >= int(version[2]):
-                    if 7 <= int(version[3]):
-                        armValue = "Enable"
-
-            self.cbTimerArm.setChecked(payload[armValue])
+            if 'Enable' in payload:
+                self.cbTimerArm.setChecked(payload['Enable'])
+                self.armKey = "Enable"
+            else:
+                self.cbTimerArm.setChecked(payload['Arm'])
+                self.armKey = "Arm"
             self.cbTimerRpt.setChecked(payload['Repeat'])
             self.cbxTimerAction.setCurrentIndex(payload['Action'])
 
@@ -222,7 +218,7 @@ class TimersDialog(QDialog):
                 if 7 <= int(version[3]):
                     armValue = "Enable"
         payload = {
-            armValue: int(self.cbTimerArm.isChecked()),
+            self.armKey: int(self.cbTimerArm.isChecked()),
             "Mode": self.TimerMode.checkedId(),
             "Time": self.teTimerTime.time().toString("hh:mm"),
             "Window": self.cbxTimerWnd.currentIndex(),

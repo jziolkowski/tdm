@@ -38,8 +38,9 @@ from Util.mqtt import MqttClient
 
 # TODO: rework device export
 
-__version__ = "0.2.6"
+__version__ = "0.2.10"
 __tasmota_minimum__ = "6.6.0.17"
+
 
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
@@ -47,6 +48,8 @@ class MainWindow(QMainWindow):
         self._version = __version__
         self.setWindowIcon(QIcon(":/logo.png"))
         self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
+
+        self.menuBar().setNativeMenuBar(False)
 
         self.unknown = []
         self.env = TasmotaEnvironment()
@@ -71,10 +74,10 @@ class MainWindow(QMainWindow):
                             format='%(asctime)s [%(levelname)s] %(message)s')
         logging.info("### TDM START ###")
 
-        # load devices from the devices file, create TasmotaDevices and add the to the envvironment
+        # load devices from the devices file, create TasmotaDevices and add the to the environment
         for mac in self.devices.childGroups():
             self.devices.beginGroup(mac)
-            device = TasmotaDevice(self.devices.value("topic"), self.devices.value("full_topic"), self.devices.value("friendly_name"))
+            device = TasmotaDevice(self.devices.value("topic"), self.devices.value("full_topic"), self.devices.value("device_name"))
             device.debug = self.devices.value("debug", False, bool)
             device.p['Mac'] = mac.replace("-", ":")
             device.env = self.env
@@ -372,7 +375,9 @@ class MainWindow(QMainWindow):
                             self.device_model.addDevice(d)
                             logging.debug("DISCOVERY: Sending initial query to topic %s", parsed['topic'])
                             self.initial_query(d, True)
-                            self.env.lwts.remove(d.tele_topic("LWT"))
+                            tele_topic = d.tele_topic("LWT")
+                            if tele_topic in self.env.lwts:
+                                self.env.lwts.remove(tele_topic)
                         d.update_property("LWT", "Online")
 
     def export(self):
@@ -510,7 +515,7 @@ class MainWindow(QMainWindow):
                 webui.load(url)
 
                 frm_webui = QFrame()
-                frm_webui.setWindowTitle("WebUI [{}]".format(self.device.p['FriendlyName1']))
+                frm_webui.setWindowTitle("WebUI [{}]".format(self.device.name))
                 frm_webui.setFrameShape(QFrame.StyledPanel)
                 frm_webui.setLayout(VLayout(0))
                 frm_webui.layout().addWidget(webui)
@@ -544,13 +549,13 @@ class MainWindow(QMainWindow):
             mac = d.p.get('Mac')
             topic = d.p['Topic']
             full_topic = d.p['FullTopic']
-            friendly_name = d.p['FriendlyName1']
+            device_name = d.name
 
             if mac:
                 self.devices.beginGroup(mac.replace(":", "-"))
                 self.devices.setValue("topic", topic)
                 self.devices.setValue("full_topic", full_topic)
-                self.devices.setValue("friendly_name", friendly_name)
+                self.devices.setValue("device_name", device_name)
 
                 for i, h in enumerate(d.history):
                     self.devices.setValue("history/{}".format(i), h)
@@ -591,4 +596,8 @@ def start():
 
 
 if __name__ == '__main__':
-    start()
+    try:
+        start()
+    except Exception as e:
+        logging.exception("EXCEPTION: %s", e)
+        print("TDM has crashed. Sorry for that. Check tdm.log for more information.")
