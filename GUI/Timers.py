@@ -243,7 +243,7 @@ class TimersDialog(QDialog):
 
                         # Tasmota >= 9.4.0.5 : There is only 1 message that covers all
                         #   { "Timers": "ON", "Timer1":{"Enable":0,"Mode":0,"Time":"00:00","Window":0,"Days":"0000000","Repeat":0,"Action":0}, ....
-                        if len(all) > 1: # If first is "Timers" but they are more, then it is Tasmota >= 9.4.0.5
+                        if len(all) > 1: # If first is "Timers" but there are more, then it is Tasmota >= 9.4.0.5
                             payload.pop("Timers")
                             self.timers.update(payload)
                             self.loadTimer(self.cbTimer.currentText())
