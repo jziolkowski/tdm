@@ -228,9 +228,9 @@ class TimersDialog(QDialog):
                     payload = loads(msg)
                     all = list(payload)
                     first = all[0]
-                    logging.debug("TIMERS payload: %s", payload)
-                    logging.debug("TIMERS list: %s", list(payload))
-                    logging.debug("TIMERS first  : %s", first)
+                    #logging.debug("TIMERS payload: %s", payload)
+                    #logging.debug("TIMERS list: %s", list(payload))
+                    #logging.debug("TIMERS first  : %s", first)
 
                 except JSONDecodeError as e:
                     error = "Timer loading error", "Can't load the timer from device.\n{}".format(e)
