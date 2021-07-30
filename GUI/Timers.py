@@ -222,11 +222,22 @@ class TimersDialog(QDialog):
 
     @pyqtSlot(str, str)
     def parseMessage(self, topic, msg):
+        """
+        Tasmota < 9.4.0.5 : There are a total of 4 messages in reply to `Timers` command:
+            {"Timers": "ON" }
+            {"Timers1" : {"Timer1":{"Enable":0,"Mode":0,"Time":"00:00","Window":0,"Days":"0000000","Repeat":0,"Action":0}, ....
+            ...
+            {"Timers4" : {"Timer13":{"Enable":0,"Mode":0,"Time":"00:00","Window":0,"Days":"0000000","Repeat":0,"Action":0}, ....
+
+        Tasmota >= 9.4.0.5 : There is only 1 message that covers all
+            { "Timers": "ON", "Timer1":{"Enable":0,"Mode":0,"Time":"00:00","Window":0,"Days":"0000000","Repeat":0,"Action":0}, ....
+        """
         if self.device.matches(topic):
             if self.device.reply == "RESULT" or self.device.reply == "TIMERS":
                 try:
                     payload = loads(msg)
-                    first = list(payload)[0]
+                    all = list(payload)
+                    first = all[0]
 
                 except JSONDecodeError as e:
                     error = "Timer loading error", "Can't load the timer from device.\n{}".format(e)
@@ -237,9 +248,12 @@ class TimersDialog(QDialog):
                     if first == 'Timers':
                         self.gbTimers.setChecked(payload[first] == "ON")
 
+                        if len(all) > 1:
+                            payload.pop("Timers")
+                            self.timers.update(payload)
+                            self.loadTimer(self.cbTimer.currentText())
+
                     elif first.startswith('Timers'):
                         self.timers.update(payload[first])
-
-                    if first == 'Timers4':
-                        self.loadTimer(self.cbTimer.currentText())
-
+                        if first == 'Timers4':
+                            self.loadTimer(self.cbTimer.currentText())
