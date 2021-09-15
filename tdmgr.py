@@ -214,8 +214,18 @@ class MainWindow(QMainWindow):
             self.broker_username = self.settings.value('username')
             self.broker_password = self.settings.value('password')
 
+            self.broker_tls = self.settings.value("tls")
+            self.broker_tls_file = self.settings.value("tls_file")
+            self.broker_tls_insecure = self.settings.value("tls_insecure")
+            self.broker_tls_version = self.settings.value("tls_version")
+
             self.mqtt.hostname = self.broker_hostname
             self.mqtt.port = self.broker_port
+
+            if self.broker_tls:
+                self.mqtt.setSSL(self.broker_tls_file, self.broker_tls_insecure, self.broker_tls_version)
+            else:
+                self.mqtt.unsetSSL()
 
             if self.broker_username:
                 self.mqtt.setAuth(self.broker_username, self.broker_password)
@@ -234,12 +244,21 @@ class MainWindow(QMainWindow):
         self.broker_username = self.settings.value('username')
         self.broker_password = self.settings.value('password')
 
+        self.broker_tls = self.settings.value("tls")
+        self.broker_tls_file = self.settings.value("tls_file")
+        self.broker_tls_insecure = self.settings.value("tls_insecure")
+        self.broker_tls_version = self.settings.value("tls_version")
+
         self.mqtt.hostname = self.broker_hostname
         self.mqtt.port = self.broker_port
 
+        if self.broker_tls:
+            self.mqtt.setSSL(self.broker_tls_file, self.broker_tls_insecure, self.broker_tls_version)
+        else:
+            self.mqtt.unsetSSL()
+
         if self.broker_username:
             self.mqtt.setAuth(self.broker_username, self.broker_password)
-
         if self.mqtt.state == self.mqtt.Disconnected:
             self.mqtt.connectToHost()
 

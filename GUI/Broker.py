@@ -1,7 +1,8 @@
 from PyQt5.QtCore import QSettings, QDir
-from PyQt5.QtWidgets import QDialog, QLineEdit, QFormLayout, QPushButton, QGroupBox, QCheckBox
+from PyQt5.QtWidgets import QDialog, QLineEdit, QFormLayout, QPushButton, QGroupBox, QCheckBox, QComboBox
 import random
 import string
+import ssl
 
 from GUI import SpinBox, HLayout, VLayout
 
@@ -23,6 +24,30 @@ class BrokerDialog(QDialog):
         hfl.addRow("Hostname", self.hostname)
         hfl.addRow("Port", self.port)
         gbHost.setLayout(hfl)
+
+
+        gbtls = QGroupBox(" TLS [optional]")
+        tlsLayout = QFormLayout()
+        self.use_tls = QCheckBox("tls")
+        self.use_tls.setChecked(self.settings.value("tls", False, bool))
+        
+        self.tls_file = QLineEdit()
+        self.tls_file.setText(self.settings.value("tlsfile", "/etc/opentls/certs/ca.crt"))
+        self.tls_insecure = QCheckBox("TLS insecure")
+        self.tls_insecure.setChecked(self.settings.value("tls_insecure", False, bool))
+        
+        self.tls_version = QComboBox(self)
+        self.tls_version.addItem("TLSv1.2", ssl.PROTOCOL_TLSv1_2)
+        self.tls_version.addItem("TLSv1.1", ssl.PROTOCOL_TLSv1_1)
+        self.tls_version.addItem("TLSv1", ssl.PROTOCOL_TLSv1)
+
+
+        tlsLayout.addRow("Use tls", self.use_tls)
+        tlsLayout.addRow("Cert file", self.tls_file)
+        tlsLayout.addRow("TLS insecure", self.tls_insecure)
+        tlsLayout.addRow("TLS Version", self.tls_version)
+        gbtls.setLayout(tlsLayout)
+
 
         gbLogin = QGroupBox("Credentials [optional]")
         lfl = QFormLayout()
@@ -51,7 +76,7 @@ class BrokerDialog(QDialog):
         hlBtn.addWidgets([btnSave, btnCancel])
 
         vl = VLayout()
-        vl.addWidgets([gbHost, gbLogin, self.cbConnectStartup])
+        vl.addWidgets([gbHost, gbtls, gbLogin, self.cbConnectStartup])
         vl.addLayout(hlBtn)
 
         self.setLayout(vl)
@@ -65,6 +90,16 @@ class BrokerDialog(QDialog):
         self.settings.setValue("username", self.username.text())
         self.settings.setValue("password", self.password.text())
         self.settings.setValue("connect_on_startup", self.cbConnectStartup.isChecked())
+        self.settings.setValue("tls", self.use_tls.isChecked())
+        self.settings.setValue("tls_file", self.tls_file.text())
+        self.settings.setValue("tls_insecure", self.tls_insecure.isChecked())
+        if self.tls_version.currentText() == "TLSv1.2":
+            self.settings.setValue("tls_version", ssl.PROTOCOL_TLSv1_2)
+        elif self.tls_version.currentText() == "TLSv1.1  ":
+            self.settings.setValue("tls_version", ssl.PROTOCOL_TLSv1_1)
+        elif self.tls_version.currentText() == "TLSv1":
+            self.settings.setValue("tls_version", ssl.PROTOCOL_TLSv1)
+        
         # self.settings.setValue("client_id", self.clientId.text())
         self.settings.sync()
         self.done(QDialog.Accepted)
