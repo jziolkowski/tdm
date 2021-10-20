@@ -1,7 +1,7 @@
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTabWidget, QWidget
 
-from GUI import Command, CommandMultiSelect, GroupBoxV, HLayout, HTMLLabel, VLayout, docs_url
+from GUI import Command, HTMLLabel, VLayout, docs_url
 from Util import commands_json as commands
 from Util import setoptions
 

@@ -1,24 +1,16 @@
-import logging
 import re
 from copy import deepcopy
 from json import JSONDecodeError, loads
 
-from PyQt5.QtCore import QDir, QSettings, QSize, Qt, QTimer, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QColor, QFont, QIcon, QSyntaxHighlighter, QTextCharFormat
 from PyQt5.QtWidgets import (
-    QCheckBox,
     QComboBox,
-    QDialog,
-    QGroupBox,
-    QHeaderView,
     QInputDialog,
     QLabel,
     QListWidget,
-    QMessageBox,
     QPlainTextEdit,
     QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
     QWidget,
 )
 
@@ -268,11 +260,13 @@ class RulesWidget(QWidget):
             if msg.startswith("{"):
                 try:
                     payload = loads(msg)
-                except JSONDecodeError:
+                except JSONDecodeError as e:
                     # JSON parse exception means that most likely the rule contains an unescaped JSON payload
                     # TDM will attempt parsing using a regex instead of json.loads()
                     parsed_rule = re.match(
-                        r"{\"(?P<rule>Rule(\d))\":\"(?P<enabled>ON|OFF)\",\"Once\":\"(?P<Once>ON|OFF)\",\"StopOnError\":\"(?P<StopOnError>ON|OFF)\",\"Free\":\d+,\"Rules\":\"(?P<Rules>.*?)\"}$",
+                        r"{\"(?P<rule>Rule(\d))\":\"(?P<enabled>ON|OFF)\",\"Once\":\""
+                        r"(?P<Once>ON|OFF)\",\"StopOnError\":\"(?P<StopOnError>ON|OFF)"
+                        r"\",\"Free\":\d+,\"Rules\":\"(?P<Rules>.*?)\"}$",
                         msg,
                         re.IGNORECASE,
                     )

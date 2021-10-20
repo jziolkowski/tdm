@@ -1,17 +1,5 @@
-import re
-
-from PyQt5.QtCore import (
-    QAbstractTableModel,
-    QDir,
-    QModelIndex,
-    QPoint,
-    QRect,
-    QRectF,
-    QSettings,
-    QSize,
-    Qt,
-)
-from PyQt5.QtGui import QColor, QFont, QIcon, QPen, QPixmap
+from PyQt5.QtCore import QAbstractTableModel, QDir, QModelIndex, QSettings, QSize, Qt
+from PyQt5.QtGui import QColor, QIcon, QPen, QPixmap
 from PyQt5.QtWidgets import QStyle, QStyledItemDelegate
 
 LWTRole = Qt.UserRole

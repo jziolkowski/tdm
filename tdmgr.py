@@ -4,9 +4,9 @@ import logging
 import os
 import re
 import sys
-from json import JSONDecodeError, loads
+from json import loads
 
-from PyQt5.QtCore import QDateTime, QDir, QSettings, QSize, Qt, QTimer, QUrl, pyqtSlot
+from PyQt5.QtCore import QDir, QSettings, QSize, Qt, QTimer, QUrl, pyqtSlot
 from PyQt5.QtGui import QDesktopServices, QFont, QIcon
 from PyQt5.QtWidgets import (
     QAction,
@@ -22,10 +22,7 @@ from PyQt5.QtWidgets import (
     QStatusBar,
 )
 
-from GUI import icons
 from GUI.ClearLWT import ClearLWTDialog
-
-# from GUI.OpenHAB import OpenHABDialog
 from GUI.Prefs import PrefsDialog
 
 try:
@@ -49,7 +46,6 @@ from Util import (
     expand_fulltopic,
     initial_commands,
     parse_topic,
-    prefixes,
 )
 from Util.models import TasmotaDevicesModel
 from Util.mqtt import MqttClient
@@ -311,7 +307,8 @@ class MainWindow(QMainWindow):
                 self.topics += expand_fulltopic(pat)
 
         for d in self.env.devices:
-            # if device has a non-standard pattern, check if the pattern is found in the custom patterns
+            # if device has a non-standard pattern, check if the pattern is found in
+            # the custom patterns
             if not d.is_default() and d.p['FullTopic'] not in custom_patterns:
                 # if pattern is not found then add the device topics to subscription list.
                 # if the pattern is found, it will be matched without implicit subscription
@@ -387,8 +384,8 @@ class MainWindow(QMainWindow):
                         possible_topic = match.groupdict().get('topic')
                         if possible_topic not in ('tele', 'stat'):
                             # if the assumed topic is different from tele or stat, there is a chance
-                            # that it's a valid topic
-                            # query the assumed device for its FullTopic. False positives won't reply.
+                            # that it's a valid topic. query the assumed device for its FullTopic.
+                            # False positives won't reply.
                             possible_topic_cmnd = (
                                 p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic)
                                 + "FullTopic"
@@ -406,10 +403,12 @@ class MainWindow(QMainWindow):
                 full_topic = loads(msg).get('FullTopic')
                 if full_topic:
                     # the device replies with its FullTopic
-                    # here the Topic is extracted using the returned FullTopic, identifying the device
+                    # here the Topic is extracted using the returned FullTopic, identifying the
+                    # device
                     parsed = parse_topic(full_topic, topic)
                     if parsed:
-                        # got a match, we query the device's MAC address in case it's a known device that had its topic changed
+                        # got a match, we query the device's MAC address in case it's a known device
+                        # that had its topic changed
                         logging.debug(
                             "DISCOVERY: topic %s is matched by fulltopic %s", topic, full_topic
                         )
@@ -657,4 +656,4 @@ if __name__ == '__main__':
         start()
     except Exception as e:  # noqa: 722
         logging.exception("EXCEPTION: %s", e)
-        logging.error("TDM has crashed. Sorry for that. Check tdm.log for more information.")
+        logging.exception("TDM has crashed. Sorry for that. Check tdm.log for more information.")
