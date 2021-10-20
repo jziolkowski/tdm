@@ -207,7 +207,7 @@ class JSONHighLighter(QSyntaxHighlighter):
         'command': command,
     }
 
-    braces = ['\{', '\}']
+    braces = [r'\{', r'\}']
 
     def __init__(self, document):
         QSyntaxHighlighter.__init__(self, document)

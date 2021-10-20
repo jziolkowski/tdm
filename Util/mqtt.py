@@ -1,4 +1,5 @@
 import logging
+import socket
 
 import paho.mqtt.client as mqtt
 from PyQt5 import QtCore
@@ -127,7 +128,7 @@ class MqttClient(QtCore.QObject):
 
                 self.state = MqttClient.Connecting
                 self.m_client.loop_start()
-            except:
+            except socket.timeout:
                 self.connectError.emit(3)
 
     @QtCore.pyqtSlot()

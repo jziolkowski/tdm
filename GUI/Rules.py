@@ -1,24 +1,16 @@
-import logging
 import re
 from copy import deepcopy
 from json import JSONDecodeError, loads
 
-from PyQt5.QtCore import QDir, QSettings, QSize, Qt, QTimer, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QColor, QFont, QIcon, QSyntaxHighlighter, QTextCharFormat
 from PyQt5.QtWidgets import (
-    QCheckBox,
     QComboBox,
-    QDialog,
-    QGroupBox,
-    QHeaderView,
     QInputDialog,
     QLabel,
     QListWidget,
-    QMessageBox,
     QPlainTextEdit,
     QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
     QWidget,
 )
 
@@ -109,7 +101,7 @@ class RulesWidget(QWidget):
 
         vl_helpers = VLayout(margin=[0, 0, 3, 0])
 
-        ###### Polling
+        # Polling
         self.gbPolling = GroupBoxH("Automatic polling")
         self.pbPollVars = QPushButton("VARs")
         self.pbPollVars.setCheckable(True)
@@ -120,7 +112,7 @@ class RulesWidget(QWidget):
 
         self.gbPolling.addWidgets([self.pbPollVars, self.pbPollMems, self.pbPollRTs])
 
-        ###### VARS
+        # VARS
         # self.gbVars = GroupBoxV("VARs")
         self.lwVars = QListWidget()
         self.lwVars.setAlternatingRowColors(True)
@@ -129,7 +121,7 @@ class RulesWidget(QWidget):
         self.lwVars.doubleClicked.connect(self.set_var)
         # self.gbVars.addWidget(self.lwVars)
 
-        ###### MEMS
+        # MEMS
         # self.gbMems = GroupBoxV("MEMs")
         self.lwMems = QListWidget()
         self.lwMems.setAlternatingRowColors(True)
@@ -138,7 +130,7 @@ class RulesWidget(QWidget):
         self.lwMems.doubleClicked.connect(self.set_mem)
         # self.gbMems.addWidget(self.lwMems)
 
-        ###### RuleTimers
+        # RuleTimers
         # self.gbRTs = GroupBoxV("Rule timers")
         self.lwRTs = QListWidget()
         self.lwRTs.setAlternatingRowColors(True)
@@ -268,11 +260,13 @@ class RulesWidget(QWidget):
             if msg.startswith("{"):
                 try:
                     payload = loads(msg)
-                except JSONDecodeError as e:
-                    # JSON parse exception means that most likely the rule contains an unescaped JSON payload
-                    # TDM will attempt parsing using a regex instead of json.loads()
+                except JSONDecodeError:
+                    # JSON parse exception means that most likely the rule contains an unescaped
+                    # JSON payload.  TDM will attempt parsing using a regex instead of json.loads()
                     parsed_rule = re.match(
-                        r"{\"(?P<rule>Rule(\d))\":\"(?P<enabled>ON|OFF)\",\"Once\":\"(?P<Once>ON|OFF)\",\"StopOnError\":\"(?P<StopOnError>ON|OFF)\",\"Free\":\d+,\"Rules\":\"(?P<Rules>.*?)\"}$",
+                        r"{\"(?P<rule>Rule(\d))\":\"(?P<enabled>ON|OFF)\",\"Once\":\""
+                        r"(?P<Once>ON|OFF)\",\"StopOnError\":\"(?P<StopOnError>ON|OFF)"
+                        r"\",\"Free\":\d+,\"Rules\":\"(?P<Rules>.*?)\"}$",
                         msg,
                         re.IGNORECASE,
                     )

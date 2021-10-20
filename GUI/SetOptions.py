@@ -1,17 +1,7 @@
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import (
-    QComboBox,
-    QDialog,
-    QDialogButtonBox,
-    QFormLayout,
-    QGroupBox,
-    QLabel,
-    QMessageBox,
-    QPushButton,
-    QWidget,
-)
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QLabel
 
-from GUI import DictComboBox, GroupBoxV, HLayout, VLayout
+from GUI import DictComboBox, GroupBoxV, VLayout
 from Util import setoptions
 
 

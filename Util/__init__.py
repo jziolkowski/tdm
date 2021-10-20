@@ -1,11 +1,11 @@
 import logging
 import re
-from json import JSONDecodeError, load, loads
+from json import JSONDecodeError, loads
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from Util.commands import commands as commands_json
-from Util.setoptions import setoptions
+# from Util.commands import commands as commands_json
+# from Util.setoptions import setoptions
 
 commands = [
     "Backlog",
@@ -282,7 +282,8 @@ commands = [
 prefixes = ["tele", "stat", "cmnd"]
 default_patterns = [
     "%prefix%/%topic%/",  # = %prefix%/%topic% (Tasmota default)
-    "%topic%/%prefix%/",  # = %topic%/%prefix% (Tasmota with SetOption19 enabled for HomeAssistant AutoDiscovery)
+    "%topic%/%prefix%/",  # = %topic%/%prefix% (Tasmota with SetOption19 enabled for
+    # HomeAssistant AutoDiscovery)
 ]
 
 custom_patterns = []
@@ -332,7 +333,8 @@ def parse_topic(full_topic, topic):
     """
     :param full_topic: FullTopic to match against
     :param topic: MQTT topic from which the reply arrived
-    :return: If match is found, returns dictionary including device Topic, prefix (cmnd/tele/stat) and reply endpoint
+    :return: If match is found, returns dictionary including device Topic,
+        prefix (cmnd/tele/stat) and reply endpoint
     """
     full_topic = (
         "{}(?P<reply>.*)".format(full_topic)
@@ -346,7 +348,7 @@ def parse_topic(full_topic, topic):
 
 
 def parse_payload(payload):
-    match = re.match("(\d+) \((.*)\)", payload)
+    match = re.match(r"(\d+) \((.*)\)", payload)
     if match:
         return dict([match.groups()])
     return {}

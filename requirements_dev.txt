@@ -1,2 +1,3 @@
-black
+axblack
 isort
+flake8

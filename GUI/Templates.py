@@ -1,8 +1,7 @@
 from json import dumps
 
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import (
-    QComboBox,
     QDialog,
     QDialogButtonBox,
     QFormLayout,
@@ -10,11 +9,9 @@ from PyQt5.QtWidgets import (
     QLabel,
     QLineEdit,
     QMessageBox,
-    QPushButton,
-    QWidget,
 )
 
-from GUI import DictComboBox, HLayout, VLayout
+from GUI import DictComboBox, VLayout
 from Util import template_adc
 
 
@@ -41,7 +38,6 @@ class TemplateDialog(QDialog):
             btns.accepted.connect(self.accept)
 
             tpl = self.device.p['Template']
-            print(tpl)
             self.leName = QLineEdit()
             self.leName.setMaxLength(14)
             self.leName.setText(tpl['NAME'])
