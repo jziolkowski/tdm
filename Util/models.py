@@ -1,5 +1,17 @@
-from PyQt5.QtCore import QAbstractTableModel, QDir, QModelIndex, QSettings, QSize, Qt
-from PyQt5.QtGui import QColor, QIcon, QPen, QPixmap
+import re
+
+from PyQt5.QtCore import (
+    QAbstractTableModel,
+    QDir,
+    QModelIndex,
+    QPoint,
+    QRect,
+    QRectF,
+    QSettings,
+    QSize,
+    Qt,
+)
+from PyQt5.QtGui import QColor, QFont, QIcon, QPen, QPixmap
 from PyQt5.QtWidgets import QStyle, QStyledItemDelegate
 
 LWTRole = Qt.UserRole
@@ -284,7 +296,9 @@ class DeviceDelegate(QStyledItemDelegate):
                 px_y = (option.rect.height() - 24) // 2
                 p.drawPixmap(option.rect.x() + 2, option.rect.y() + px_y, px.scaled(24, 24))
 
-                p.drawText(option.rect.adjusted(28, 0, 0, 0), Qt.AlignVCenter | Qt.AlignLeft, index.data())
+                p.drawText(
+                    option.rect.adjusted(28, 0, 0, 0), Qt.AlignVCenter | Qt.AlignLeft, index.data()
+                )
 
                 alerts = []
                 if index.data(RestartReasonRole) == "Exception":
@@ -340,7 +354,9 @@ class DeviceDelegate(QStyledItemDelegate):
                             p.drawPixmap(x, y, 24, 24, QPixmap(":/P_{}".format(index.data()[k])))
 
                         else:
-                            p.drawPixmap(x, y, 24, 24, QPixmap(":/P{}_{}".format(i + 1, index.data()[k])))
+                            p.drawPixmap(
+                                x, y, 24, 24, QPixmap(":/P{}_{}".format(i + 1, index.data()[k]))
+                            )
 
                 else:
                     i = 0
@@ -355,7 +371,9 @@ class DeviceDelegate(QStyledItemDelegate):
                                     y,
                                     24,
                                     24,
-                                    QPixmap(":/P{}_{}".format(i + 1, list(index.data().values())[i])),
+                                    QPixmap(
+                                        ":/P{}_{}".format(i + 1, list(index.data().values())[i])
+                                    ),
                                 )
                             i += 1
 

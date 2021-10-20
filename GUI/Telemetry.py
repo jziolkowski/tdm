@@ -88,7 +88,9 @@ class TelemetryWidget(QDockWidget):
                 if isinstance(v, dict):
                     for nested_key, nested_v in v.items():
                         nested_item = self.get_nested_item(key, nested_key)
-                        nested_item.setText(1, "{} {}".format(nested_v, item_units.get(nested_key, "")))
+                        nested_item.setText(
+                            1, "{} {}".format(nested_v, item_units.get(nested_key, ""))
+                        )
 
                 else:
                     item = self.get_top_item(key)

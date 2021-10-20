@@ -4,9 +4,9 @@ import logging
 import os
 import re
 import sys
-from json import loads
+from json import JSONDecodeError, loads
 
-from PyQt5.QtCore import QDir, QSettings, QSize, Qt, QTimer, QUrl, pyqtSlot
+from PyQt5.QtCore import QDateTime, QDir, QSettings, QSize, Qt, QTimer, QUrl, pyqtSlot
 from PyQt5.QtGui import QDesktopServices, QFont, QIcon
 from PyQt5.QtWidgets import (
     QAction,
@@ -22,8 +22,10 @@ from PyQt5.QtWidgets import (
     QStatusBar,
 )
 
-from GUI import icons  # noqa: F401
+from GUI import icons
 from GUI.ClearLWT import ClearLWTDialog
+
+# from GUI.OpenHAB import OpenHABDialog
 from GUI.Prefs import PrefsDialog
 
 try:
@@ -47,6 +49,7 @@ from Util import (
     expand_fulltopic,
     initial_commands,
     parse_topic,
+    prefixes,
 )
 from Util.models import TasmotaDevicesModel
 from Util.mqtt import MqttClient
@@ -200,7 +203,9 @@ class MainWindow(QMainWindow):
         # mExport.addAction(QIcon(), "OpenHAB", self.openhab)
 
     def build_toolbars(self):
-        main_toolbar = Toolbar(orientation=Qt.Horizontal, iconsize=24, label_position=Qt.ToolButtonTextBesideIcon)
+        main_toolbar = Toolbar(
+            orientation=Qt.Horizontal, iconsize=24, label_position=Qt.ToolButtonTextBesideIcon
+        )
         main_toolbar.setObjectName("main_toolbar")
 
     def initial_query(self, device, queued=False):
@@ -371,7 +376,10 @@ class MainWindow(QMainWindow):
 
                 for p in default_patterns + custom_patterns:
                     match = re.fullmatch(
-                        p.replace("%topic%", "(?P<topic>.*?)").replace("%prefix%", "(?P<prefix>.*?)") + ".*$",
+                        p.replace("%topic%", "(?P<topic>.*?)").replace(
+                            "%prefix%", "(?P<prefix>.*?)"
+                        )
+                        + ".*$",
                         topic,
                     )
                     if match:
@@ -382,7 +390,8 @@ class MainWindow(QMainWindow):
                             # that it's a valid topic
                             # query the assumed device for its FullTopic. False positives won't reply.
                             possible_topic_cmnd = (
-                                p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic) + "FullTopic"
+                                p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic)
+                                + "FullTopic"
                             )
                             logging.debug(
                                 "DISCOVERY: Asking an unknown device for FullTopic at %s",
@@ -390,7 +399,9 @@ class MainWindow(QMainWindow):
                             )
                             self.mqtt_queue.append([possible_topic_cmnd, ""])
 
-            elif topic.endswith("RESULT") or topic.endswith("FULLTOPIC"):  # reply from an unknown device
+            elif topic.endswith("RESULT") or topic.endswith(
+                "FULLTOPIC"
+            ):  # reply from an unknown device
                 # STAGE 2
                 full_topic = loads(msg).get('FullTopic')
                 if full_topic:
@@ -398,9 +409,10 @@ class MainWindow(QMainWindow):
                     # here the Topic is extracted using the returned FullTopic, identifying the device
                     parsed = parse_topic(full_topic, topic)
                     if parsed:
-                        # got a match, we query the device's MAC address in case it's a known device
-                        # that had its topic changed
-                        logging.debug("DISCOVERY: topic %s is matched by fulltopic %s", topic, full_topic)
+                        # got a match, we query the device's MAC address in case it's a known device that had its topic changed
+                        logging.debug(
+                            "DISCOVERY: topic %s is matched by fulltopic %s", topic, full_topic
+                        )
 
                         d = self.env.find_device(topic=parsed['topic'])
                         if d:
@@ -414,7 +426,9 @@ class MainWindow(QMainWindow):
                             d = TasmotaDevice(parsed['topic'], full_topic)
                             self.env.devices.append(d)
                             self.device_model.addDevice(d)
-                            logging.debug("DISCOVERY: Sending initial query to topic %s", parsed['topic'])
+                            logging.debug(
+                                "DISCOVERY: Sending initial query to topic %s", parsed['topic']
+                            )
                             self.initial_query(d, True)
                             tele_topic = d.tele_topic("LWT")
                             if tele_topic in self.env.lwts:

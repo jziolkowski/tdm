@@ -213,12 +213,16 @@ class TimersDialog(QDialog):
 
                 text = "{timer} will {action} {time} {days} {repeat}".format(**desc)
             else:
-                text = "{timer} will do nothing because there are no relays configured.".format(**desc)
+                text = "{timer} will do nothing because there are no relays configured.".format(
+                    **desc
+                )
 
             self.lbTimerDesc.setText(text)
 
         else:
-            self.lbTimerDesc.setText("{} is not armed, it will do nothing.".format(self.cbTimer.currentText().upper()))
+            self.lbTimerDesc.setText(
+                "{} is not armed, it will do nothing.".format(self.cbTimer.currentText().upper())
+            )
 
     def saveTimer(self):
         payload = {
@@ -232,7 +236,9 @@ class TimersDialog(QDialog):
             "Action": self.cbxTimerAction.currentIndex(),
         }
         self.sendCommand.emit(self.device.cmnd_topic(self.cbTimer.currentText()), dumps(payload))
-        QMessageBox.information(self, "Timer saved", "{} data sent to device.".format(self.cbTimer.currentText()))
+        QMessageBox.information(
+            self, "Timer saved", "{} data sent to device.".format(self.cbTimer.currentText())
+        )
 
     @pyqtSlot(str, str)
     def parseMessage(self, topic, msg):

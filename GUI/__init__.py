@@ -232,7 +232,12 @@ class CheckableAction(QAction):
 
 class Toolbar(QToolBar):
     def __init__(
-        self, orientation=Qt.Horizontal, iconsize=32, label_position=Qt.ToolButtonTextUnderIcon, *args, **kwargs
+        self,
+        orientation=Qt.Horizontal,
+        iconsize=32,
+        label_position=Qt.ToolButtonTextUnderIcon,
+        *args,
+        **kwargs
     ):
         super(Toolbar, self).__init__(*args, **kwargs)
         self.setMovable(False)
@@ -322,7 +327,9 @@ class Command(QWidget):
         if meta['type'] == "select":
             self.input = QComboBox()
             for k, v in meta['parameters'].items():
-                self.input.addItem("{} {}".format(v['description'], "(default)" if v.get("default") else ""), k)
+                self.input.addItem(
+                    "{} {}".format(v['description'], "(default)" if v.get("default") else ""), k
+                )
 
             if meta.get('editable'):
                 self.input.setEditable(True)
@@ -331,7 +338,9 @@ class Command(QWidget):
                 self.input.setCurrentIndex(value)
 
         elif meta['type'] == "value":
-            self.input = SpinBox(minimum=int(meta['parameters']['min']), maximum=int(meta['parameters']['max']))
+            self.input = SpinBox(
+                minimum=int(meta['parameters']['min']), maximum=int(meta['parameters']['max'])
+            )
             self.input.setMinimumWidth(75)
             if value:
                 self.input.setValue(value)
@@ -378,7 +387,9 @@ class CommandMultiSelect(QWidget):
             cb = QComboBox()
             for k, v in meta['parameters'].items():
                 cb.addItem(
-                    "{}: {} {}".format(k, v['description'], "(default)" if v.get("default") else ""),
+                    "{}: {} {}".format(
+                        k, v['description'], "(default)" if v.get("default") else ""
+                    ),
                     k,
                 )
             cb.setCurrentIndex(val)
@@ -474,7 +485,9 @@ class PulseTime(QWidget):
 
         vl_groups = VLayout(0)
         for k in sorted(list(value.keys())):
-            sb = SpinBox(minimum=int(meta['parameters']['min']), maximum=int(meta['parameters']['max']))
+            sb = SpinBox(
+                minimum=int(meta['parameters']['min']), maximum=int(meta['parameters']['max'])
+            )
             sb.setValue(value[k])
             hl_group = HLayout(0)
             hl_group.addWidgets([QLabel(k), sb])

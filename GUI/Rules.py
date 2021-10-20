@@ -1,10 +1,26 @@
+import logging
 import re
 from copy import deepcopy
 from json import JSONDecodeError, loads
 
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QDir, QSettings, QSize, Qt, QTimer, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QColor, QFont, QIcon, QSyntaxHighlighter, QTextCharFormat
-from PyQt5.QtWidgets import QComboBox, QInputDialog, QLabel, QListWidget, QPlainTextEdit, QPushButton, QWidget
+from PyQt5.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QGroupBox,
+    QHeaderView,
+    QInputDialog,
+    QLabel,
+    QListWidget,
+    QMessageBox,
+    QPlainTextEdit,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QWidget,
+)
 
 from GUI import CheckableAction, GroupBoxH, GroupBoxV, HLayout, Toolbar, VLayout
 
@@ -152,10 +168,14 @@ class RulesWidget(QWidget):
         self.sendCommand.emit(self.device.cmnd_topic(self.cbRule.currentText()), str(int(state)))
 
     def toggle_once(self, state):
-        self.sendCommand.emit(self.device.cmnd_topic(self.cbRule.currentText()), str(4 + int(state)))
+        self.sendCommand.emit(
+            self.device.cmnd_topic(self.cbRule.currentText()), str(4 + int(state))
+        )
 
     def toggle_stop(self, state):
-        self.sendCommand.emit(self.device.cmnd_topic(self.cbRule.currentText()), str(8 + int(state)))
+        self.sendCommand.emit(
+            self.device.cmnd_topic(self.cbRule.currentText()), str(8 + int(state))
+        )
 
     def clean_rule(self):
         re_spaces = re.compile(r"\s{2,}")
@@ -213,9 +233,13 @@ class RulesWidget(QWidget):
 
     def set_rt(self, idx):
         curr = self.rts[self.rt]
-        new, ok = QInputDialog.getInt(self, "Set ruletimer", "Set ruletimer{} value.".format(self.rt + 1), value=curr)
+        new, ok = QInputDialog.getInt(
+            self, "Set ruletimer", "Set ruletimer{} value.".format(self.rt + 1), value=curr
+        )
         if ok:
-            self.sendCommand.emit(self.device.cmnd_topic("ruletimer{}".format(self.rt + 1)), str(new))
+            self.sendCommand.emit(
+                self.device.cmnd_topic("ruletimer{}".format(self.rt + 1)), str(new)
+            )
 
     def display_rule(self, payload, rule):
         if type(payload[rule]) is dict:
@@ -248,8 +272,7 @@ class RulesWidget(QWidget):
                     # JSON parse exception means that most likely the rule contains an unescaped JSON payload
                     # TDM will attempt parsing using a regex instead of json.loads()
                     parsed_rule = re.match(
-                        r"{\"(?P<rule>Rule(\d))\":\"(?P<enabled>ON|OFF)\",\"Once\":\"(?P<Once>ON|OFF)\",\"StopOnError"
-                        r"\":\"(?P<StopOnError>ON|OFF)\",\"Free\":\d+,\"Rules\":\"(?P<Rules>.*?)\"}$",
+                        r"{\"(?P<rule>Rule(\d))\":\"(?P<enabled>ON|OFF)\",\"Once\":\"(?P<Once>ON|OFF)\",\"StopOnError\":\"(?P<StopOnError>ON|OFF)\",\"Free\":\d+,\"Rules\":\"(?P<Rules>.*?)\"}$",
                         msg,
                         re.IGNORECASE,
                     )
@@ -264,9 +287,15 @@ class RulesWidget(QWidget):
                         keys = list(payload.keys())
                         fk = keys[0]
 
-                        if self.device.reply == 'RESULT' and fk == "T1" or self.device.reply == "RULETIMER":
+                        if (
+                            self.device.reply == 'RESULT'
+                            and fk == "T1"
+                            or self.device.reply == "RULETIMER"
+                        ):
                             for i, rt in enumerate(payload.keys()):
-                                self.lwRTs.item(i).setText("RuleTimer{}: {}".format(i + 1, payload[rt]))
+                                self.lwRTs.item(i).setText(
+                                    "RuleTimer{}: {}".format(i + 1, payload[rt])
+                                )
                                 self.rts[i] = payload[rt]
 
                         elif (

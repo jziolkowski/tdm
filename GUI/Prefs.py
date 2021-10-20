@@ -1,7 +1,22 @@
-from PyQt5.QtCore import QDir, QSettings, Qt
-from PyQt5.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QFormLayout, QGroupBox
+from PyQt5.QtCore import QDir, QSettings, QSize, Qt
+from PyQt5.QtGui import QFont, QFontInfo
+from PyQt5.QtWidgets import (
+    QButtonGroup,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QFontDialog,
+    QFormLayout,
+    QGroupBox,
+    QLabel,
+    QPushButton,
+    QSizePolicy,
+    QTableWidget,
+    QTreeWidget,
+)
 
-from GUI import SpinBox, VLayout
+from GUI import GroupBoxH, GroupBoxV, HLayout, SpinBox, VLayout, console_font
 
 
 class PrefsDialog(QDialog):

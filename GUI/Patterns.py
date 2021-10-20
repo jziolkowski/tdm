@@ -1,5 +1,12 @@
-from PyQt5.QtCore import QDir, QSettings
-from PyQt5.QtWidgets import QDialog, QHeaderView, QLabel, QPushButton, QTableWidget, QTableWidgetItem
+from PyQt5.QtCore import QDir, QSettings, QSize
+from PyQt5.QtWidgets import (
+    QDialog,
+    QHeaderView,
+    QLabel,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+)
 
 from GUI import HLayout, VLayout
 
