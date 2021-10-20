@@ -167,7 +167,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 if d.p['LWT'] == "Online":
                     rssi = int(d.p.get("RSSI", 0))
 
-                    if rssi > 0 and rssi < 50:
+                    if 0 < rssi < 50:
                         return QIcon(":/status_low.png")
 
                     elif rssi < 75:
@@ -284,7 +284,9 @@ class DeviceDelegate(QStyledItemDelegate):
                 px_y = (option.rect.height() - 24) // 2
                 p.drawPixmap(option.rect.x() + 2, option.rect.y() + px_y, px.scaled(24, 24))
 
-                p.drawText(option.rect.adjusted(28, 0, 0, 0), Qt.AlignVCenter | Qt.AlignLeft, index.data())
+                p.drawText(
+                    option.rect.adjusted(28, 0, 0, 0), Qt.AlignVCenter | Qt.AlignLeft, index.data()
+                )
 
                 alerts = []
                 if index.data(RestartReasonRole) == "Exception":
@@ -340,7 +342,9 @@ class DeviceDelegate(QStyledItemDelegate):
                             p.drawPixmap(x, y, 24, 24, QPixmap(":/P_{}".format(index.data()[k])))
 
                         else:
-                            p.drawPixmap(x, y, 24, 24, QPixmap(":/P{}_{}".format(i + 1, index.data()[k])))
+                            p.drawPixmap(
+                                x, y, 24, 24, QPixmap(":/P{}_{}".format(i + 1, index.data()[k]))
+                            )
 
                 else:
                     i = 0
@@ -355,7 +359,9 @@ class DeviceDelegate(QStyledItemDelegate):
                                     y,
                                     24,
                                     24,
-                                    QPixmap(":/P{}_{}".format(i + 1, list(index.data().values())[i])),
+                                    QPixmap(
+                                        ":/P{}_{}".format(i + 1, list(index.data().values())[i])
+                                    ),
                                 )
                             i += 1
 

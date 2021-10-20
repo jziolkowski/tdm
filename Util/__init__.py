@@ -4,9 +4,6 @@ from json import JSONDecodeError, loads
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from Util.commands import commands as commands_json  # noqa: F401
-from Util.setoptions import setoptions  # noqa: F401
-
 commands = [
     "Backlog",
     "BlinkCount",
@@ -282,7 +279,8 @@ commands = [
 prefixes = ["tele", "stat", "cmnd"]
 default_patterns = [
     "%prefix%/%topic%/",  # = %prefix%/%topic% (Tasmota default)
-    "%topic%/%prefix%/",  # = %topic%/%prefix% (Tasmota with SetOption19 enabled for HomeAssistant AutoDiscovery)
+    "%topic%/%prefix%/",  # = %topic%/%prefix% (Tasmota with SetOption19 enabled for
+    # HomeAssistant AutoDiscovery)
 ]
 
 custom_patterns = []
@@ -332,10 +330,13 @@ def parse_topic(full_topic, topic):
     """
     :param full_topic: FullTopic to match against
     :param topic: MQTT topic from which the reply arrived
-    :return: If match is found, returns dictionary including device Topic, prefix (cmnd/tele/stat) and reply endpoint
+    :return: If match is found, returns dictionary including device Topic,
+        prefix (cmnd/tele/stat) and reply endpoint
     """
     full_topic = (
-        "{}(?P<reply>.*)".format(full_topic).replace("%topic%", "(?P<topic>.*?)").replace("%prefix%", "(?P<prefix>.*?)")
+        "{}(?P<reply>.*)".format(full_topic)
+        .replace("%topic%", "(?P<topic>.*?)")
+        .replace("%prefix%", "(?P<prefix>.*?)")
     )
     match = re.fullmatch(full_topic, topic)
     if match:
@@ -353,7 +354,9 @@ def parse_payload(payload):
 def expand_fulltopic(fulltopic):
     fulltopics = []
     for prefix in prefixes:
-        topic = fulltopic.replace("%prefix%", prefix).replace("%topic%", "+") + "#"  # expand prefix and topic
+        topic = (
+            fulltopic.replace("%prefix%", prefix).replace("%topic%", "+") + "#"
+        )  # expand prefix and topic
         topic = topic.replace("+/#", "#")  # simplify wildcards
         fulltopics.append(topic)
     return fulltopics
@@ -402,7 +405,12 @@ class TasmotaDevice(QObject):
         self.prefix = ""
 
     def build_topic(self, prefix):
-        return self.p['FullTopic'].replace("%prefix%", prefix).replace("%topic%", self.p['Topic']).rstrip("/")
+        return (
+            self.p['FullTopic']
+            .replace("%prefix%", prefix)
+            .replace("%topic%", self.p['Topic'])
+            .rstrip("/")
+        )
 
     def cmnd_topic(self, command=""):
         if command:
@@ -421,11 +429,13 @@ class TasmotaDevice(QObject):
         return self.p['FullTopic'] in ["%prefix%/%topic%/", "%topic%/%prefix%/"]
 
     def update_property(self, k, v):
-        old = self.p.get('k')  # safely get the old value
+        old = self.p.get(k)  # safely get the old value
         if self.property_changed and (
             not old or old != v
         ):  # If property_changed callback is set then check previous value presence and
-            self.property_changed(self, k)  # compare with new value. Trigger the callback if value has changed
+            self.property_changed(
+                self, k
+            )  # compare with new value. Trigger the callback if value has changed
         self.p[k] = v  # store the new value
 
     def module(self):
@@ -515,7 +525,11 @@ class TasmotaDevice(QObject):
                     keys = list(payload.keys())
                     fk = keys[0]
 
-                    if self.reply == 'RESULT' and fk.startswith("Modules") or self.reply == "MODULES":
+                    if (
+                        self.reply == 'RESULT'
+                        and fk.startswith("Modules")
+                        or self.reply == "MODULES"
+                    ):
                         for k, v in payload.items():
                             if isinstance(v, list):
                                 for mdl in v:
@@ -570,7 +584,11 @@ class TasmotaDevice(QObject):
         return ptime
 
     def pwm(self):
-        return {k: v for k, v in self.p.items() if k.startswith('PWM') or (k != "Channel" and k.startswith("Channel"))}
+        return {
+            k: v
+            for k, v in self.p.items()
+            if k.startswith('PWM') or (k != "Channel" and k.startswith("Channel"))
+        }
 
     def color(self):
         color = {k: self.p[k] for k in ["Color", "Dimmer", "HSBColor"] if k in self.p.keys()}

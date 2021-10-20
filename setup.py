@@ -13,11 +13,7 @@ long_description = "{}\n\n# Changelog\n{}".format(readme, changelog)
 
 if os.name == "nt":
     scripts = None
-    entry_points = {
-        {
-            'console_scripts': ['tdmgr=tdmgr:main'],
-        }
-    }
+    entry_points = {{'console_scripts': ['tdmgr=tdmgr:main']}}
 else:
     scripts = ['tdmgr.py']
     entry_points = None
@@ -36,7 +32,8 @@ setup(
     license='GPLv3',
     author='jziolkowski',
     author_email='jacek@ziolkowscy.com',
-    description='Tasmota Device Manager is able to find, monitor and do magic things. The easy way. Like a Superhero.',
+    description='Tasmota Device Manager is able to find, monitor and do magic things. The easy way.'
+    ' Like a Superhero.',
     long_description=long_description,
     long_description_content_type='text/markdown',
     python_requires='>=3.6',

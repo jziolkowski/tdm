@@ -22,7 +22,6 @@ from PyQt5.QtWidgets import (
     QStatusBar,
 )
 
-from GUI import icons  # noqa: F401
 from GUI.ClearLWT import ClearLWTDialog
 from GUI.Prefs import PrefsDialog
 
@@ -31,7 +30,7 @@ try:
 except ImportError:
     pass
 
-from GUI import Toolbar, VLayout
+from GUI import Toolbar, VLayout, icons  # noqa: F401
 from GUI.Broker import BrokerDialog
 from GUI.BSSID import BSSIdDialog
 from GUI.Console import ConsoleWidget
@@ -78,8 +77,8 @@ class MainWindow(QMainWindow):
         if not os.path.isdir("{}/TDM".format(QDir.homePath())):
             os.mkdir("{}/TDM".format(QDir.homePath()))
 
-        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
-        self.devices = QSettings("{}/TDM/devices.cfg".format(QDir.homePath()), QSettings.IniFormat)
+        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, 'tdm', 'tdm')
+        self.devices = QSettings(QSettings.IniFormat, QSettings.UserScope, 'tdm', 'devices')
         self.setMinimumSize(QSize(1000, 600))
 
         # configure logging
@@ -200,7 +199,9 @@ class MainWindow(QMainWindow):
         # mExport.addAction(QIcon(), "OpenHAB", self.openhab)
 
     def build_toolbars(self):
-        main_toolbar = Toolbar(orientation=Qt.Horizontal, iconsize=24, label_position=Qt.ToolButtonTextBesideIcon)
+        main_toolbar = Toolbar(
+            orientation=Qt.Horizontal, iconsize=24, label_position=Qt.ToolButtonTextBesideIcon
+        )
         main_toolbar.setObjectName("main_toolbar")
 
     def initial_query(self, device, queued=False):
@@ -230,17 +231,7 @@ class MainWindow(QMainWindow):
 
     def toggle_connect(self, state):
         if state and self.mqtt.state == self.mqtt.Disconnected:
-            self.broker_hostname = self.settings.value('hostname', 'localhost')
-            self.broker_port = self.settings.value('port', 1883, int)
-            self.broker_username = self.settings.value('username')
-            self.broker_password = self.settings.value('password')
-
-            self.mqtt.hostname = self.broker_hostname
-            self.mqtt.port = self.broker_port
-
-            if self.broker_username:
-                self.mqtt.setAuth(self.broker_username, self.broker_password)
-            self.mqtt.connectToHost()
+            self.mqtt_connect()
         elif not state and self.mqtt.state == self.mqtt.Connected:
             self.mqtt_disconnect()
 
@@ -250,10 +241,19 @@ class MainWindow(QMainWindow):
                 self.mqtt.publish(d.cmnd_topic('STATUS'), payload=8)
 
     def mqtt_connect(self):
+        self.broker_tls = self.settings.value("tls")
+        self.broker_tls_file = self.settings.value("tls_file")
+        self.broker_tls_insecure = self.settings.value("tls_insecure")
+        self.broker_tls_version = self.settings.value("tls_version")
         self.broker_hostname = self.settings.value('hostname', 'localhost')
         self.broker_port = self.settings.value('port', 1883, int)
         self.broker_username = self.settings.value('username')
         self.broker_password = self.settings.value('password')
+
+        if self.broker_tls:
+            self.mqtt.setSSL(self.broker_tls_file, self.broker_tls_insecure, self.broker_tls_version)
+        else:
+            self.mqtt.unsetSSL()
 
         self.mqtt.hostname = self.broker_hostname
         self.mqtt.port = self.broker_port
@@ -306,7 +306,8 @@ class MainWindow(QMainWindow):
                 self.topics += expand_fulltopic(pat)
 
         for d in self.env.devices:
-            # if device has a non-standard pattern, check if the pattern is found in the custom patterns
+            # if device has a non-standard pattern, check if the pattern is found in
+            # the custom patterns
             if not d.is_default() and d.p['FullTopic'] not in custom_patterns:
                 # if pattern is not found then add the device topics to subscription list.
                 # if the pattern is found, it will be matched without implicit subscription
@@ -371,7 +372,10 @@ class MainWindow(QMainWindow):
 
                 for p in default_patterns + custom_patterns:
                     match = re.fullmatch(
-                        p.replace("%topic%", "(?P<topic>.*?)").replace("%prefix%", "(?P<prefix>.*?)") + ".*$",
+                        p.replace("%topic%", "(?P<topic>.*?)").replace(
+                            "%prefix%", "(?P<prefix>.*?)"
+                        )
+                        + ".*$",
                         topic,
                     )
                     if match:
@@ -379,28 +383,35 @@ class MainWindow(QMainWindow):
                         possible_topic = match.groupdict().get('topic')
                         if possible_topic not in ('tele', 'stat'):
                             # if the assumed topic is different from tele or stat, there is a chance
-                            # that it's a valid topic
-                            # query the assumed device for its FullTopic. False positives won't reply.
+                            # that it's a valid topic. query the assumed device for its FullTopic.
+                            # False positives won't reply.
                             possible_topic_cmnd = (
-                                p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic) + "FullTopic"
+                                p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic)
+                                + "FullTopic"
                             )
+
                             logging.debug(
                                 "DISCOVERY: Asking an unknown device for FullTopic at %s",
                                 possible_topic_cmnd,
                             )
                             self.mqtt_queue.append([possible_topic_cmnd, ""])
 
-            elif topic.endswith("RESULT") or topic.endswith("FULLTOPIC"):  # reply from an unknown device
+            elif topic.endswith("RESULT") or topic.endswith(
+                "FULLTOPIC"
+            ):  # reply from an unknown device
                 # STAGE 2
                 full_topic = loads(msg).get('FullTopic')
                 if full_topic:
                     # the device replies with its FullTopic
-                    # here the Topic is extracted using the returned FullTopic, identifying the device
+                    # here the Topic is extracted using the returned FullTopic, identifying the
+                    # device
                     parsed = parse_topic(full_topic, topic)
                     if parsed:
                         # got a match, we query the device's MAC address in case it's a known device
                         # that had its topic changed
-                        logging.debug("DISCOVERY: topic %s is matched by fulltopic %s", topic, full_topic)
+                        logging.debug(
+                            "DISCOVERY: topic %s is matched by fulltopic %s", topic, full_topic
+                        )
 
                         d = self.env.find_device(topic=parsed['topic'])
                         if d:
@@ -414,7 +425,9 @@ class MainWindow(QMainWindow):
                             d = TasmotaDevice(parsed['topic'], full_topic)
                             self.env.devices.append(d)
                             self.device_model.addDevice(d)
-                            logging.debug("DISCOVERY: Sending initial query to topic %s", parsed['topic'])
+                            logging.debug(
+                                "DISCOVERY: Sending initial query to topic %s", parsed['topic']
+                            )
                             self.initial_query(d, True)
                             tele_topic = d.tele_topic("LWT")
                             if tele_topic in self.env.lwts:
@@ -627,8 +640,8 @@ class MainWindow(QMainWindow):
 
 def start():
     app = QApplication(sys.argv)
-    app.setOrganizationName("Tasmota")
-    app.setApplicationName("TDM")
+    # app.setOrganizationName("HRBL")
+    # app.setApplicationName("TDM")
     app.lastWindowClosed.connect(app.quit)
     app.setStyle("Fusion")
 
@@ -643,4 +656,4 @@ if __name__ == '__main__':
         start()
     except Exception as e:  # noqa: 722
         logging.exception("EXCEPTION: %s", e)
-        logging.error("TDM has crashed. Sorry for that. Check tdm.log for more information.")
+        logging.exception("TDM has crashed. Sorry for that. Check tdm.log for more information.")

@@ -1,5 +1,12 @@
-from PyQt5.QtCore import QDir, QSettings
-from PyQt5.QtWidgets import QDialog, QHeaderView, QLabel, QPushButton, QTableWidget, QTableWidgetItem
+from PyQt5.QtCore import QSettings
+from PyQt5.QtWidgets import (
+    QDialog,
+    QHeaderView,
+    QLabel,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+)
 
 from GUI import HLayout, VLayout
 
@@ -11,7 +18,7 @@ class PatternsDialog(QDialog):
         self.setMinimumWidth(400)
         self.setWindowTitle("Autodiscovery patterns")
 
-        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
+        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, 'tdm', 'tdm')
         self.settings.beginGroup("Patterns")
 
         vl = VLayout()
@@ -30,8 +37,8 @@ class PatternsDialog(QDialog):
         vl.addWidgets(
             [
                 QLabel(
-                    "Add your modified FullTopic patterns to enable auto-discovery of such devices\n"
-                    "Patterns MUST include %prefix%, %topic% and trailing /\n"
+                    "Add your modified FullTopic patterns to enable auto-discovery of such devices"
+                    "\nPatterns MUST include %prefix%, %topic% and trailing /\n"
                     "Default Tasmota FullTopics are built-in\n\n"
                     "You have to reconnect to your Broker after topic changes."
                 ),

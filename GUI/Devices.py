@@ -139,13 +139,17 @@ class ListWidget(QWidget):
 
         self.tb.addSpacer()
 
-        actTelemetry = self.tb.addAction(QIcon(":/telemetry.png"), "Telemetry", self.openTelemetry.emit)
+        actTelemetry = self.tb.addAction(
+            QIcon(":/telemetry.png"), "Telemetry", self.openTelemetry.emit
+        )
         actTelemetry.setShortcut("Ctrl+T")
 
         actWebui = self.tb.addAction(QIcon(":/web.png"), "WebUI", self.openWebUI.emit)
         actWebui.setShortcut("Ctrl+U")
 
-        self.ctx_menu.addActions([actRules, actTimers, actButtons, actSwitches, actPower, actTelemetry, actWebui])
+        self.ctx_menu.addActions(
+            [actRules, actTimers, actButtons, actSwitches, actPower, actTelemetry, actWebui]
+        )
         self.ctx_menu.addSeparator()
 
         self.ctx_menu_cfg = QMenu("Configure")
@@ -166,7 +170,9 @@ class ListWidget(QWidget):
         self.ctx_menu.addAction(QIcon(":/refresh.png"), "Refresh", self.ctx_menu_refresh)
 
         self.ctx_menu.addSeparator()
-        self.ctx_menu.addAction(QIcon(":/clear.png"), "Clear retained", self.ctx_menu_clear_retained)
+        self.ctx_menu.addAction(
+            QIcon(":/clear.png"), "Clear retained", self.ctx_menu_clear_retained
+        )
         self.ctx_menu.addAction("Clear Backlog", self.ctx_menu_clear_backlog)
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon(":/copy.png"), "Copy", self.ctx_menu_copy)
@@ -328,7 +334,9 @@ class ListWidget(QWidget):
     def ctx_menu_config_backup(self):
         if self.device:
             self.backup = bytes()
-            self.dl = self.nam.get(QNetworkRequest(QUrl("http://{}/dl".format(self.device.p['IPAddress']))))
+            self.dl = self.nam.get(
+                QNetworkRequest(QUrl("http://{}/dl".format(self.device.p['IPAddress'])))
+            )
             self.dl.readyRead.connect(self.get_dump)
             self.dl.finished.connect(self.save_dump)
 
@@ -583,7 +591,9 @@ class ListWidget(QWidget):
                         backlog.append("SetOption{} {}".format(so, new_value))
 
                 new_interlock_value = power.ci.input.currentData()
-                new_interlock_grps = " ".join([grp.text().replace(" ", "") for grp in power.ci.groups]).rstrip()
+                new_interlock_grps = " ".join(
+                    [grp.text().replace(" ", "") for grp in power.ci.groups]
+                ).rstrip()
 
                 if new_interlock_value != self.device.p.get("Interlock", "OFF"):
                     backlog.append("interlock {}".format(new_interlock_value))

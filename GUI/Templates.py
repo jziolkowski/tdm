@@ -1,7 +1,15 @@
 from json import dumps
 
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QFormLayout, QGroupBox, QLabel, QLineEdit, QMessageBox
+from PyQt5.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
+    QFormLayout,
+    QGroupBox,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+)
 
 from GUI import DictComboBox, VLayout
 from Util import template_adc
