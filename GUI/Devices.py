@@ -1,13 +1,29 @@
 from json import dumps
 
-from PyQt5.QtCore import Qt, QSettings, QSortFilterProxyModel, QUrl, QDir, pyqtSignal, QSize
-from PyQt5.QtGui import QIcon, QColor
+from PyQt5.QtCore import QDir, QSettings, QSize, QSortFilterProxyModel, Qt, QUrl, pyqtSignal
+from PyQt5.QtGui import QColor, QIcon
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
-from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QApplication, QInputDialog, QFileDialog, \
-    QAction, QActionGroup, QLabel, QSizePolicy, QLineEdit, QHeaderView, QToolButton, QPushButton, QColorDialog, QDialog, \
-    QComboBox
+from PyQt5.QtWidgets import (
+    QAction,
+    QActionGroup,
+    QApplication,
+    QColorDialog,
+    QComboBox,
+    QDialog,
+    QFileDialog,
+    QHeaderView,
+    QInputDialog,
+    QLabel,
+    QLineEdit,
+    QMenu,
+    QMessageBox,
+    QPushButton,
+    QSizePolicy,
+    QToolButton,
+    QWidget,
+)
 
-from GUI import VLayout, Toolbar, TableView, SliderAction, default_views, base_view, SpinBox
+from GUI import SliderAction, SpinBox, TableView, Toolbar, VLayout, base_view, default_views
 from GUI.Buttons import ButtonsDialog
 from GUI.GPIO import GPIODialog
 from GUI.Modules import ModuleDialog
@@ -16,8 +32,7 @@ from GUI.SetOptions import SetOptionsDialog
 from GUI.Switches import SwitchesDialog
 from GUI.Templates import TemplateDialog
 from GUI.Timers import TimersDialog
-
-from Util import TasmotaDevice, resets, initial_commands
+from Util import TasmotaDevice, initial_commands, resets
 from Util.models import DeviceDelegate
 
 
@@ -126,13 +141,17 @@ class ListWidget(QWidget):
 
         self.tb.addSpacer()
 
-        actTelemetry = self.tb.addAction(QIcon(":/telemetry.png"), "Telemetry", self.openTelemetry.emit)
+        actTelemetry = self.tb.addAction(
+            QIcon(":/telemetry.png"), "Telemetry", self.openTelemetry.emit
+        )
         actTelemetry.setShortcut("Ctrl+T")
 
         actWebui = self.tb.addAction(QIcon(":/web.png"), "WebUI", self.openWebUI.emit)
         actWebui.setShortcut("Ctrl+U")
 
-        self.ctx_menu.addActions([actRules, actTimers, actButtons, actSwitches, actPower, actTelemetry, actWebui])
+        self.ctx_menu.addActions(
+            [actRules, actTimers, actButtons, actSwitches, actPower, actTelemetry, actWebui]
+        )
         self.ctx_menu.addSeparator()
 
         self.ctx_menu_cfg = QMenu("Configure")
@@ -153,7 +172,9 @@ class ListWidget(QWidget):
         self.ctx_menu.addAction(QIcon(":/refresh.png"), "Refresh", self.ctx_menu_refresh)
 
         self.ctx_menu.addSeparator()
-        self.ctx_menu.addAction(QIcon(":/clear.png"), "Clear retained", self.ctx_menu_clear_retained)
+        self.ctx_menu.addAction(
+            QIcon(":/clear.png"), "Clear retained", self.ctx_menu_clear_retained
+        )
         self.ctx_menu.addAction("Clear Backlog", self.ctx_menu_clear_backlog)
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon(":/copy.png"), "Copy", self.ctx_menu_copy)
@@ -265,7 +286,9 @@ class ListWidget(QWidget):
 
     def ctx_menu_reset(self):
         if self.device:
-            reset, ok = QInputDialog.getItem(self, "Reset device and restart", "Select reset mode", resets, editable=False)
+            reset, ok = QInputDialog.getItem(
+                self, "Reset device and restart", "Select reset mode", resets, editable=False
+            )
             if ok:
                 self.mqtt.publish(self.device.cmnd_topic("reset"), payload=reset.split(":")[0])
                 for k in list(self.device.power().keys()):
@@ -283,13 +306,28 @@ class ListWidget(QWidget):
 
     def ctx_menu_delete_device(self):
         if self.device:
-            if QMessageBox.question(self, "Confirm", "Do you want to remove the following device?\n'{}' ({})"
-                    .format(self.device.p['DeviceName'], self.device.p['Topic'])) == QMessageBox.Yes:
+            if (
+                QMessageBox.question(
+                    self,
+                    "Confirm",
+                    "Do you want to remove the following device?\n'{}' ({})".format(
+                        self.device.p['DeviceName'], self.device.p['Topic']
+                    ),
+                )
+                == QMessageBox.Yes
+            ):
                 self.model.deleteDevice(self.idx)
 
     def ctx_menu_teleperiod(self):
         if self.device:
-            teleperiod, ok = QInputDialog.getInt(self, "Set telemetry period", "Input 1 to reset to default\n[Min: 10, Max: 3600]", self.device.p['TelePeriod'], 1, 3600)
+            teleperiod, ok = QInputDialog.getInt(
+                self,
+                "Set telemetry period",
+                "Input 1 to reset to default\n[Min: 10, Max: 3600]",
+                self.device.p['TelePeriod'],
+                1,
+                3600,
+            )
             if ok:
                 if teleperiod != 1 and teleperiod < 10:
                     teleperiod = 10
@@ -298,14 +336,20 @@ class ListWidget(QWidget):
     def ctx_menu_config_backup(self):
         if self.device:
             self.backup = bytes()
-            self.dl = self.nam.get(QNetworkRequest(QUrl("http://{}/dl".format(self.device.p['IPAddress']))))
+            self.dl = self.nam.get(
+                QNetworkRequest(QUrl("http://{}/dl".format(self.device.p['IPAddress'])))
+            )
             self.dl.readyRead.connect(self.get_dump)
             self.dl.finished.connect(self.save_dump)
 
     def ctx_menu_ota_upgrade(self):
         if self.device:
-            reply = QMessageBox.question(self, "OTA Upgrade", "Are you sure to OTA upgrade from\n{}".format(
-                                         self.device.p['OtaUrl']), QMessageBox.Yes | QMessageBox.No)
+            reply = QMessageBox.question(
+                self,
+                "OTA Upgrade",
+                "Are you sure to OTA upgrade from\n{}".format(self.device.p['OtaUrl']),
+                QMessageBox.Yes | QMessageBox.No,
+            )
             if reply == QMessageBox.Yes:
                 self.mqtt.publish(self.device.cmnd_topic("upgrade"), payload="1")
 
@@ -407,8 +451,12 @@ class ListWidget(QWidget):
 
     def configureOtaUrl(self):
         if self.device:
-            url, ok = QInputDialog.getText(self, "Set OTA URL", '100 chars max. Set to "1" to reset to default.',
-                                           text=self.device.p['OtaUrl'])
+            url, ok = QInputDialog.getText(
+                self,
+                "Set OTA URL",
+                '100 chars max. Set to "1" to reset to default.',
+                text=self.device.p['OtaUrl'],
+            )
             if ok:
                 self.mqtt.publish(self.device.cmnd_topic("otaurl"), payload=url)
 
@@ -501,7 +549,7 @@ class ListWidget(QWidget):
                     new_value = switches.sm.inputs[sw].currentIndex()
 
                     if sw_mode != new_value:
-                        backlog.append("switchmode{} {}".format(sw+1, new_value))
+                        backlog.append("switchmode{} {}".format(sw + 1, new_value))
 
                 if backlog:
                     backlog.append("status")
@@ -535,7 +583,6 @@ class ListWidget(QWidget):
                         so_error = True
                     new_value = -1
 
-
                     if isinstance(sow.input, SpinBox):
                         new_value = sow.input.value()
 
@@ -546,7 +593,9 @@ class ListWidget(QWidget):
                         backlog.append("SetOption{} {}".format(so, new_value))
 
                 new_interlock_value = power.ci.input.currentData()
-                new_interlock_grps = " ".join([grp.text().replace(" ", "") for grp in power.ci.groups]).rstrip()
+                new_interlock_grps = " ".join(
+                    [grp.text().replace(" ", "") for grp in power.ci.groups]
+                ).rstrip()
 
                 if new_interlock_value != self.device.p.get("Interlock", "OFF"):
                     backlog.append("interlock {}".format(new_interlock_value))
@@ -555,7 +604,7 @@ class ListWidget(QWidget):
                     backlog.append("interlock {}".format(new_interlock_grps))
 
                 for i, pt in enumerate(power.cpt.inputs):
-                    ptime = "PulseTime{}".format(i+1)
+                    ptime = "PulseTime{}".format(i + 1)
                     current_ptime = self.device.p.get(ptime)
                     if current_ptime:
                         current_value = list(current_ptime.keys())[0]
@@ -576,7 +625,9 @@ class ListWidget(QWidget):
         fname = self.dl.header(QNetworkRequest.ContentDispositionHeader)
         if fname:
             fname = fname.split('=')[1]
-            save_file = QFileDialog.getSaveFileName(self, "Save config backup", "{}/TDM/{}".format(QDir.homePath(), fname))[0]
+            save_file = QFileDialog.getSaveFileName(
+                self, "Save config backup", "{}/TDM/{}".format(QDir.homePath(), fname)
+            )[0]
             if save_file:
                 with open(save_file, "wb") as f:
                     f.write(self.backup)

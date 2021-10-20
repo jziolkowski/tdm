@@ -1,8 +1,9 @@
-from PyQt5.QtCore import pyqtSignal, Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTabWidget, QWidget
 
-from GUI import HLayout, VLayout, GroupBoxV, HTMLLabel, Command, CommandMultiSelect, docs_url
-from Util import setoptions, commands_json as commands
+from GUI import Command, CommandMultiSelect, GroupBoxV, HLayout, HTMLLabel, VLayout, docs_url
+from Util import commands_json as commands
+from Util import setoptions
 
 
 class SwitchesDialog(QDialog):
@@ -27,7 +28,9 @@ class SwitchesDialog(QDialog):
             cw = Command(cmd, commands[cmd], self.device.p.get(cmd))
             vl_cmd.addWidget(cw)
             self.command_widgets[cmd] = cw
-        self.sm = CommandMultiSelect("SwitchMode", commands["SwitchMode"], self.device.p.get("SwitchMode"))
+        self.sm = CommandMultiSelect(
+            "SwitchMode", commands["SwitchMode"], self.device.p.get("SwitchMode")
+        )
         vl_cmd.addWidget(self.sm)
         vl_cmd.addStretch(1)
 
@@ -51,5 +54,12 @@ class SwitchesDialog(QDialog):
         btns = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Close)
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
-        vl.addWidgets([HTMLLabel("<a href={}/Buttons-and-Switches>Buttons and Switches</a>".format(docs_url)), btns])
+        vl.addWidgets(
+            [
+                HTMLLabel(
+                    "<a href={}/Buttons-and-Switches>Buttons and Switches</a>".format(docs_url)
+                ),
+                btns,
+            ]
+        )
         self.setLayout(vl)

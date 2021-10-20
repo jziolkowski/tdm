@@ -1,8 +1,18 @@
 import re
 
-from PyQt5.QtCore import QModelIndex, Qt, QAbstractTableModel, QSettings, QSize, QRect, QDir, QRectF, QPoint
-from PyQt5.QtGui import QIcon, QColor, QPixmap, QFont, QPen
-from PyQt5.QtWidgets import QStyledItemDelegate, QStyle
+from PyQt5.QtCore import (
+    QAbstractTableModel,
+    QDir,
+    QModelIndex,
+    QPoint,
+    QRect,
+    QRectF,
+    QSettings,
+    QSize,
+    Qt,
+)
+from PyQt5.QtGui import QColor, QFont, QIcon, QPen, QPixmap
+from PyQt5.QtWidgets import QStyle, QStyledItemDelegate
 
 LWTRole = Qt.UserRole
 RestartReasonRole = Qt.UserRole + 1
@@ -87,7 +97,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
                 elif col_name == "Version" and val:
                     if self.devices_short_version and "(" in val:
-                        return val[0:val.index("(")]
+                        return val[0 : val.index("(")]
                     return val.replace("(", " (")
 
                 elif col_name in ("Uptime", "Downtime") and val:
@@ -149,7 +159,13 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
             elif role == Qt.TextAlignmentRole:
                 # Left-aligned columns
-                if col_name in ("Device", "Module", "RestartReason", "OtaUrl", "Hostname") or col_name.endswith("Topic"):
+                if col_name in (
+                    "Device",
+                    "Module",
+                    "RestartReason",
+                    "OtaUrl",
+                    "Hostname",
+                ) or col_name.endswith("Topic"):
                     return Qt.AlignLeft | Qt.AlignVCenter | Qt.TextWordWrap
 
                 # Right-aligned columns
@@ -188,7 +204,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 if col_name == "Version":
                     val = d.p.get('Version')
                     if val:
-                        return val[val.index("(")+1:val.index(")")]
+                        return val[val.index("(") + 1 : val.index(")")]
                     return ""
 
                 elif col_name == "BSSId":
@@ -280,7 +296,9 @@ class DeviceDelegate(QStyledItemDelegate):
                 px_y = (option.rect.height() - 24) / 2
                 p.drawPixmap(option.rect.x() + 2, option.rect.y() + px_y, px.scaled(24, 24))
 
-                p.drawText(option.rect.adjusted(28, 0, 0, 0), Qt.AlignVCenter | Qt.AlignLeft, index.data())
+                p.drawText(
+                    option.rect.adjusted(28, 0, 0, 0), Qt.AlignVCenter | Qt.AlignLeft, index.data()
+                )
 
                 alerts = []
                 if index.data(RestartReasonRole) == "Exception":
@@ -300,7 +318,6 @@ class DeviceDelegate(QStyledItemDelegate):
                     p.drawText(exc_rect, Qt.AlignCenter, message)
                     p.drawRect(exc_rect)
                     p.restore()
-
 
         elif col_name == "RSSI":
             if index.data():
@@ -324,7 +341,6 @@ class DeviceDelegate(QStyledItemDelegate):
                 p.drawRect(rect)
                 p.restore()
 
-
         elif col_name == "Power":
             if isinstance(index.data(), dict):
                 num = len(index.data().keys())
@@ -338,7 +354,9 @@ class DeviceDelegate(QStyledItemDelegate):
                             p.drawPixmap(x, y, 24, 24, QPixmap(":/P_{}".format(index.data()[k])))
 
                         else:
-                            p.drawPixmap(x, y, 24, 24, QPixmap(":/P{}_{}".format(i + 1, index.data()[k])))
+                            p.drawPixmap(
+                                x, y, 24, 24, QPixmap(":/P{}_{}".format(i + 1, index.data()[k]))
+                            )
 
                 else:
                     i = 0
@@ -348,7 +366,15 @@ class DeviceDelegate(QStyledItemDelegate):
                             y = option.rect.y() + row * 24
 
                             if i < num:
-                                p.drawPixmap(x, y, 24, 24, QPixmap(":/P{}_{}".format(i + 1, list(index.data().values())[i])))
+                                p.drawPixmap(
+                                    x,
+                                    y,
+                                    24,
+                                    24,
+                                    QPixmap(
+                                        ":/P{}_{}".format(i + 1, list(index.data().values())[i])
+                                    ),
+                                )
                             i += 1
 
         elif col_name == "Color":
@@ -381,4 +407,3 @@ class DeviceDelegate(QStyledItemDelegate):
 
         else:
             QStyledItemDelegate.paint(self, p, option, index)
-

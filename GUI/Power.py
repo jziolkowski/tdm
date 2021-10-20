@@ -1,8 +1,19 @@
-from PyQt5.QtCore import pyqtSignal, Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTabWidget, QWidget
 
-from GUI import HLayout, VLayout, GroupBoxV, HTMLLabel, Command, CommandMultiSelect, Interlock, PulseTime, docs_url
-from Util import setoptions, commands_json as commands
+from GUI import (
+    Command,
+    CommandMultiSelect,
+    GroupBoxV,
+    HLayout,
+    HTMLLabel,
+    Interlock,
+    PulseTime,
+    VLayout,
+    docs_url,
+)
+from Util import commands_json as commands
+from Util import setoptions
 
 
 class PowerDialog(QDialog):
@@ -27,7 +38,14 @@ class PowerDialog(QDialog):
             vl_cmd.addWidget(cw)
             self.command_widgets[cmd] = cw
 
-        self.ci = Interlock("Interlock", commands["Interlock"], {"Interlock": self.device.p.get("Interlock", "OFF"), "Groups": self.device.p.get("Groups", "")})
+        self.ci = Interlock(
+            "Interlock",
+            commands["Interlock"],
+            {
+                "Interlock": self.device.p.get("Interlock", "OFF"),
+                "Groups": self.device.p.get("Groups", ""),
+            },
+        )
         vl_cmd.addWidget(self.ci)
 
         self.cpt = PulseTime("PulseTime", commands["PulseTime"], self.device.pulsetime())
@@ -55,5 +73,12 @@ class PowerDialog(QDialog):
         btns = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Close)
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
-        vl.addWidgets([HTMLLabel("<a href={}/Buttons-and-Switches>Buttons and Switches</a>".format(docs_url)), btns])
+        vl.addWidgets(
+            [
+                HTMLLabel(
+                    "<a href={}/Buttons-and-Switches>Buttons and Switches</a>".format(docs_url)
+                ),
+                btns,
+            ]
+        )
         self.setLayout(vl)

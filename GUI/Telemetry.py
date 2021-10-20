@@ -21,6 +21,7 @@ item_units = {
     "Today": "kWh",
 }
 
+
 class TelemetryWidget(QDockWidget):
     def __init__(self, device, *args, **kwargs):
         super(TelemetryWidget, self).__init__(*args, **kwargs)
@@ -72,7 +73,6 @@ class TelemetryWidget(QDockWidget):
             self.tree_items[parent][name] = item
             return item
 
-
     @pyqtSlot()
     def update_telemetry(self):
         t = self.device.t
@@ -88,7 +88,9 @@ class TelemetryWidget(QDockWidget):
                 if isinstance(v, dict):
                     for nested_key, nested_v in v.items():
                         nested_item = self.get_nested_item(key, nested_key)
-                        nested_item.setText(1, "{} {}".format(nested_v, item_units.get(nested_key, "")))
+                        nested_item.setText(
+                            1, "{} {}".format(nested_v, item_units.get(nested_key, ""))
+                        )
 
                 else:
                     item = self.get_top_item(key)

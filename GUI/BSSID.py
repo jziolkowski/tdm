@@ -1,7 +1,7 @@
-from PyQt5.QtCore import QSize, QSettings, QDir
-from PyQt5.QtWidgets import QDialog, QTableWidget, QHeaderView, QTableWidgetItem, QPushButton
+from PyQt5.QtCore import QDir, QSettings, QSize
+from PyQt5.QtWidgets import QDialog, QHeaderView, QPushButton, QTableWidget, QTableWidgetItem
 
-from GUI import VLayout, HLayout
+from GUI import HLayout, VLayout
 
 
 class BSSIdDialog(QDialog):
@@ -16,7 +16,7 @@ class BSSIdDialog(QDialog):
 
         vl = VLayout()
         cols = ["BSSId", "Alias"]
-        self.tw = QTableWidget(0,2)
+        self.tw = QTableWidget(0, 2)
         self.tw.setHorizontalHeaderLabels(cols)
         self.tw.verticalHeader().hide()
 
@@ -31,7 +31,7 @@ class BSSIdDialog(QDialog):
 
         vl.addWidget(self.tw)
 
-        hl_btns = HLayout([0,3,0,3])
+        hl_btns = HLayout([0, 3, 0, 3])
         btnAdd = QPushButton("Add")
         btnDel = QPushButton("Delete")
         btnCancel = QPushButton("Cancel")

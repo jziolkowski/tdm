@@ -1,15 +1,28 @@
-from copy import deepcopy
-from json import loads, JSONDecodeError
 import logging
-
-from PyQt5.QtCore import QSize, QSettings, QDir, pyqtSlot, Qt, QTimer, pyqtSignal
-from PyQt5.QtGui import QIcon, QFont, QSyntaxHighlighter, QTextCharFormat, QColor
-from PyQt5.QtWidgets import QDialog, QTableWidget, QHeaderView, QTableWidgetItem, QPushButton, QLabel, QWidget, \
-    QMessageBox, QComboBox, QCheckBox, QPlainTextEdit, QGroupBox, QListWidget, QInputDialog
-
-from GUI import VLayout, HLayout, Toolbar, CheckableAction, GroupBoxV, GroupBoxH
-
 import re
+from copy import deepcopy
+from json import JSONDecodeError, loads
+
+from PyQt5.QtCore import QDir, QSettings, QSize, Qt, QTimer, pyqtSignal, pyqtSlot
+from PyQt5.QtGui import QColor, QFont, QIcon, QSyntaxHighlighter, QTextCharFormat
+from PyQt5.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QGroupBox,
+    QHeaderView,
+    QInputDialog,
+    QLabel,
+    QListWidget,
+    QMessageBox,
+    QPlainTextEdit,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QWidget,
+)
+
+from GUI import CheckableAction, GroupBoxH, GroupBoxV, HLayout, Toolbar, VLayout
 
 # TODO: triggers list
 # TODO: open/save rule from/to file
@@ -59,7 +72,7 @@ class RulesWidget(QWidget):
         self.actStopOnError.triggered.connect(self.toggle_stop)
 
         tb.addActions([self.actEnabled, self.actOnce, self.actStopOnError])
-        self.cbRule.setFixedHeight(tb.widgetForAction(self.actEnabled).height()+1)
+        self.cbRule.setFixedHeight(tb.widgetForAction(self.actEnabled).height() + 1)
 
         self.actUpload = tb.addAction(QIcon(":/upload.png"), "Upload")
         self.actUpload.triggered.connect(self.upload_rule)
@@ -155,10 +168,14 @@ class RulesWidget(QWidget):
         self.sendCommand.emit(self.device.cmnd_topic(self.cbRule.currentText()), str(int(state)))
 
     def toggle_once(self, state):
-        self.sendCommand.emit(self.device.cmnd_topic(self.cbRule.currentText()), str(4+int(state)))
+        self.sendCommand.emit(
+            self.device.cmnd_topic(self.cbRule.currentText()), str(4 + int(state))
+        )
 
     def toggle_stop(self, state):
-        self.sendCommand.emit(self.device.cmnd_topic(self.cbRule.currentText()), str(8+int(state)))
+        self.sendCommand.emit(
+            self.device.cmnd_topic(self.cbRule.currentText()), str(8 + int(state))
+        )
 
     def clean_rule(self):
         re_spaces = re.compile(r"\s{2,}")
@@ -173,7 +190,7 @@ class RulesWidget(QWidget):
         self.sendCommand.emit(self.device.cmnd_topic(self.cbRule.currentText()), rule)
 
     def update_counter(self):
-        self.counter.setText("Remaining: {}".format(511-len(self.clean_rule())))
+        self.counter.setText("Remaining: {}".format(511 - len(self.clean_rule())))
 
     def poll(self):
         if self.pbPollVars.isChecked():
@@ -190,45 +207,59 @@ class RulesWidget(QWidget):
 
     def set_var(self, idx):
         curr = self.vars[self.var]
-        new, ok = QInputDialog.getText(self, "Set VAR", "Set VAR{} value. Empty to clear.".format(self.var+1), text=curr)
+        new, ok = QInputDialog.getText(
+            self, "Set VAR", "Set VAR{} value. Empty to clear.".format(self.var + 1), text=curr
+        )
         if ok:
             if new == '':
                 new = '"'
-            self.sendCommand.emit(self.device.cmnd_topic("var{}".format(self.var+1)), new)
+            self.sendCommand.emit(self.device.cmnd_topic("var{}".format(self.var + 1)), new)
 
     def select_mem(self, idx):
         self.mem = idx.row()
 
     def set_mem(self, idx):
         curr = self.mems[self.mem]
-        new, ok = QInputDialog.getText(self, "Set mem", "Set mem{} value. Empty to clear.".format(self.mem+1), text=curr)
+        new, ok = QInputDialog.getText(
+            self, "Set mem", "Set mem{} value. Empty to clear.".format(self.mem + 1), text=curr
+        )
         if ok:
             if new == '':
                 new = '"'
-            self.sendCommand.emit(self.device.cmnd_topic("mem{}".format(self.mem+1)), new)
+            self.sendCommand.emit(self.device.cmnd_topic("mem{}".format(self.mem + 1)), new)
 
     def select_rt(self, idx):
         self.rt = idx.row()
 
     def set_rt(self, idx):
         curr = self.rts[self.rt]
-        new, ok = QInputDialog.getInt(self, "Set ruletimer", "Set ruletimer{} value.".format(self.rt+1), value=curr)
+        new, ok = QInputDialog.getInt(
+            self, "Set ruletimer", "Set ruletimer{} value.".format(self.rt + 1), value=curr
+        )
         if ok:
-            self.sendCommand.emit(self.device.cmnd_topic("ruletimer{}".format(self.rt+1)), str(new))
+            self.sendCommand.emit(
+                self.device.cmnd_topic("ruletimer{}".format(self.rt + 1)), str(new)
+            )
 
     def display_rule(self, payload, rule):
-            if type(payload[rule]) is dict:
-                payload = payload[rule]
-                self.actEnabled.setChecked(payload['State'] == "ON")
-            else:
-                self.actEnabled.setChecked(payload[rule] == "ON")
-            rules = payload['Rules'].replace(" on ", "\non ").replace(" do ", " do\n\t").replace(" endon", "\nendon ").rstrip(" ")
-            if len(rules) == 0:
-                self.editor.setPlaceholderText("rule buffer is empty")
-            self.editor.setPlainText(rules)
+        if type(payload[rule]) is dict:
+            payload = payload[rule]
+            self.actEnabled.setChecked(payload['State'] == "ON")
+        else:
+            self.actEnabled.setChecked(payload[rule] == "ON")
+        rules = (
+            payload['Rules']
+            .replace(" on ", "\non ")
+            .replace(" do ", " do\n\t")
+            .replace(" endon", "\nendon ")
+            .rstrip(" ")
+        )
+        if len(rules) == 0:
+            self.editor.setPlaceholderText("rule buffer is empty")
+        self.editor.setPlainText(rules)
 
-            self.actOnce.setChecked(payload['Once'] == 'ON')
-            self.actStopOnError.setChecked(payload['StopOnError'] == 'ON')
+        self.actOnce.setChecked(payload['Once'] == 'ON')
+        self.actStopOnError.setChecked(payload['StopOnError'] == 'ON')
 
     @pyqtSlot(str, str)
     def parseMessage(self, topic, msg):
@@ -240,7 +271,11 @@ class RulesWidget(QWidget):
                 except JSONDecodeError as e:
                     # JSON parse exception means that most likely the rule contains an unescaped JSON payload
                     # TDM will attempt parsing using a regex instead of json.loads()
-                    parsed_rule = re.match(r"{\"(?P<rule>Rule(\d))\":\"(?P<enabled>ON|OFF)\",\"Once\":\"(?P<Once>ON|OFF)\",\"StopOnError\":\"(?P<StopOnError>ON|OFF)\",\"Free\":\d+,\"Rules\":\"(?P<Rules>.*?)\"}$", msg, re.IGNORECASE)
+                    parsed_rule = re.match(
+                        r"{\"(?P<rule>Rule(\d))\":\"(?P<enabled>ON|OFF)\",\"Once\":\"(?P<Once>ON|OFF)\",\"StopOnError\":\"(?P<StopOnError>ON|OFF)\",\"Free\":\d+,\"Rules\":\"(?P<Rules>.*?)\"}$",
+                        msg,
+                        re.IGNORECASE,
+                    )
                     # modify the resulting matchdict to follow the keys of original JSON payload
                     payload = deepcopy(parsed_rule.groupdict())
                     rule = payload.pop("rule")
@@ -252,24 +287,42 @@ class RulesWidget(QWidget):
                         keys = list(payload.keys())
                         fk = keys[0]
 
-                        if self.device.reply == 'RESULT' and fk == "T1" or self.device.reply == "RULETIMER":
+                        if (
+                            self.device.reply == 'RESULT'
+                            and fk == "T1"
+                            or self.device.reply == "RULETIMER"
+                        ):
                             for i, rt in enumerate(payload.keys()):
-                                self.lwRTs.item(i).setText("RuleTimer{}: {}".format(i+1, payload[rt]))
+                                self.lwRTs.item(i).setText(
+                                    "RuleTimer{}: {}".format(i + 1, payload[rt])
+                                )
                                 self.rts[i] = payload[rt]
 
-                        elif self.device.reply == 'RESULT' and fk.startswith("Var") or self.device.reply.startswith("VAR"):
+                        elif (
+                            self.device.reply == 'RESULT'
+                            and fk.startswith("Var")
+                            or self.device.reply.startswith("VAR")
+                        ):
                             for k, v in payload.items():
                                 row = int(k.replace("Var", "")) - 1
                                 self.lwVars.item(row).setText("VAR{}: {}".format(row + 1, v))
                                 self.vars[row] = v
 
-                        elif self.device.reply == 'RESULT' and fk.startswith("Mem") or self.device.reply.startswith("MEM"):
+                        elif (
+                            self.device.reply == 'RESULT'
+                            and fk.startswith("Mem")
+                            or self.device.reply.startswith("MEM")
+                        ):
                             for k, v in payload.items():
                                 row = int(k.replace("Mem", "")) - 1
                                 self.lwMems.item(row).setText("MEM{}: {}".format(row + 1, v))
                                 self.mems[row] = v
 
-                        elif self.device.reply == 'RESULT' and fk.startswith("Rule") or self.device.reply.startswith("RULE"):
+                        elif (
+                            self.device.reply == 'RESULT'
+                            and fk.startswith("Rule")
+                            or self.device.reply.startswith("RULE")
+                        ):
                             self.display_rule(payload, fk)
 
 
@@ -303,5 +356,5 @@ class RuleHighLighter(QSyntaxHighlighter):
         # print(self.document().toRawText())
         for exp, fmt in self.rules:
             for fi in re.finditer(exp, text):
-                self.setFormat(fi.start(1), fi.end(1)-fi.start(1), fmt)
+                self.setFormat(fi.start(1), fi.end(1) - fi.start(1), fmt)
                 # print(fi.re, fi.groups(), fi.start(1), fi.end(1), fi.end(1)-fi.start(1))
