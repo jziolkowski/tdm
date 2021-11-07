@@ -4,9 +4,6 @@ from json import JSONDecodeError, loads
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
-# from Util.commands import commands as commands_json
-# from Util.setoptions import setoptions
-
 commands = [
     "Backlog",
     "BlinkCount",
