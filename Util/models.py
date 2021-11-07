@@ -167,7 +167,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 if d.p['LWT'] == "Online":
                     rssi = int(d.p.get("RSSI", 0))
 
-                    if rssi > 0 and rssi < 50:
+                    if 0 < rssi < 50:
                         return QIcon(":/status_low.png")
 
                     elif rssi < 75:

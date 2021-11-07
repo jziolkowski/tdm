@@ -30,7 +30,7 @@ try:
 except ImportError:
     pass
 
-from GUI import Toolbar, VLayout
+from GUI import Toolbar, VLayout, icons  # noqa: F401
 from GUI.Broker import BrokerDialog
 from GUI.BSSID import BSSIdDialog
 from GUI.Console import ConsoleWidget
@@ -77,8 +77,8 @@ class MainWindow(QMainWindow):
         if not os.path.isdir("{}/TDM".format(QDir.homePath())):
             os.mkdir("{}/TDM".format(QDir.homePath()))
 
-        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
-        self.devices = QSettings("{}/TDM/devices.cfg".format(QDir.homePath()), QSettings.IniFormat)
+        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, 'tdm', 'tdm')
+        self.devices = QSettings(QSettings.IniFormat, QSettings.UserScope, 'tdm', 'devices')
         self.setMinimumSize(QSize(1000, 600))
 
         # configure logging
@@ -640,8 +640,8 @@ class MainWindow(QMainWindow):
 
 def start():
     app = QApplication(sys.argv)
-    app.setOrganizationName("Tasmota")
-    app.setApplicationName("TDM")
+    # app.setOrganizationName("HRBL")
+    # app.setApplicationName("TDM")
     app.lastWindowClosed.connect(app.quit)
     app.setStyle("Fusion")
 

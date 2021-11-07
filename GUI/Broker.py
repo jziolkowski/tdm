@@ -1,7 +1,7 @@
 import random
 import string
 
-from PyQt5.QtCore import QDir, QSettings
+from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QCheckBox, QDialog, QFormLayout, QGroupBox, QLineEdit, QPushButton
 
 from GUI import HLayout, SpinBox, VLayout
@@ -13,7 +13,7 @@ class BrokerDialog(QDialog):
 
         self.setWindowTitle("MQTT Broker")
 
-        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
+        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, 'tdm', 'tdm')
 
         gbHost = QGroupBox("Hostname and port")
         hfl = QFormLayout()
@@ -52,7 +52,7 @@ class BrokerDialog(QDialog):
         hlBtn.addWidgets([btnSave, btnCancel])
 
         vl = VLayout()
-        vl.addWidgets([gbHost, gbLogin, self.cbConnectStartup])
+        vl.addWidgets([gbHost, gbLogin, gbClientId, self.cbConnectStartup])
         vl.addLayout(hlBtn)
 
         self.setLayout(vl)
@@ -66,11 +66,9 @@ class BrokerDialog(QDialog):
         self.settings.setValue("username", self.username.text())
         self.settings.setValue("password", self.password.text())
         self.settings.setValue("connect_on_startup", self.cbConnectStartup.isChecked())
-        # self.settings.setValue("client_id", self.clientId.text())
+        self.settings.setValue("client_id", self.clientId.text())
         self.settings.sync()
         self.done(QDialog.Accepted)
 
-    ##################################################################
-    # utils
     def random_generator(self, size=6, chars=string.ascii_uppercase + string.digits):
         return ''.join(random.choice(chars) for x in range(size))

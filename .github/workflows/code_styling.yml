@@ -1,11 +1,9 @@
 name: Code styling
 
-on:
-    workflow_dispatch:
-    pull_request:
+on: [push, pull_request]
 
 jobs:
-  CICD:
+  cicd:
     runs-on: ubuntu-20.04
 
     steps:
@@ -15,11 +13,18 @@ jobs:
       - name: Setup
         run: make dev-setup
 
+      - name: Activate venv
+        working-directory: ./backend
+        run: source .venv/bin/activate
+
       - name: Black
+        working-directory: ./backend
         run: make black-check
 
       - name: Flake8
+        working-directory: ./backend
         run: make flake8
 
       - name: Isort
+        working-directory: ./backend
         run: make isort
