@@ -1,0 +1,28 @@
+name: Code styling
+
+on:
+    workflow_dispatch:
+    pull_request:
+
+jobs:
+  CICD:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup
+        run: make dev-setup
+
+      - name: Activate venv
+        run: source .venv/bin/activate
+
+      - name: Black
+        run: make black-check
+
+      - name: Flake8
+        run: make flake8
+
+      - name: Isort
+        run: make isort
