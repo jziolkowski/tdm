@@ -15,9 +15,6 @@ jobs:
       - name: Setup
         run: make dev-setup
 
-      - name: Activate venv
-        run: source .venv/bin/activate
-
       - name: Black
         run: make black-check
 
