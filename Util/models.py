@@ -278,7 +278,7 @@ class DeviceDelegate(QStyledItemDelegate):
                         px = QPixmap(":/status_high.png")
 
                 px_y = (option.rect.height() - 24) / 2
-                p.drawPixmap(option.rect.x() + 2, option.rect.y() + px_y, px.scaled(24, 24))
+                p.drawPixmap(int(option.rect.x() + 2), int(option.rect.y() + px_y), px.scaled(24, 24))
 
                 p.drawText(option.rect.adjusted(28, 0, 0, 0), Qt.AlignVCenter | Qt.AlignLeft, index.data())
 
@@ -335,10 +335,10 @@ class DeviceDelegate(QStyledItemDelegate):
                         y = option.rect.y() + (option.rect.height() - 24) / 2
 
                         if num == 1:
-                            p.drawPixmap(x, y, 24, 24, QPixmap(":/P_{}".format(index.data()[k])))
+                            p.drawPixmap(int(x), int(y), 24, 24, QPixmap(":/P_{}".format(index.data()[k])))
 
                         else:
-                            p.drawPixmap(x, y, 24, 24, QPixmap(":/P{}_{}".format(i + 1, index.data()[k])))
+                            p.drawPixmap(int(x), int(y), 24, 24, QPixmap(":/P{}_{}".format(i + 1, index.data()[k])))
 
                 else:
                     i = 0
@@ -348,7 +348,7 @@ class DeviceDelegate(QStyledItemDelegate):
                             y = option.rect.y() + row * 24
 
                             if i < num:
-                                p.drawPixmap(x, y, 24, 24, QPixmap(":/P{}_{}".format(i + 1, list(index.data().values())[i])))
+                                p.drawPixmap(int(x), int(y), 24, 24, QPixmap(":/P{}_{}".format(i + 1, list(index.data().values())[i])))
                             i += 1
 
         elif col_name == "Color":
