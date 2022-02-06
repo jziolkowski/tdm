@@ -386,26 +386,29 @@ class MainWindow(QMainWindow):
             if not fname.endswith(".csv"):
                 fname += ".csv"
 
-            with open(fname, "w", encoding='utf8') as f:
-                column_titles = ['mac', 'topic', 'friendly_name', 'full_topic', 'cmnd_topic', 'stat_topic', 'tele_topic', 'module', 'module_id', 'firmware', 'core']
+            with open(fname, "w", encoding='utf8', newline='') as f:
+                column_titles = ['Device', 'IPAddress', 'Mac', 'Module', 'Version', 'Topic', 'CommandTopic', 'StatTopic', 'TeleTopic', 'FullTopic', 'Core']
+                if self.settings.value("csv_export"):
+                    column_titles.clear()
+                    column_titles = self.settings.value("csv_export").split(";")
                 c = csv.writer(f)
                 c.writerow(column_titles)
 
-                for r in range(self.device_model.rowCount()):
-                    d = self.device_model.index(r,0)
-                    c.writerow([
-                        self.device_model.mac(d),
-                        self.device_model.topic(d),
-                        self.device_model.friendly_name(d),
-                        self.device_model.fullTopic(d),
-                        self.device_model.commandTopic(d),
-                        self.device_model.statTopic(d),
-                        self.device_model.teleTopic(d),
-                        # modules.get(self.device_model.module(d)),
-                        self.device_model.module(d),
-                        self.device_model.firmware(d),
-                        self.device_model.core(d)
-                    ])
+                for r in self.env.devices:
+                    row_parts = []
+                    row_parts.clear()
+                    for x in column_titles:
+                        if x == "CommandTopic":
+                            row_parts.append(r.cmnd_topic())
+                        elif  x == "StatTopic":
+                            row_parts.append(r.stat_topic())
+                        elif x == "TeleTopic":
+                            row_parts.append(r.tele_topic())
+                        elif x == "Device":
+                            row_parts.append(r.name)
+                        else:
+                            row_parts.append(r.p.get(x))
+                    c.writerow(row_parts)
 
     def bssid(self):
         BSSIdDialog().exec_()
@@ -455,13 +458,16 @@ class MainWindow(QMainWindow):
 
             device_username = self.settings.value("device_username", "admin")
             if device_username != dlg.cbConsWW.isChecked():
-                update_consoles = True
                 self.settings.setValue("device_username", dlg.devusername.text())
 
             device_password = self.settings.value("device_password", "admin")
             if device_password != dlg.cbConsWW.isChecked():
-                update_consoles = True
                 self.settings.setValue("device_password", dlg.devpassword.text())
+
+            decode_config_path = self.settings.value("decode_config_path", "")
+            if decode_config_path != dlg.cbConsWW.isChecked():
+                self.settings.setValue("decode_config_path", dlg.devdecodeconfig.text())
+
             if update_consoles:
                 for c in self.consoles:
                     c.console.setWordWrapMode(dlg.cbConsWW.isChecked())

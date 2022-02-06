@@ -39,6 +39,8 @@ class ListWidget(QWidget):
         self.mqtt = parent.mqtt
         self.env = parent.env
 
+        self.export = parent.export
+
         self.device = None
         self.idx = None
 
@@ -123,8 +125,12 @@ class ListWidget(QWidget):
         actPower = self.tb.addAction(QIcon(":/power.png"), "Power", self.configurePower)
         actPower.setShortcut("Ctrl+P")
 
-        actPower = self.tb.addAction(QIcon("GUI/icons/backup.png"), "Backup All", self.backupAll)
-        actPower.setShortcut("Ctrl+P")
+        if self.settings.value("decode_config_path"):
+            actPower = self.tb.addAction(QIcon("GUI/icons/backup.png"), "Backup All", self.backupAll)
+            actPower.setShortcut("Ctrl+A")
+
+        actPower = self.tb.addAction(QIcon("GUI/icons/csv.png"), "CSV Export", self.export)
+        actPower.setShortcut("Ctrl+X")
 
         # setopts = self.tb.addAction(QIcon(":/setoptions.png"), "SetOptions", self.configureSO)
         # setopts.setShortcut("Ctrl+S")
