@@ -24,8 +24,6 @@ from PyQt5.QtWidgets import (
 
 from GUI import icons  # noqa: F401
 from GUI.ClearLWT import ClearLWTDialog
-
-# from GUI.OpenHAB import OpenHABDialog
 from GUI.Prefs import PrefsDialog
 
 try:
