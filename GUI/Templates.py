@@ -1,10 +1,9 @@
 from json import dumps
 
-from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtWidgets import QDialog, QMessageBox, QComboBox, QPushButton, QFormLayout, QLabel, QGroupBox, QWidget, \
-    QDialogButtonBox, QLineEdit
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QFormLayout, QGroupBox, QLabel, QLineEdit, QMessageBox
 
-from GUI import HLayout, VLayout, DictComboBox
+from GUI import DictComboBox, VLayout
 from Util import template_adc
 
 
@@ -31,7 +30,6 @@ class TemplateDialog(QDialog):
             btns.accepted.connect(self.accept)
 
             tpl = self.device.p['Template']
-            print(tpl)
             self.leName = QLineEdit()
             self.leName.setMaxLength(14)
             self.leName.setText(tpl['NAME'])
@@ -45,7 +43,10 @@ class TemplateDialog(QDialog):
                 gbx = DictComboBox(gpios)
                 gbx.setCurrentText(gpios.get(str(tpl['GPIO'][i])))
 
-                fl.addRow("<font color='{}'>GPIO{}</font>".format('red' if g in [9, 10] else 'black', g), gbx)
+                fl.addRow(
+                    "<font color='{}'>GPIO{}</font>".format('red' if g in [9, 10] else 'black', g),
+                    gbx,
+                )
                 self.gb[i] = gbx
 
             self.gbxADC = DictComboBox(template_adc)

@@ -1,15 +1,64 @@
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QGroupBox, QTableView, QSpinBox, QAction, QToolBar, \
-    QHeaderView, QComboBox, QDoubleSpinBox, QWidget, QSizePolicy, QSlider, QWidgetAction, QFrame, QLineEdit
+from PyQt5.QtWidgets import (
+    QAction,
+    QComboBox,
+    QDoubleSpinBox,
+    QFrame,
+    QGroupBox,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QSizePolicy,
+    QSlider,
+    QSpinBox,
+    QTableView,
+    QToolBar,
+    QVBoxLayout,
+    QWidget,
+    QWidgetAction,
+)
 
 base_view = ["Device"]
 default_views = {
     "Home": base_view + ["Module", "Power", "Color", "LoadAvg", "LinkCount", "Uptime"],
-    "Health": base_view + ["Uptime", "BootCount", "RestartReason", "LoadAvg", "Sleep", "MqttCount", "LinkCount", "Downtime", "RSSI"],
+    "Health": base_view
+    + [
+        "Uptime",
+        "BootCount",
+        "RestartReason",
+        "LoadAvg",
+        "Sleep",
+        "MqttCount",
+        "LinkCount",
+        "Downtime",
+        "RSSI",
+    ],
     "Firmware": base_view + ["Version", "Core", "SDK", "ProgramSize", "Free", "OtaUrl"],
-    "Wifi": base_view + ["Hostname", "Mac", "IPAddress", "Gateway", "SSId", "BSSId", "Channel", "RSSI", "LinkCount", "Downtime"],
-    "MQTT": base_view + ["Topic", "FullTopic", "CommandTopic", "StatTopic", "TeleTopic", "FallbackTopic", "GroupTopic"],
+    "Wifi": base_view
+    + [
+        "Hostname",
+        "Mac",
+        "IPAddress",
+        "Gateway",
+        "SSId",
+        "BSSId",
+        "Channel",
+        "RSSI",
+        "LinkCount",
+        "Downtime",
+    ],
+    "MQTT": base_view
+    + [
+        "Topic",
+        "FullTopic",
+        "CommandTopic",
+        "StatTopic",
+        "TeleTopic",
+        "FallbackTopic",
+        "GroupTopic",
+    ],
 }
 
 console_font = QFont("asd")
@@ -182,10 +231,12 @@ class CheckableAction(QAction):
 
 
 class Toolbar(QToolBar):
-    def __init__(self, orientation = Qt.Horizontal, iconsize=32, label_position=Qt.ToolButtonTextUnderIcon, *args, **kwargs):
+    def __init__(
+        self, orientation=Qt.Horizontal, iconsize=32, label_position=Qt.ToolButtonTextUnderIcon, *args, **kwargs
+    ):
         super(Toolbar, self).__init__(*args, **kwargs)
         self.setMovable(False)
-        self.setIconSize(QSize(iconsize,iconsize))
+        self.setIconSize(QSize(iconsize, iconsize))
         self.setOrientation(orientation)
         self.setToolButtonStyle(label_position)
 
@@ -326,10 +377,13 @@ class CommandMultiSelect(QWidget):
         for i, val in enumerate(value):
             cb = QComboBox()
             for k, v in meta['parameters'].items():
-                cb.addItem("{}: {} {}".format(k, v['description'], "(default)" if v.get("default") else ""), k)
+                cb.addItem(
+                    "{}: {} {}".format(k, v['description'], "(default)" if v.get("default") else ""),
+                    k,
+                )
             cb.setCurrentIndex(val)
             hl_input = HLayout(0)
-            hl_input.addWidgets([QLabel("{}: ".format(i+1)), cb])
+            hl_input.addWidgets([QLabel("{}: ".format(i + 1)), cb])
 
             self.inputs.append(cb)
             vl.addLayout(hl_input)
@@ -365,7 +419,10 @@ class Interlock(QWidget):
 
         user_data = ["OFF", "ON"]
         for k, v in meta['parameters'].items():
-            self.input.addItem("{} {}".format(v['description'], "(default)" if v.get("default") else ""), user_data[int(k)])
+            self.input.addItem(
+                "{} {}".format(v['description'], "(default)" if v.get("default") else ""),
+                user_data[int(k)],
+            )
 
         if value and value.get("Interlock", "OFF") == "OFF":
             self.input.setCurrentIndex(0)
@@ -384,7 +441,7 @@ class Interlock(QWidget):
                     group_value = group_value_list[i]
                     le.setText(group_value)
             hl_group = HLayout(0)
-            hl_group.addWidgets([QLabel("Group {}".format(i+1)), le])
+            hl_group.addWidgets([QLabel("Group {}".format(i + 1)), le])
             vl_groups.addLayout(hl_group)
             self.groups.append(le)
         vl.addLayout(vl_groups)

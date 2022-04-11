@@ -1,8 +1,6 @@
-import re
-
-from PyQt5.QtCore import QModelIndex, Qt, QAbstractTableModel, QSettings, QSize, QRect, QDir, QRectF, QPoint
-from PyQt5.QtGui import QIcon, QColor, QPixmap, QFont, QPen
-from PyQt5.QtWidgets import QStyledItemDelegate, QStyle
+from PyQt5.QtCore import QAbstractTableModel, QDir, QModelIndex, QSettings, QSize, Qt
+from PyQt5.QtGui import QColor, QIcon, QPen, QPixmap
+from PyQt5.QtWidgets import QStyle, QStyledItemDelegate
 
 LWTRole = Qt.UserRole
 RestartReasonRole = Qt.UserRole + 1
@@ -87,7 +85,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
                 elif col_name == "Version" and val:
                     if self.devices_short_version and "(" in val:
-                        return val[0:val.index("(")]
+                        return val[0 : val.index("(")]
                     return val.replace("(", " (")
 
                 elif col_name in ("Uptime", "Downtime") and val:
@@ -149,7 +147,13 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
             elif role == Qt.TextAlignmentRole:
                 # Left-aligned columns
-                if col_name in ("Device", "Module", "RestartReason", "OtaUrl", "Hostname") or col_name.endswith("Topic"):
+                if col_name in (
+                    "Device",
+                    "Module",
+                    "RestartReason",
+                    "OtaUrl",
+                    "Hostname",
+                ) or col_name.endswith("Topic"):
                     return Qt.AlignLeft | Qt.AlignVCenter | Qt.TextWordWrap
 
                 # Right-aligned columns
@@ -188,7 +192,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 if col_name == "Version":
                     val = d.p.get('Version')
                     if val:
-                        return val[val.index("(")+1:val.index(")")]
+                        return val[val.index("(") + 1 : val.index(")")]
                     return ""
 
                 elif col_name == "BSSId":
@@ -301,7 +305,6 @@ class DeviceDelegate(QStyledItemDelegate):
                     p.drawRect(exc_rect)
                     p.restore()
 
-
         elif col_name == "RSSI":
             if index.data():
                 rect = option.rect.adjusted(4, 4, -4, -4)
@@ -323,7 +326,6 @@ class DeviceDelegate(QStyledItemDelegate):
                 p.setPen(pen)
                 p.drawRect(rect)
                 p.restore()
-
 
         elif col_name == "Power":
             if isinstance(index.data(), dict):
@@ -348,7 +350,13 @@ class DeviceDelegate(QStyledItemDelegate):
                             y = option.rect.y() + row * 24
 
                             if i < num:
-                                p.drawPixmap(x, y, 24, 24, QPixmap(":/P{}_{}".format(i + 1, list(index.data().values())[i])))
+                                p.drawPixmap(
+                                    x,
+                                    y,
+                                    24,
+                                    24,
+                                    QPixmap(":/P{}_{}".format(i + 1, list(index.data().values())[i])),
+                                )
                             i += 1
 
         elif col_name == "Color":
@@ -381,4 +389,3 @@ class DeviceDelegate(QStyledItemDelegate):
 
         else:
             QStyledItemDelegate.paint(self, p, option, index)
-

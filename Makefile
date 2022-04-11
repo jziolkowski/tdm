@@ -1,11 +1,11 @@
 isort:
-	isort -l 100 --up .
+	isort -l 120 --up .
 
 black-check:
-	black -S -l 100 --check .
+	black -S -l 120 --check .
 
 black:
-	black -S -l 100 .
+	black -S -l 120 .
 
 flake8:
 	flake8 .

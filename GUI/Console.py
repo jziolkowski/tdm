@@ -1,12 +1,24 @@
-from PyQt5.QtCore import Qt, pyqtSlot, QTime, pyqtSignal, QRegExp, QEvent, QStringListModel, QSize, QSettings, QDir
-from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont, QIcon
-from PyQt5.QtWidgets import QDockWidget, QPlainTextEdit, QLineEdit, QWidget, QCompleter, QComboBox, QListWidget, \
-    QDialog, QLabel, QPushButton, QFileDialog
+from datetime import datetime
 
-from GUI import VLayout, GroupBoxV, HLayout, console_font
+from PyQt5.QtCore import QDir, QEvent, QRegExp, QSettings, QSize, QStringListModel, Qt, QTime, pyqtSignal, pyqtSlot
+from PyQt5.QtGui import QColor, QFont, QIcon, QSyntaxHighlighter, QTextCharFormat
+from PyQt5.QtWidgets import (
+    QComboBox,
+    QCompleter,
+    QDialog,
+    QDockWidget,
+    QFileDialog,
+    QLabel,
+    QLineEdit,
+    QListWidget,
+    QPlainTextEdit,
+    QPushButton,
+    QWidget,
+)
+
+from GUI import GroupBoxV, HLayout, VLayout, console_font
 from Util import commands
 
-from datetime import datetime
 
 class ConsoleWidget(QDockWidget):
 
@@ -66,7 +78,16 @@ class ConsoleWidget(QDockWidget):
         pbClear.clicked.connect(self.clear_console)
 
         self.cbMQTTLog = QComboBox()
-        self.cbMQTTLog.addItems(["Disabled", "Error", "Error/Info (default)", "Error/Info/Debug", "Error/Info/More debug", "All"])
+        self.cbMQTTLog.addItems(
+            [
+                "Disabled",
+                "Error",
+                "Error/Info (default)",
+                "Error/Info/Debug",
+                "Error/Info/More debug",
+                "All",
+            ]
+        )
         mqttlog = self.device.p.get("MqttLog", -1)
 
         if mqttlog != -1:
@@ -136,7 +157,9 @@ class ConsoleWidget(QDockWidget):
         self.sendCommand.emit(self.device.cmnd_topic("MqttLog"), str(idx))
 
     def save_console(self):
-        new_fname = "{}/TDM/{} {}.log".format(QDir.homePath(), self.device.name, datetime.now().strftime("%Y%m%d-%H%M%S"))
+        new_fname = "{}/TDM/{} {}.log".format(
+            QDir.homePath(), self.device.name, datetime.now().strftime("%Y%m%d-%H%M%S")
+        )
         file, ok = QFileDialog.getSaveFileName(self, "Save console", new_fname, "Log files | *.log")
         if ok:
             with open(file, "w") as f:
@@ -144,6 +167,7 @@ class ConsoleWidget(QDockWidget):
 
     def clear_console(self):
         self.console.clear()
+
 
 class JSONHighLighter(QSyntaxHighlighter):
     keyword = QTextCharFormat()
@@ -162,18 +186,15 @@ class JSONHighLighter(QSyntaxHighlighter):
     tstamp = QTextCharFormat()
     tstamp.setForeground(QColor("gray"))
 
-
     STYLES = {
         'keyword': keyword,
         'brace': braces,
         'error': error,
         'tstamp': tstamp,
-        'command': command
+        'command': command,
     }
 
-    braces = [
-        '\{', '\}'
-    ]
+    braces = [r'\{', r'\}']
 
     def __init__(self, document):
         QSyntaxHighlighter.__init__(self, document)
@@ -186,7 +207,6 @@ class JSONHighLighter(QSyntaxHighlighter):
             (r'\s.*cmnd.*\s', 0, self.STYLES['command']),
             (r'\"\w*\"(?=:)', 0, self.STYLES['keyword']),
             (r':\"\w*\"', 0, self.STYLES['error']),
-
             (r'\{\"Command\":\"Unknown\"\}', 0, self.STYLES['error']),
         ]
 

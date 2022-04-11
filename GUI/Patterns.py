@@ -1,7 +1,7 @@
-from PyQt5.QtCore import QSize, QSettings, QDir
-from PyQt5.QtWidgets import QDialog, QTableWidget, QHeaderView, QTableWidgetItem, QPushButton, QLabel
+from PyQt5.QtCore import QDir, QSettings
+from PyQt5.QtWidgets import QDialog, QHeaderView, QLabel, QPushButton, QTableWidget, QTableWidgetItem
 
-from GUI import VLayout, HLayout
+from GUI import HLayout, VLayout
 
 
 class PatternsDialog(QDialog):
@@ -27,10 +27,17 @@ class PatternsDialog(QDialog):
             self.tw.insertRow(row)
             self.tw.setItem(row, 0, QTableWidgetItem(self.settings.value(k)))
 
-        vl.addWidgets([QLabel("Add your modified FullTopic patterns to enable auto-discovery of such devices\n"
-                              "Patterns MUST include %prefix%, %topic% and trailing /\n"
-                              "Default Tasmota FullTopics are built-in\n\n"
-                              "You have to reconnect to your Broker after topic changes."), self.tw])
+        vl.addWidgets(
+            [
+                QLabel(
+                    "Add your modified FullTopic patterns to enable auto-discovery of such devices\n"
+                    "Patterns MUST include %prefix%, %topic% and trailing /\n"
+                    "Default Tasmota FullTopics are built-in\n\n"
+                    "You have to reconnect to your Broker after topic changes."
+                ),
+                self.tw,
+            ]
+        )
 
         hl_btns = HLayout([0, 3, 0, 3])
         btnAdd = QPushButton("Add")
@@ -69,7 +76,7 @@ class PatternsDialog(QDialog):
         for r in range(self.tw.rowCount()):
             val = self.tw.item(r, 0).text()
             # check for trailing /
-            if (not val.endswith('/')):
+            if not val.endswith('/'):
                 val += '/'
             self.settings.setValue(str(r), val)
         self.settings.endGroup()

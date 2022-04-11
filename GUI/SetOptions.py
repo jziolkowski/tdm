@@ -1,9 +1,9 @@
-from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtWidgets import QDialog, QMessageBox, QComboBox, QPushButton, QFormLayout, QLabel, QGroupBox, QWidget, \
-    QDialogButtonBox
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QLabel
 
-from GUI import HLayout, VLayout, DictComboBox, GroupBoxV
+from GUI import DictComboBox, GroupBoxV, VLayout
 from Util import setoptions
+
 
 class SetOptionsDialog(QDialog):
     sendCommand = pyqtSignal(str, str)

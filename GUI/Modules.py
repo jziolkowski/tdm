@@ -1,8 +1,7 @@
-from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtWidgets import QDialog, QMessageBox, QComboBox, QPushButton, QFormLayout, QLabel, QGroupBox, QWidget, \
-    QDialogButtonBox
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QMessageBox
 
-from GUI import HLayout, VLayout, DictComboBox, GroupBoxV
+from GUI import DictComboBox, GroupBoxV, VLayout
 
 
 class ModuleDialog(QDialog):

@@ -1,9 +1,10 @@
-from PyQt5.QtCore import QSettings, QDir
-from PyQt5.QtWidgets import QDialog, QLineEdit, QFormLayout, QPushButton, QGroupBox, QCheckBox
 import random
 import string
 
-from GUI import SpinBox, HLayout, VLayout
+from PyQt5.QtCore import QDir, QSettings
+from PyQt5.QtWidgets import QCheckBox, QDialog, QFormLayout, QGroupBox, QLineEdit, QPushButton
+
+from GUI import HLayout, SpinBox, VLayout
 
 
 class BrokerDialog(QDialog):

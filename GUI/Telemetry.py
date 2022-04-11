@@ -21,6 +21,7 @@ item_units = {
     "Today": "kWh",
 }
 
+
 class TelemetryWidget(QDockWidget):
     def __init__(self, device, *args, **kwargs):
         super(TelemetryWidget, self).__init__(*args, **kwargs)
@@ -71,7 +72,6 @@ class TelemetryWidget(QDockWidget):
             _top_item.addChild(item)
             self.tree_items[parent][name] = item
             return item
-
 
     @pyqtSlot()
     def update_telemetry(self):

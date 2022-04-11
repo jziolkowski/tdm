@@ -1,15 +1,25 @@
 import logging
-from json import loads, JSONDecodeError, dumps
+from json import JSONDecodeError, dumps, loads
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, Qt, QTime
-from PyQt5.QtWidgets import QDialog, QMessageBox, QComboBox, QCheckBox, QButtonGroup, QRadioButton, QTimeEdit, QLabel, \
-    QDialogButtonBox
+from PyQt5.QtCore import Qt, QTime, pyqtSignal, pyqtSlot
+from PyQt5.QtWidgets import (
+    QButtonGroup,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QLabel,
+    QMessageBox,
+    QRadioButton,
+    QTimeEdit,
+)
 
-from GUI import VLayout, GroupBoxV, HLayout, GroupBoxH
+from GUI import GroupBoxH, GroupBoxV, HLayout, VLayout
 
 # TODO: make time +/- default disabled
 # TODO: check disabling AM/PM suffix in time before/after
 # TODO: reset time above/after when switching away from 'Time'
+
 
 class TimersDialog(QDialog):
     sendCommand = pyqtSignal(str, str)
@@ -166,7 +176,10 @@ class TimersDialog(QDialog):
                 if wnd == 0:
                     desc['time'] = "at {}".format(time.toString("hh:mm"))
                 else:
-                    desc['time'] = "somewhere between {} and {}".format(time.addSecs(wnd * -1).toString("hh:mm"), time.addSecs(wnd).toString("hh:mm"))
+                    desc['time'] = "somewhere between {} and {}".format(
+                        time.addSecs(wnd * -1).toString("hh:mm"),
+                        time.addSecs(wnd).toString("hh:mm"),
+                    )
             else:
                 prefix = "before" if pm == "-" else "after"
                 mode_desc = "sunrise" if mode == 1 else "sunset"
@@ -215,8 +228,9 @@ class TimersDialog(QDialog):
             "Window": self.cbxTimerWnd.currentIndex(),
             "Days": "".join([str(int(cb.isChecked())) for cb in self.TimerWeekday.buttons()]),
             "Repeat": int(self.cbTimerRpt.isChecked()),
-            "Output": self.cbxTimerOut.currentIndex()+1,
-            "Action": self.cbxTimerAction.currentIndex()}
+            "Output": self.cbxTimerOut.currentIndex() + 1,
+            "Action": self.cbxTimerAction.currentIndex(),
+        }
         self.sendCommand.emit(self.device.cmnd_topic(self.cbTimer.currentText()), dumps(payload))
         QMessageBox.information(self, "Timer saved", "{} data sent to device.".format(self.cbTimer.currentText()))
 
@@ -225,12 +239,15 @@ class TimersDialog(QDialog):
         """
         Tasmota < 9.4.0.5 : There are a total of 4 messages in reply to `Timers` command:
             {"Timers": "ON" }
-            {"Timers1" : {"Timer1":{"Enable":0,"Mode":0,"Time":"00:00","Window":0,"Days":"0000000","Repeat":0,"Action":0}, ....
+            {"Timers1" : {"Timer1":{"Enable":0,"Mode":0,"Time":"00:00","Window":0,"Days":"0000000","Repeat":0,
+            "Action":0}, ....
             ...
-            {"Timers4" : {"Timer13":{"Enable":0,"Mode":0,"Time":"00:00","Window":0,"Days":"0000000","Repeat":0,"Action":0}, ....
+            {"Timers4" : {"Timer13":{"Enable":0,"Mode":0,"Time":"00:00","Window":0,"Days":"0000000","Repeat":0,
+            "Action":0}, ....
 
         Tasmota >= 9.4.0.5 : There is only 1 message that covers all
-            { "Timers": "ON", "Timer1":{"Enable":0,"Mode":0,"Time":"00:00","Window":0,"Days":"0000000","Repeat":0,"Action":0}, ....
+            { "Timers": "ON", "Timer1":{"Enable":0,"Mode":0,"Time":"00:00","Window":0,"Days":"0000000","Repeat":0,
+            "Action":0}, ....
         """
         if self.device.matches(topic):
             if self.device.reply == "RESULT" or self.device.reply == "TIMERS":

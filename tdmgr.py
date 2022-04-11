@@ -1,22 +1,32 @@
 #!/usr/bin/env python
+import csv
+import logging
 import os
 import re
 import sys
-import csv
-from json import loads, JSONDecodeError
+from json import loads
 
-import logging
+from PyQt5.QtCore import QDir, QSettings, QSize, Qt, QTimer, QUrl, pyqtSlot
+from PyQt5.QtGui import QDesktopServices, QFont, QIcon
+from PyQt5.QtWidgets import (
+    QAction,
+    QApplication,
+    QDialog,
+    QFileDialog,
+    QFrame,
+    QInputDialog,
+    QMainWindow,
+    QMdiArea,
+    QMessageBox,
+    QPushButton,
+    QStatusBar,
+)
 
-from PyQt5.QtCore import QTimer, pyqtSlot, QSettings, QDir, QSize, Qt, QDateTime, QUrl
-from PyQt5.QtGui import QIcon, QDesktopServices, QFont
-from PyQt5.QtWidgets import QMainWindow, QDialog, QStatusBar, QApplication, QMdiArea, QFileDialog, QAction, QFrame, \
-    QInputDialog, QMessageBox, QPushButton
-
+from GUI import icons  # noqa: F401
 from GUI.ClearLWT import ClearLWTDialog
+
 # from GUI.OpenHAB import OpenHABDialog
 from GUI.Prefs import PrefsDialog
-
-from GUI import icons
 
 try:
     from PyQt5.QtWebEngineWidgets import QWebEngineView
@@ -24,15 +34,22 @@ except ImportError:
     pass
 
 from GUI import Toolbar, VLayout
-from GUI.BSSID import BSSIdDialog
 from GUI.Broker import BrokerDialog
+from GUI.BSSID import BSSIdDialog
 from GUI.Console import ConsoleWidget
-from GUI.Rules import RulesWidget
-from GUI.Telemetry import TelemetryWidget
 from GUI.Devices import ListWidget
 from GUI.Patterns import PatternsDialog
-from Util import TasmotaDevice, TasmotaEnvironment, parse_topic, default_patterns, prefixes, custom_patterns, \
-    expand_fulltopic, initial_commands
+from GUI.Rules import RulesWidget
+from GUI.Telemetry import TelemetryWidget
+from Util import (
+    TasmotaDevice,
+    TasmotaEnvironment,
+    custom_patterns,
+    default_patterns,
+    expand_fulltopic,
+    initial_commands,
+    parse_topic,
+)
 from Util.models import TasmotaDevicesModel
 from Util.mqtt import MqttClient
 
@@ -68,16 +85,22 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(QSize(1000, 600))
 
         # configure logging
-        logging.basicConfig(filename="{}/TDM/tdm.log".format(QDir.homePath()),
-                            level=self.settings.value("loglevel", "INFO"),
-                            datefmt="%Y-%m-%d %H:%M:%S",
-                            format='%(asctime)s [%(levelname)s] %(message)s')
+        logging.basicConfig(
+            filename="{}/TDM/tdm.log".format(QDir.homePath()),
+            level=self.settings.value("loglevel", "INFO"),
+            datefmt="%Y-%m-%d %H:%M:%S",
+            format='%(asctime)s [%(levelname)s] %(message)s',
+        )
         logging.info("### TDM START ###")
 
         # load devices from the devices file, create TasmotaDevices and add the to the environment
         for mac in self.devices.childGroups():
             self.devices.beginGroup(mac)
-            device = TasmotaDevice(self.devices.value("topic"), self.devices.value("full_topic"), self.devices.value("device_name"))
+            device = TasmotaDevice(
+                self.devices.value("topic"),
+                self.devices.value("full_topic"),
+                self.devices.value("device_name"),
+            )
             device.debug = self.devices.value("debug", False, bool)
             device.p['Mac'] = mac.replace("-", ":")
             device.env = self.env
@@ -150,7 +173,7 @@ class MainWindow(QMainWindow):
             self.restoreGeometry(wndGeometry)
 
     def build_mainmenu(self):
-        mMQTT  = self.menuBar().addMenu("MQTT")
+        mMQTT = self.menuBar().addMenu("MQTT")
         self.actToggleConnect = QAction(QIcon(":/disconnect.png"), "Connect")
         self.actToggleConnect.setCheckable(True)
         self.actToggleConnect.toggled.connect(self.toggle_connect)
@@ -198,7 +221,7 @@ class MainWindow(QMainWindow):
             self.mqtt.disconnect()
 
     def toggle_autoupdate(self, state):
-        if state == True:
+        if state:
             if self.mqtt.state == self.mqtt.Connected:
                 for d in self.env.devices:
                     self.mqtt.publish(d.cmnd_topic('STATUS'), payload=8)
@@ -252,7 +275,13 @@ class MainWindow(QMainWindow):
     def mqtt_connected(self):
         self.actToggleConnect.setIcon(QIcon(":/connect.png"))
         self.actToggleConnect.setText("Disconnect")
-        self.statusBar().showMessage("Connected to {}:{} as {}".format(self.broker_hostname, self.broker_port, self.broker_username if self.broker_username else '[anonymous]'))
+        self.statusBar().showMessage(
+            "Connected to {}:{} as {}".format(
+                self.broker_hostname,
+                self.broker_port,
+                self.broker_username if self.broker_username else '[anonymous]',
+            )
+        )
 
         self.mqtt_subscribe()
 
@@ -268,7 +297,7 @@ class MainWindow(QMainWindow):
         self.settings.endGroup()
 
         # expand fulltopic patterns to subscribable topics
-        for pat in default_patterns:    # tasmota default and SO19
+        for pat in default_patterns:  # tasmota default and SO19
             self.topics += expand_fulltopic(pat)
 
         # check if custom patterns can be matched by default patterns
@@ -333,7 +362,7 @@ class MainWindow(QMainWindow):
                 if device.debug:
                     logging.debug("MQTT: %s %s", topic, msg)
 
-        else:            # unknown device, start autodiscovery process
+        else:  # unknown device, start autodiscovery process
             if topic.endswith("LWT"):
                 self.env.lwts.append(topic)
                 logging.info("DISCOVERY: LWT from an unknown device %s", topic)
@@ -343,18 +372,27 @@ class MainWindow(QMainWindow):
                 # try matching the LWT topic (it follows the device's FullTopic syntax
 
                 for p in default_patterns + custom_patterns:
-                    match = re.fullmatch(p.replace("%topic%", "(?P<topic>.*?)").replace("%prefix%", "(?P<prefix>.*?)") + ".*$", topic)
+                    match = re.fullmatch(
+                        p.replace("%topic%", "(?P<topic>.*?)").replace("%prefix%", "(?P<prefix>.*?)") + ".*$",
+                        topic,
+                    )
                     if match:
                         # assume that the matched topic is the one configured in device settings
                         possible_topic = match.groupdict().get('topic')
                         if possible_topic not in ('tele', 'stat'):
-                            # if the assumed topic is different from tele or stat, there is a chance that it's a valid topic
+                            # if the assumed topic is different from tele or stat, there is a chance
+                            # that it's a valid topic
                             # query the assumed device for its FullTopic. False positives won't reply.
-                            possible_topic_cmnd = p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic) + "FullTopic"
-                            logging.debug("DISCOVERY: Asking an unknown device for FullTopic at %s", possible_topic_cmnd)
+                            possible_topic_cmnd = (
+                                p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic) + "FullTopic"
+                            )
+                            logging.debug(
+                                "DISCOVERY: Asking an unknown device for FullTopic at %s",
+                                possible_topic_cmnd,
+                            )
                             self.mqtt_queue.append([possible_topic_cmnd, ""])
 
-            elif topic.endswith("RESULT") or topic.endswith("FULLTOPIC"):      # reply from an unknown device
+            elif topic.endswith("RESULT") or topic.endswith("FULLTOPIC"):  # reply from an unknown device
                 # STAGE 2
                 full_topic = loads(msg).get('FullTopic')
                 if full_topic:
@@ -362,14 +400,19 @@ class MainWindow(QMainWindow):
                     # here the Topic is extracted using the returned FullTopic, identifying the device
                     parsed = parse_topic(full_topic, topic)
                     if parsed:
-                        # got a match, we query the device's MAC address in case it's a known device that had its topic changed
+                        # got a match, we query the device's MAC address in case it's a known device
+                        # that had its topic changed
                         logging.debug("DISCOVERY: topic %s is matched by fulltopic %s", topic, full_topic)
 
                         d = self.env.find_device(topic=parsed['topic'])
                         if d:
                             d.update_property("FullTopic", full_topic)
                         else:
-                            logging.info("DISCOVERY: Discovered topic=%s with fulltopic=%s", parsed['topic'], full_topic)
+                            logging.info(
+                                "DISCOVERY: Discovered topic=%s with fulltopic=%s",
+                                parsed['topic'],
+                                full_topic,
+                            )
                             d = TasmotaDevice(parsed['topic'], full_topic)
                             self.env.devices.append(d)
                             self.device_model.addDevice(d)
@@ -381,31 +424,47 @@ class MainWindow(QMainWindow):
                         d.update_property("LWT", "Online")
 
     def export(self):
-        fname, _ = QFileDialog.getSaveFileName(self, "Export device list as...", directory=QDir.homePath(), filter="CSV files (*.csv)")
+        fname, _ = QFileDialog.getSaveFileName(
+            self, "Export device list as...", directory=QDir.homePath(), filter="CSV files (*.csv)"
+        )
         if fname:
             if not fname.endswith(".csv"):
                 fname += ".csv"
 
             with open(fname, "w", encoding='utf8') as f:
-                column_titles = ['mac', 'topic', 'friendly_name', 'full_topic', 'cmnd_topic', 'stat_topic', 'tele_topic', 'module', 'module_id', 'firmware', 'core']
+                column_titles = [
+                    'mac',
+                    'topic',
+                    'friendly_name',
+                    'full_topic',
+                    'cmnd_topic',
+                    'stat_topic',
+                    'tele_topic',
+                    'module',
+                    'module_id',
+                    'firmware',
+                    'core',
+                ]
                 c = csv.writer(f)
                 c.writerow(column_titles)
 
                 for r in range(self.device_model.rowCount()):
-                    d = self.device_model.index(r,0)
-                    c.writerow([
-                        self.device_model.mac(d),
-                        self.device_model.topic(d),
-                        self.device_model.friendly_name(d),
-                        self.device_model.fullTopic(d),
-                        self.device_model.commandTopic(d),
-                        self.device_model.statTopic(d),
-                        self.device_model.teleTopic(d),
-                        # modules.get(self.device_model.module(d)),
-                        self.device_model.module(d),
-                        self.device_model.firmware(d),
-                        self.device_model.core(d)
-                    ])
+                    d = self.device_model.index(r, 0)
+                    c.writerow(
+                        [
+                            self.device_model.mac(d),
+                            self.device_model.topic(d),
+                            self.device_model.friendly_name(d),
+                            self.device_model.fullTopic(d),
+                            self.device_model.commandTopic(d),
+                            self.device_model.statTopic(d),
+                            self.device_model.teleTopic(d),
+                            # modules.get(self.device_model.module(d)),
+                            self.device_model.module(d),
+                            self.device_model.firmware(d),
+                            self.device_model.core(d),
+                        ]
+                    )
 
     def bssid(self):
         BSSIdDialog().exec_()
@@ -433,13 +492,10 @@ class MainWindow(QMainWindow):
     def prefs(self):
         dlg = PrefsDialog()
         if dlg.exec_() == QDialog.Accepted:
-            update_devices = False
 
             devices_short_version = self.settings.value("devices_short_version", True, bool)
             if devices_short_version != dlg.cbDevShortVersion.isChecked():
-                update_devices = True
                 self.settings.setValue("devices_short_version", dlg.cbDevShortVersion.isChecked())
-
 
             update_consoles = False
 
@@ -464,7 +520,13 @@ class MainWindow(QMainWindow):
 
     def auto_telemetry_period(self):
         curr_val = self.settings.value("autotelemetry", 5000, int)
-        period, ok = QInputDialog.getInt(self, "Set AutoTelemetry period", "Values under 5000ms may cause increased ESP LoadAvg", curr_val, 1000)
+        period, ok = QInputDialog.getInt(
+            self,
+            "Set AutoTelemetry period",
+            "Values under 5000ms may cause increased ESP LoadAvg",
+            curr_val,
+            1000,
+        )
         if ok:
             self.settings.setValue("autotelemetry", period)
             self.settings.sync()
@@ -581,6 +643,6 @@ def start():
 if __name__ == '__main__':
     try:
         start()
-    except Exception as e:
+    except Exception as e:  # noqa: 722
         logging.exception("EXCEPTION: %s", e)
-        print("TDM has crashed. Sorry for that. Check tdm.log for more information.")
+        logging.error("TDM has crashed. Sorry for that. Check tdm.log for more information.")

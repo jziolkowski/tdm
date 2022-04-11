@@ -1,5 +1,5 @@
 from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidget, QListWidgetItem, QLabel
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidget, QListWidgetItem
 
 from GUI import VLayout
 

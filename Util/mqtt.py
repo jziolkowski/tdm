@@ -1,8 +1,9 @@
+import logging
+
 import paho.mqtt.client as mqtt
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSlot
 
-import logging
 
 class MqttClient(QtCore.QObject):
     Disconnected = 0
@@ -38,13 +39,11 @@ class MqttClient(QtCore.QObject):
 
         self.m_state = MqttClient.Disconnected
 
-        self.m_client = mqtt.Client(clean_session=self.m_cleanSession,
-            protocol=self.protocolVersion)
+        self.m_client = mqtt.Client(clean_session=self.m_cleanSession, protocol=self.protocolVersion)
 
         self.m_client.on_connect = self.on_connect
         self.m_client.on_message = self.on_message
         self.m_client.on_disconnect = self.on_disconnect
-
 
     @QtCore.pyqtProperty(int, notify=stateChanged)
     def state(self):
@@ -52,7 +51,8 @@ class MqttClient(QtCore.QObject):
 
     @state.setter
     def state(self, state):
-        if self.m_state == state: return
+        if self.m_state == state:
+            return
         self.m_state = state
         self.stateChanged.emit(state)
 
@@ -62,7 +62,8 @@ class MqttClient(QtCore.QObject):
 
     @hostname.setter
     def hostname(self, hostname):
-        if self.m_hostname == hostname: return
+        if self.m_hostname == hostname:
+            return
         self.m_hostname = hostname
         self.hostnameChanged.emit(hostname)
 
@@ -72,7 +73,8 @@ class MqttClient(QtCore.QObject):
 
     @port.setter
     def port(self, port):
-        if self.m_port == port: return
+        if self.m_port == port:
+            return
         self.m_port = port
         self.portChanged.emit(port)
 
@@ -85,7 +87,8 @@ class MqttClient(QtCore.QObject):
 
     @keepAlive.setter
     def keepAlive(self, keepAlive):
-        if self.m_keepAlive == keepAlive: return
+        if self.m_keepAlive == keepAlive:
+            return
         self.m_keepAlive = keepAlive
         self.keepAliveChanged.emit(keepAlive)
 
@@ -95,7 +98,8 @@ class MqttClient(QtCore.QObject):
 
     @cleanSession.setter
     def cleanSession(self, cleanSession):
-        if self.m_cleanSession == cleanSession: return
+        if self.m_cleanSession == cleanSession:
+            return
         self.m_cleanSession = cleanSession
         self.cleanSessionChanged.emit(cleanSession)
 
@@ -105,7 +109,8 @@ class MqttClient(QtCore.QObject):
 
     @protocolVersion.setter
     def protocolVersion(self, protocolVersion):
-        if self.m_protocolVersion == protocolVersion: return
+        if self.m_protocolVersion == protocolVersion:
+            return
         if protocolVersion in (MqttClient.MQTT_3_1, MqttClient.MQTT_3_1_1):
             self.m_protocolVersion = protocolVersion
             self.protocolVersionChanged.emit(protocolVersion)
@@ -116,13 +121,11 @@ class MqttClient(QtCore.QObject):
         if self.m_hostname:
             self.connecting.emit()
             try:
-                self.m_client.connect(self.m_hostname,
-                    port=self.port,
-                    keepalive=self.keepAlive)
+                self.m_client.connect(self.m_hostname, port=self.port, keepalive=self.keepAlive)
 
                 self.state = MqttClient.Connecting
                 self.m_client.loop_start()
-            except:
+            except:  # noqa: 722
                 self.connectError.emit(3)
 
     @QtCore.pyqtSlot()
@@ -136,7 +139,7 @@ class MqttClient(QtCore.QObject):
             logging.info("MQTT: Subscribed to %s", ", ".join([p[0] for p in path]))
 
     @pyqtSlot(str, str)
-    def publish(self, topic, payload = None, qos=0, retain=False):
+    def publish(self, topic, payload=None, qos=0, retain=False):
         if self.state == MqttClient.Connected:
             self.m_client.publish(topic, payload, qos, retain)
 
@@ -149,7 +152,7 @@ class MqttClient(QtCore.QObject):
             retained = msg.retain
             self.messageSignal.emit(topic, mstr, retained)
         except UnicodeDecodeError as e:
-            logging.error('MQTT MESSAGE DECODE ERROR: %s (%s=%s)', e, msg.topic,msg.payload.__repr__())
+            logging.error('MQTT MESSAGE DECODE ERROR: %s (%s=%s)', e, msg.topic, msg.payload.__repr__())
 
     def on_connect(self, *args):
         rc = args[3]
@@ -163,4 +166,3 @@ class MqttClient(QtCore.QObject):
     def on_disconnect(self, *args):
         self.state = MqttClient.Disconnected
         self.disconnected.emit()
-
