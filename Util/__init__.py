@@ -429,7 +429,7 @@ class TasmotaDevice(QObject):
         return self.p['FullTopic'] in ["%prefix%/%topic%/", "%topic%/%prefix%/"]
 
     def update_property(self, k, v):
-        old = self.p.get('k')  # safely get the old value
+        old = self.p.get(k)  # safely get the old value
         if self.property_changed and (
             not old or old != v
         ):  # If property_changed callback is set then check previous value presence and
