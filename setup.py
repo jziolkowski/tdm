@@ -13,11 +13,7 @@ long_description = "{}\n\n# Changelog\n{}".format(readme, changelog)
 
 if os.name == "nt":
     scripts = None
-    entry_points = {
-        {
-            'console_scripts': ['tdmgr=tdmgr:main'],
-        }
-    }
+    entry_points = {{'console_scripts': ['tdmgr=tdmgr:main'],}}
 else:
     scripts = ['tdmgr.py']
     entry_points = None

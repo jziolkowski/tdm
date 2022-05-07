@@ -17,10 +17,7 @@ commands = {
     "ButtonRetain": {
         "description": "Add MQTT retain flag on button press",
         "type": "select",
-        "parameters": {
-            "0": {"description": "Disabled", "default": "True"},
-            "1": {"description": "Enabled"},
-        },
+        "parameters": {"0": {"description": "Disabled", "default": "True"}, "1": {"description": "Enabled"},},
     },
     "ButtonTopic": {
         "description": "MQTT button topic",
@@ -55,10 +52,7 @@ commands = {
     "PowerRetain": {
         "description": "Add MQTT power retain flag on status update",
         "type": "select",
-        "parameters": {
-            "0": {"description": "Disabled", "default": "True"},
-            "1": {"description": "Enabled"},
-        },
+        "parameters": {"0": {"description": "Disabled", "default": "True"}, "1": {"description": "Enabled"},},
     },
     "PulseTime": {
         "description": "Control the relay PulseTime",
@@ -87,9 +81,6 @@ commands = {
     "SwitchRetain": {
         "description": "Add MQTT retain flag on switch press",
         "type": "select",
-        "parameters": {
-            "0": {"description": "Disabled", "default": "True"},
-            "1": {"description": "Enabled"},
-        },
+        "parameters": {"0": {"description": "Disabled", "default": "True"}, "1": {"description": "Enabled"},},
     },
 }

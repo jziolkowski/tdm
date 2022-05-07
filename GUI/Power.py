@@ -31,10 +31,7 @@ class PowerDialog(QDialog):
         self.ci = Interlock(
             "Interlock",
             commands["Interlock"],
-            {
-                "Interlock": self.device.p.get("Interlock", "OFF"),
-                "Groups": self.device.p.get("Groups", ""),
-            },
+            {"Interlock": self.device.p.get("Interlock", "OFF"), "Groups": self.device.p.get("Groups", ""),},
         )
         vl_cmd.addWidget(self.ci)
 
@@ -64,9 +61,6 @@ class PowerDialog(QDialog):
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
         vl.addWidgets(
-            [
-                HTMLLabel("<a href={}/Buttons-and-Switches>Buttons and Switches</a>".format(docs_url)),
-                btns,
-            ]
+            [HTMLLabel("<a href={}/Buttons-and-Switches>Buttons and Switches</a>".format(docs_url)), btns,]
         )
         self.setLayout(vl)

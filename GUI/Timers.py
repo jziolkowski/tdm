@@ -177,8 +177,7 @@ class TimersDialog(QDialog):
                     desc['time'] = "at {}".format(time.toString("hh:mm"))
                 else:
                     desc['time'] = "somewhere between {} and {}".format(
-                        time.addSecs(wnd * -1).toString("hh:mm"),
-                        time.addSecs(wnd).toString("hh:mm"),
+                        time.addSecs(wnd * -1).toString("hh:mm"), time.addSecs(wnd).toString("hh:mm"),
                     )
             else:
                 prefix = "before" if pm == "-" else "after"

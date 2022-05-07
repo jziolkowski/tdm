@@ -24,41 +24,12 @@ base_view = ["Device"]
 default_views = {
     "Home": base_view + ["Module", "Power", "Color", "LoadAvg", "LinkCount", "Uptime"],
     "Health": base_view
-    + [
-        "Uptime",
-        "BootCount",
-        "RestartReason",
-        "LoadAvg",
-        "Sleep",
-        "MqttCount",
-        "LinkCount",
-        "Downtime",
-        "RSSI",
-    ],
+    + ["Uptime", "BootCount", "RestartReason", "LoadAvg", "Sleep", "MqttCount", "LinkCount", "Downtime", "RSSI",],
     "Firmware": base_view + ["Version", "Core", "SDK", "ProgramSize", "Free", "OtaUrl"],
     "Wifi": base_view
-    + [
-        "Hostname",
-        "Mac",
-        "IPAddress",
-        "Gateway",
-        "SSId",
-        "BSSId",
-        "Channel",
-        "RSSI",
-        "LinkCount",
-        "Downtime",
-    ],
+    + ["Hostname", "Mac", "IPAddress", "Gateway", "SSId", "BSSId", "Channel", "RSSI", "LinkCount", "Downtime",],
     "MQTT": base_view
-    + [
-        "Topic",
-        "FullTopic",
-        "CommandTopic",
-        "StatTopic",
-        "TeleTopic",
-        "FallbackTopic",
-        "GroupTopic",
-    ],
+    + ["Topic", "FullTopic", "CommandTopic", "StatTopic", "TeleTopic", "FallbackTopic", "GroupTopic",],
 }
 
 console_font = QFont("asd")
@@ -378,8 +349,7 @@ class CommandMultiSelect(QWidget):
             cb = QComboBox()
             for k, v in meta['parameters'].items():
                 cb.addItem(
-                    "{}: {} {}".format(k, v['description'], "(default)" if v.get("default") else ""),
-                    k,
+                    "{}: {} {}".format(k, v['description'], "(default)" if v.get("default") else ""), k,
                 )
             cb.setCurrentIndex(val)
             hl_input = HLayout(0)
@@ -420,8 +390,7 @@ class Interlock(QWidget):
         user_data = ["OFF", "ON"]
         for k, v in meta['parameters'].items():
             self.input.addItem(
-                "{} {}".format(v['description'], "(default)" if v.get("default") else ""),
-                user_data[int(k)],
+                "{} {}".format(v['description'], "(default)" if v.get("default") else ""), user_data[int(k)],
             )
 
         if value and value.get("Interlock", "OFF") == "OFF":

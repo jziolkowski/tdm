@@ -79,14 +79,7 @@ class ConsoleWidget(QDockWidget):
 
         self.cbMQTTLog = QComboBox()
         self.cbMQTTLog.addItems(
-            [
-                "Disabled",
-                "Error",
-                "Error/Info (default)",
-                "Error/Info/Debug",
-                "Error/Info/More debug",
-                "All",
-            ]
+            ["Disabled", "Error", "Error/Info (default)", "Error/Info/Debug", "Error/Info/More debug", "All",]
         )
         mqttlog = self.device.p.get("MqttLog", -1)
 

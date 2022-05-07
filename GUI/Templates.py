@@ -44,8 +44,7 @@ class TemplateDialog(QDialog):
                 gbx.setCurrentText(gpios.get(str(tpl['GPIO'][i])))
 
                 fl.addRow(
-                    "<font color='{}'>GPIO{}</font>".format('red' if g in [9, 10] else 'black', g),
-                    gbx,
+                    "<font color='{}'>GPIO{}</font>".format('red' if g in [9, 10] else 'black', g), gbx,
                 )
                 self.gb[i] = gbx
 

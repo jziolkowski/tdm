@@ -49,9 +49,6 @@ class ButtonsDialog(QDialog):
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
         vl.addWidgets(
-            [
-                HTMLLabel("<a href={}/Buttons-and-Switches>Buttons and Switches</a>".format(docs_url)),
-                btns,
-            ]
+            [HTMLLabel("<a href={}/Buttons-and-Switches>Buttons and Switches</a>".format(docs_url)), btns,]
         )
         self.setLayout(vl)

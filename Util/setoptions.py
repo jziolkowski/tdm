@@ -2,26 +2,17 @@ setoptions = {
     "0": {
         "description": "Save power state and use after restart",
         "type": "select",
-        "parameters": {
-            "0": {"description": "Disabled"},
-            "1": {"description": "Enabled", "default": "True"},
-        },
+        "parameters": {"0": {"description": "Disabled"}, "1": {"description": "Enabled", "default": "True"},},
     },
     "1": {
         "description": "Set button multipress mode",
         "type": "select",
-        "parameters": {
-            "0": {"description": "Disabled"},
-            "1": {"description": "Enabled", "default": "True"},
-        },
+        "parameters": {"0": {"description": "Disabled"}, "1": {"description": "Enabled", "default": "True"},},
     },
     "11": {
         "description": "Swap button single and double press functionality",
         "type": "select",
-        "parameters": {
-            "0": {"description": "Disabled", "default": "True"},
-            "1": {"description": "Enabled"},
-        },
+        "parameters": {"0": {"description": "Disabled", "default": "True"}, "1": {"description": "Enabled"},},
     },
     "13": {
         "description": "Allow immediate action on single button press",
@@ -52,17 +43,11 @@ setoptions = {
     "61": {
         "description": "Force local operation when ButtonTopic or SwitchTopic is set",
         "type": "select",
-        "parameters": {
-            "0": {"description": "Disabled", "default": "True"},
-            "1": {"description": "Enabled"},
-        },
+        "parameters": {"0": {"description": "Disabled", "default": "True"}, "1": {"description": "Enabled"},},
     },
     "63": {
         "description": "Scan relay power feedback state at restart",
         "type": "select",
-        "parameters": {
-            "0": {"description": "Enabled", "default": "True"},
-            "1": {"description": "Disabled"},
-        },
+        "parameters": {"0": {"description": "Enabled", "default": "True"}, "1": {"description": "Disabled"},},
     },
 }

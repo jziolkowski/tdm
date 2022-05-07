@@ -442,10 +442,7 @@ class ListWidget(QWidget):
     def configureOtaUrl(self):
         if self.device:
             url, ok = QInputDialog.getText(
-                self,
-                "Set OTA URL",
-                '100 chars max. Set to "1" to reset to default.',
-                text=self.device.p['OtaUrl'],
+                self, "Set OTA URL", '100 chars max. Set to "1" to reset to default.', text=self.device.p['OtaUrl'],
             )
             if ok:
                 self.mqtt.publish(self.device.cmnd_topic("otaurl"), payload=url)

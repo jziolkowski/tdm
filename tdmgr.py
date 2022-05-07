@@ -95,9 +95,7 @@ class MainWindow(QMainWindow):
         for mac in self.devices.childGroups():
             self.devices.beginGroup(mac)
             device = TasmotaDevice(
-                self.devices.value("topic"),
-                self.devices.value("full_topic"),
-                self.devices.value("device_name"),
+                self.devices.value("topic"), self.devices.value("full_topic"), self.devices.value("device_name"),
             )
             device.debug = self.devices.value("debug", False, bool)
             device.p['Mac'] = mac.replace("-", ":")
@@ -275,9 +273,7 @@ class MainWindow(QMainWindow):
         self.actToggleConnect.setText("Disconnect")
         self.statusBar().showMessage(
             "Connected to {}:{} as {}".format(
-                self.broker_hostname,
-                self.broker_port,
-                self.broker_username if self.broker_username else '[anonymous]',
+                self.broker_hostname, self.broker_port, self.broker_username if self.broker_username else '[anonymous]',
             )
         )
 
@@ -371,8 +367,7 @@ class MainWindow(QMainWindow):
 
                 for p in default_patterns + custom_patterns:
                     match = re.fullmatch(
-                        p.replace("%topic%", "(?P<topic>.*?)").replace("%prefix%", "(?P<prefix>.*?)") + ".*$",
-                        topic,
+                        p.replace("%topic%", "(?P<topic>.*?)").replace("%prefix%", "(?P<prefix>.*?)") + ".*$", topic,
                     )
                     if match:
                         # assume that the matched topic is the one configured in device settings
@@ -385,8 +380,7 @@ class MainWindow(QMainWindow):
                                 p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic) + "FullTopic"
                             )
                             logging.debug(
-                                "DISCOVERY: Asking an unknown device for FullTopic at %s",
-                                possible_topic_cmnd,
+                                "DISCOVERY: Asking an unknown device for FullTopic at %s", possible_topic_cmnd,
                             )
                             self.mqtt_queue.append([possible_topic_cmnd, ""])
 
@@ -407,9 +401,7 @@ class MainWindow(QMainWindow):
                             d.update_property("FullTopic", full_topic)
                         else:
                             logging.info(
-                                "DISCOVERY: Discovered topic=%s with fulltopic=%s",
-                                parsed['topic'],
-                                full_topic,
+                                "DISCOVERY: Discovered topic=%s with fulltopic=%s", parsed['topic'], full_topic,
                             )
                             d = TasmotaDevice(parsed['topic'], full_topic)
                             self.env.devices.append(d)
@@ -519,11 +511,7 @@ class MainWindow(QMainWindow):
     def auto_telemetry_period(self):
         curr_val = self.settings.value("autotelemetry", 5000, int)
         period, ok = QInputDialog.getInt(
-            self,
-            "Set AutoTelemetry period",
-            "Values under 5000ms may cause increased ESP LoadAvg",
-            curr_val,
-            1000,
+            self, "Set AutoTelemetry period", "Values under 5000ms may cause increased ESP LoadAvg", curr_val, 1000,
         )
         if ok:
             self.settings.setValue("autotelemetry", period)
