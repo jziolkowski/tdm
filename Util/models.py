@@ -281,7 +281,7 @@ class DeviceDelegate(QStyledItemDelegate):
                     elif rssi >= 75:
                         px = QPixmap(":/status_high.png")
 
-                px_y = (option.rect.height() - 24) / 2
+                px_y = (option.rect.height() - 24) // 2
                 p.drawPixmap(option.rect.x() + 2, option.rect.y() + px_y, px.scaled(24, 24))
 
                 p.drawText(
@@ -335,8 +335,8 @@ class DeviceDelegate(QStyledItemDelegate):
 
                 if num <= 4:
                     for i, k in enumerate(sorted(index.data().keys())):
-                        x = option.rect.x() + i * 24 + (option.rect.width() - num * 24) / 2
-                        y = option.rect.y() + (option.rect.height() - 24) / 2
+                        x = option.rect.x() + i * 24 + (option.rect.width() - num * 24) // 2
+                        y = option.rect.y() + (option.rect.height() - 24) // 2
 
                         if num == 1:
                             p.drawPixmap(x, y, 24, 24, QPixmap(":/P_{}".format(index.data()[k])))

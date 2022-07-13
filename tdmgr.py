@@ -94,9 +94,7 @@ class MainWindow(QMainWindow):
         for mac in self.devices.childGroups():
             self.devices.beginGroup(mac)
             device = TasmotaDevice(
-                self.devices.value("topic"),
-                self.devices.value("full_topic"),
-                self.devices.value("device_name"),
+                self.devices.value("topic"), self.devices.value("full_topic"), self.devices.value("device_name"),
             )
             device.debug = self.devices.value("debug", False, bool)
             device.p['Mac'] = mac.replace("-", ":")
@@ -231,17 +229,7 @@ class MainWindow(QMainWindow):
 
     def toggle_connect(self, state):
         if state and self.mqtt.state == self.mqtt.Disconnected:
-            self.broker_hostname = self.settings.value('hostname', 'localhost')
-            self.broker_port = self.settings.value('port', 1883, int)
-            self.broker_username = self.settings.value('username')
-            self.broker_password = self.settings.value('password')
-
-            self.mqtt.hostname = self.broker_hostname
-            self.mqtt.port = self.broker_port
-
-            if self.broker_username:
-                self.mqtt.setAuth(self.broker_username, self.broker_password)
-            self.mqtt.connectToHost()
+            self.mqtt_connect()
         elif not state and self.mqtt.state == self.mqtt.Connected:
             self.mqtt_disconnect()
 
@@ -251,10 +239,19 @@ class MainWindow(QMainWindow):
                 self.mqtt.publish(d.cmnd_topic('STATUS'), payload=8)
 
     def mqtt_connect(self):
+        self.broker_tls = self.settings.value("tls")
+        self.broker_tls_file = self.settings.value("tls_file")
+        self.broker_tls_insecure = self.settings.value("tls_insecure")
+        self.broker_tls_version = self.settings.value("tls_version")
         self.broker_hostname = self.settings.value('hostname', 'localhost')
         self.broker_port = self.settings.value('port', 1883, int)
         self.broker_username = self.settings.value('username')
         self.broker_password = self.settings.value('password')
+
+        if self.broker_tls:
+            self.mqtt.setSSL(self.broker_tls_file, self.broker_tls_insecure, self.broker_tls_version)
+        else:
+            self.mqtt.unsetSSL()
 
         self.mqtt.hostname = self.broker_hostname
         self.mqtt.port = self.broker_port
@@ -276,9 +273,7 @@ class MainWindow(QMainWindow):
         self.actToggleConnect.setText("Disconnect")
         self.statusBar().showMessage(
             "Connected to {}:{} as {}".format(
-                self.broker_hostname,
-                self.broker_port,
-                self.broker_username if self.broker_username else '[anonymous]',
+                self.broker_hostname, self.broker_port, self.broker_username if self.broker_username else '[anonymous]',
             )
         )
 
@@ -391,8 +386,7 @@ class MainWindow(QMainWindow):
                                 + "FullTopic"
                             )
                             logging.debug(
-                                "DISCOVERY: Asking an unknown device for FullTopic at %s",
-                                possible_topic_cmnd,
+                                "DISCOVERY: Asking an unknown device for FullTopic at %s", possible_topic_cmnd,
                             )
                             self.mqtt_queue.append([possible_topic_cmnd, ""])
 
@@ -418,9 +412,7 @@ class MainWindow(QMainWindow):
                             d.update_property("FullTopic", full_topic)
                         else:
                             logging.info(
-                                "DISCOVERY: Discovered topic=%s with fulltopic=%s",
-                                parsed['topic'],
-                                full_topic,
+                                "DISCOVERY: Discovered topic=%s with fulltopic=%s", parsed['topic'], full_topic,
                             )
                             d = TasmotaDevice(parsed['topic'], full_topic)
                             self.env.devices.append(d)
@@ -532,11 +524,7 @@ class MainWindow(QMainWindow):
     def auto_telemetry_period(self):
         curr_val = self.settings.value("autotelemetry", 5000, int)
         period, ok = QInputDialog.getInt(
-            self,
-            "Set AutoTelemetry period",
-            "Values under 5000ms may cause increased ESP LoadAvg",
-            curr_val,
-            1000,
+            self, "Set AutoTelemetry period", "Values under 5000ms may cause increased ESP LoadAvg", curr_val, 1000,
         )
         if ok:
             self.settings.setValue("autotelemetry", period)

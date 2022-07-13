@@ -1,5 +1,6 @@
 import logging
 import socket
+import ssl
 
 import paho.mqtt.client as mqtt
 from PyQt5 import QtCore
@@ -32,8 +33,12 @@ class MqttClient(QtCore.QObject):
         super(MqttClient, self).__init__(parent)
 
         self.m_hostname = ""
-        self.m_port = 1883
-        self.ssl = False
+        self.m_port = 8883
+        self.m_tls_is_set = False
+        self.m_tls = False
+        self.m_tls_insecure = True
+        self.m_tls_version = ssl.PROTOCOL_TLSv1_2
+        self.m_cert_file = "/cert/cert/ca.crt"
         self.m_keepAlive = 60
         self.m_cleanSession = True
         self.m_protocolVersion = MqttClient.MQTT_3_1
@@ -124,12 +129,33 @@ class MqttClient(QtCore.QObject):
         if self.m_hostname:
             self.connecting.emit()
             try:
+                # TLS setup
+                if self.m_tls and not self.m_tls_is_set:
+                    if self.m_tls_insecure:
+                        self.m_client.tls_set(tls_version=self.m_tls_version)
+                    else:
+                        self.m_client.tls_set(self.m_cert_file, tls_version=self.m_tls_version)
+
+                    self.m_client.tls_insecure_set(self.m_tls_insecure)
+                    self.m_tls_is_set = True
+
                 self.m_client.connect(self.m_hostname, port=self.port, keepalive=self.keepAlive)
 
                 self.state = MqttClient.Connecting
                 self.m_client.loop_start()
             except socket.timeout:
                 self.connectError.emit(3)
+
+    @QtCore.pyqtSlot()
+    def setSSL(self, broker_tls_file, broker_tls_insecure, broker_tls_version):
+        self.m_tls = True
+        self.m_tls_insecure = broker_tls_insecure
+        self.m_tls_version = broker_tls_version
+        self.m_cert_file = broker_tls_file
+
+    @QtCore.pyqtSlot()
+    def unsetSSL(self):
+        self.m_tls = False
 
     @QtCore.pyqtSlot()
     def disconnectFromHost(self):
