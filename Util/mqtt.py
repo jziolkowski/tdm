@@ -33,9 +33,9 @@ class MqttClient(QtCore.QObject):
         super(MqttClient, self).__init__(parent)
 
         self.m_hostname = ""
-        self.m_port = 8883
+        self.m_port = 1883
         self.m_tls_is_set = False
-        self.m_tls = False
+        self.ssl = False
         self.m_tls_insecure = True
         self.m_tls_version = ssl.PROTOCOL_TLSv1_2
         self.m_cert_file = "/cert/cert/ca.crt"
@@ -130,7 +130,7 @@ class MqttClient(QtCore.QObject):
             self.connecting.emit()
             try:
                 # TLS setup
-                if self.m_tls and not self.m_tls_is_set:
+                if self.ssl and not self.m_tls_is_set:
                     if self.m_tls_insecure:
                         self.m_client.tls_set(tls_version=self.m_tls_version)
                     else:
@@ -148,14 +148,14 @@ class MqttClient(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def setSSL(self, broker_tls_file, broker_tls_insecure, broker_tls_version):
-        self.m_tls = True
+        self.ssl = True
         self.m_tls_insecure = broker_tls_insecure
         self.m_tls_version = broker_tls_version
         self.m_cert_file = broker_tls_file
 
     @QtCore.pyqtSlot()
     def unsetSSL(self):
-        self.m_tls = False
+        self.ssl = False
 
     @QtCore.pyqtSlot()
     def disconnectFromHost(self):
