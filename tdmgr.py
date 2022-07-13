@@ -94,7 +94,9 @@ class MainWindow(QMainWindow):
         for mac in self.devices.childGroups():
             self.devices.beginGroup(mac)
             device = TasmotaDevice(
-                self.devices.value("topic"), self.devices.value("full_topic"), self.devices.value("device_name"),
+                self.devices.value("topic"),
+                self.devices.value("full_topic"),
+                self.devices.value("device_name"),
             )
             device.debug = self.devices.value("debug", False, bool)
             device.p['Mac'] = mac.replace("-", ":")
