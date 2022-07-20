@@ -383,21 +383,22 @@ class CommandMultiSelect(QWidget):
         desc.setWordWrap(True)
         vl.addWidget(desc)
 
-        for i, val in enumerate(value):
-            cb = QComboBox()
-            for k, v in meta['parameters'].items():
-                cb.addItem(
-                    "{}: {} {}".format(
-                        k, v['description'], "(default)" if v.get("default") else ""
-                    ),
-                    k,
-                )
-            cb.setCurrentIndex(val)
-            hl_input = HLayout(0)
-            hl_input.addWidgets([QLabel("{}: ".format(i + 1)), cb])
+        if value:
+            for i, val in enumerate(value):
+                cb = QComboBox()
+                for k, v in meta['parameters'].items():
+                    cb.addItem(
+                        "{}: {} {}".format(
+                            k, v['description'], "(default)" if v.get("default") else ""
+                        ),
+                        k,
+                    )
+                cb.setCurrentIndex(val)
+                hl_input = HLayout(0)
+                hl_input.addWidgets([QLabel("{}: ".format(i + 1)), cb])
 
-            self.inputs.append(cb)
-            vl.addLayout(hl_input)
+                self.inputs.append(cb)
+                vl.addLayout(hl_input)
 
         line = QFrame()
         line.setFrameStyle(QFrame.HLine)
