@@ -3,7 +3,15 @@ import ssl
 import string
 
 from PyQt5.QtCore import QSettings
-from PyQt5.QtWidgets import QCheckBox, QComboBox, QDialog, QFormLayout, QGroupBox, QLineEdit, QPushButton
+from PyQt5.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QFormLayout,
+    QGroupBox,
+    QLineEdit,
+    QPushButton,
+)
 
 from GUI import HLayout, SpinBox, VLayout
 

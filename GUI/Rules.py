@@ -260,8 +260,9 @@ class RulesWidget(QWidget):
             if msg.startswith("{"):
                 try:
                     payload = loads(msg)
-                except JSONDecodeError as e:
-                    # JSON parse exception means that most likely the rule contains an unescaped JSON payload
+                except JSONDecodeError:
+                    # JSON parse exception means that most likely the rule contains an unescaped
+                    # JSON payload
                     # TDM will attempt parsing using a regex instead of json.loads()
                     parsed_rule = re.match(
                         r"{\"(?P<rule>Rule(\d))\":\"(?P<enabled>ON|OFF)\",\"Once\":\""
