@@ -251,7 +251,9 @@ class MainWindow(QMainWindow):
         self.broker_password = self.settings.value('password')
 
         if self.broker_tls:
-            self.mqtt.setSSL(self.broker_tls_file, self.broker_tls_insecure, self.broker_tls_version)
+            self.mqtt.setSSL(
+                self.broker_tls_file, self.broker_tls_insecure, self.broker_tls_version
+            )
         else:
             self.mqtt.unsetSSL()
 
