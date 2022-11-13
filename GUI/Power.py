@@ -2,7 +2,7 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTabWidget, QWidget
 
 from GUI import Command, HTMLLabel, Interlock, PulseTime, VLayout, docs_url
-from Util import setoptions
+from Util.setoptions import setoptions
 from Util.commands import commands
 
 
