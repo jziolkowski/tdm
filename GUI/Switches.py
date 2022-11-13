@@ -2,8 +2,8 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTabWidget, QWidget
 
 from GUI import Command, CommandMultiSelect, HTMLLabel, VLayout, docs_url
-from Util.setoptions import setoptions
 from Util.commands import commands
+from Util.setoptions import setoptions
 
 
 class SwitchesDialog(QDialog):

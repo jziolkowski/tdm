@@ -1,19 +1,22 @@
+VENV_DIR = .venv
+
 isort:
-	isort -l 100 --up .
+	$(VENV_DIR)/bin/isort -l 100 --up .
 
 black-check:
-	black -S -l 100 --check .
+	$(VENV_DIR)/bin/black -S -l 100 --check .
 
 black:
-	black -S -l 100 .
+	$(VENV_DIR)/bin/black -S -l 100 .
 
 flake8:
-	flake8 .
+	$(VENV_DIR)/bin/flake8 .
 
 check-and-fix: isort black flake8
 
 dev-setup:
-	pip3 install --upgrade pip setuptools wheel
-	pip3 install -r requirements.txt -r requirements_dev.txt
+	python3 -m venv $(VENV_DIR)
+	$(VENV_DIR)/bin/pip install --upgrade pip wheel setuptools
+	$(VENV_DIR)/bin/pip install -r requirements_dev.txt -r requirements.txt
 
 
