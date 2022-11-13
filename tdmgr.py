@@ -119,7 +119,7 @@ class MainWindow(QMainWindow):
         self.build_mainmenu()
         # self.build_toolbars()
         self.setStatusBar(QStatusBar())
-
+        #
         pbSubs = QPushButton("Show subscriptions")
         pbSubs.setFlat(True)
         pbSubs.clicked.connect(self.showSubs)
@@ -241,9 +241,9 @@ class MainWindow(QMainWindow):
                 self.mqtt.publish(d.cmnd_topic('STATUS'), payload=8)
 
     def mqtt_connect(self):
-        self.broker_tls = self.settings.value("tls")
-        self.broker_tls_file = self.settings.value("tls_file")
-        self.broker_tls_insecure = self.settings.value("tls_insecure")
+        self.broker_tls = self.settings.value("tls", False, bool)
+        self.broker_tls_file = self.settings.value("tls_file", '', str)
+        self.broker_tls_insecure = self.settings.value("tls_insecure", False, bool)
         self.broker_tls_version = self.settings.value("tls_version")
         self.broker_hostname = self.settings.value('hostname', 'localhost')
         self.broker_port = self.settings.value('port', 1883, int)
