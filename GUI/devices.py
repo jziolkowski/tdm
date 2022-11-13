@@ -22,19 +22,21 @@ from PyQt5.QtWidgets import (
 )
 
 from GUI import SliderAction, SpinBox, TableView, Toolbar, VLayout, base_view, default_views
-from GUI.Buttons import ButtonsDialog
-from GUI.GPIO import GPIODialog
-from GUI.Modules import ModuleDialog
-from GUI.Power import PowerDialog
-from GUI.SetOptions import SetOptionsDialog
-from GUI.Switches import SwitchesDialog
-from GUI.Templates import TemplateDialog
-from GUI.Timers import TimersDialog
+from GUI.dialogs import (
+    ButtonsDialog,
+    GPIODialog,
+    ModulesDialog,
+    PowerDialog,
+    SetOptionsDialog,
+    SwitchesDialog,
+    TemplateDialog,
+    TimersDialog,
+)
 from Util import TasmotaDevice, initial_commands, resets
 from Util.models import DeviceDelegate
 
 
-class ListWidget(QWidget):
+class DevicesListWidget(QWidget):
     deviceSelected = pyqtSignal(TasmotaDevice)
     openRulesEditor = pyqtSignal()
     openConsole = pyqtSignal()
@@ -42,7 +44,7 @@ class ListWidget(QWidget):
     openWebUI = pyqtSignal()
 
     def __init__(self, parent, *args, **kwargs):
-        super(ListWidget, self).__init__(*args, **kwargs)
+        super(DevicesListWidget, self).__init__(*args, **kwargs)
         self.setWindowTitle("Devices list")
         self.setWindowState(Qt.WindowMaximized)
         self.setLayout(VLayout(margin=0, spacing=0))
@@ -431,7 +433,7 @@ class ListWidget(QWidget):
 
     def configureModule(self):
         if self.device:
-            dlg = ModuleDialog(self.device)
+            dlg = ModulesDialog(self.device)
             dlg.sendCommand.connect(self.mqtt.publish)
             dlg.exec_()
 

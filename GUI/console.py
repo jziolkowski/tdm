@@ -28,7 +28,7 @@ from PyQt5.QtWidgets import (
 )
 
 from GUI import GroupBoxV, HLayout, VLayout, console_font
-from Util import commands
+from Util.commands import commands
 
 
 class ConsoleWidget(QDockWidget):

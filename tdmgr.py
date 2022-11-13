@@ -22,8 +22,7 @@ from PyQt5.QtWidgets import (
     QStatusBar,
 )
 
-from GUI.ClearLWT import ClearLWTDialog
-from GUI.Prefs import PrefsDialog
+from GUI.dialogs import ClearLWTDialog, PrefsDialog
 
 try:
     from PyQt5.QtWebEngineWidgets import QWebEngineView
@@ -31,13 +30,11 @@ except ImportError:
     pass
 
 from GUI import Toolbar, VLayout, icons  # noqa: F401
-from GUI.Broker import BrokerDialog
-from GUI.BSSID import BSSIdDialog
-from GUI.Console import ConsoleWidget
-from GUI.Devices import ListWidget
-from GUI.Patterns import PatternsDialog
-from GUI.Rules import RulesWidget
-from GUI.Telemetry import TelemetryWidget
+from GUI.console import ConsoleWidget
+from GUI.devices import DevicesListWidget
+from GUI.dialogs import BrokerDialog, BSSIdDialog, PatternsDialog
+from GUI.rules import RulesWidget
+from GUI.telemetry import TelemetryWidget
 from Util import (
     TasmotaDevice,
     TasmotaEnvironment,
@@ -155,7 +152,7 @@ class MainWindow(QMainWindow):
         self.mqtt.messageSignal.connect(self.mqtt_message)
 
     def add_devices_tab(self):
-        self.devices_list = ListWidget(self)
+        self.devices_list = DevicesListWidget(self)
         sub = self.mdi.addSubWindow(self.devices_list)
         sub.setWindowState(Qt.WindowMaximized)
         self.devices_list.deviceSelected.connect(self.selectDevice)
