@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
     QTimeEdit,
 )
 
-from GUI import GroupBoxH, GroupBoxV, HLayout, VLayout
+from GUI.widgets import GroupBoxH, GroupBoxV, HLayout, VLayout
 
 # TODO: make time +/- default disabled
 # TODO: check disabling AM/PM suffix in time before/after
@@ -46,7 +46,7 @@ class TimersDialog(QDialog):
         self.cbTimerArm.clicked.connect(lambda x: self.describeTimer())
         self.cbTimerRpt = QCheckBox("Repeat")
         self.cbTimerRpt.clicked.connect(lambda x: self.describeTimer())
-        hl_tmr_arm_rpt.addWidgets([self.cbTimerArm, self.cbTimerRpt])
+        hl_tmr_arm_rpt.addElements(self.cbTimerArm, self.cbTimerRpt)
 
         hl_tmr_out_act = HLayout(0)
         self.cbxTimerOut = QComboBox()
@@ -55,7 +55,7 @@ class TimersDialog(QDialog):
         self.cbxTimerAction = QComboBox()
         self.cbxTimerAction.addItems(["Off", "On", "Toggle", "Rule"])
         self.cbxTimerAction.currentIndexChanged.connect(lambda x: self.describeTimer())
-        hl_tmr_out_act.addWidgets([self.cbxTimerOut, self.cbxTimerAction])
+        hl_tmr_out_act.addElements(self.cbxTimerOut, self.cbxTimerAction)
 
         self.TimerMode = QButtonGroup()
         rbTime = QRadioButton("Time")
@@ -66,7 +66,7 @@ class TimersDialog(QDialog):
         self.TimerMode.addButton(rbSunset, 2)
         self.TimerMode.buttonClicked.connect(lambda x: self.describeTimer())
         gbTimerMode = GroupBoxH("Mode")
-        gbTimerMode.addWidgets(self.TimerMode.buttons())
+        gbTimerMode.addElements(self.TimerMode.buttons())
 
         hl_tmr_time = HLayout(0)
         self.cbxTimerPM = QComboBox()
@@ -101,14 +101,11 @@ class TimersDialog(QDialog):
         self.lbTimerDesc.setWordWrap(True)
         gbTimerDesc.layout().addWidget(self.lbTimerDesc)
 
-        hl_tmr_time.addWidgets([self.cbxTimerPM, self.teTimerTime, lbWnd, self.cbxTimerWnd])
+        hl_tmr_time.addElements(self.cbxTimerPM, self.teTimerTime, lbWnd, self.cbxTimerWnd)
 
-        self.gbTimers.layout().addWidget(self.cbTimer)
-        self.gbTimers.layout().addLayout(hl_tmr_arm_rpt)
-        self.gbTimers.layout().addLayout(hl_tmr_out_act)
-        self.gbTimers.layout().addWidget(gbTimerMode)
-        self.gbTimers.layout().addLayout(hl_tmr_time)
-        self.gbTimers.layout().addLayout(hl_tmr_days)
+        self.gbTimers.addElements(
+            self.cbTimer, hl_tmr_arm_rpt, hl_tmr_out_act, gbTimerMode, hl_tmr_time, hl_tmr_days
+        )
 
         btns = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Close)
         reload = btns.addButton("Reload", QDialogButtonBox.ResetRole)
@@ -117,7 +114,7 @@ class TimersDialog(QDialog):
         btns.rejected.connect(self.reject)
         reload.clicked.connect(lambda: self.loadTimer(self.cbTimer.currentText()))
 
-        vl.addWidgets([self.gbTimers, gbTimerDesc, btns])
+        vl.addElements(self.gbTimers, gbTimerDesc, btns)
         self.setLayout(vl)
 
     def toggleTimers(self, state):

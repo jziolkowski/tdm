@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from GUI import GroupBoxV, HLayout, VLayout, console_font
+from GUI.widgets import GroupBoxV, HLayout, VLayout, console_font
 from Util.commands import commands
 
 
@@ -108,12 +108,11 @@ class ConsoleWidget(QDockWidget):
 
         self.cbMQTTLog.currentIndexChanged.connect(self.change_mqttlog)
 
-        hl_command_mqttlog.addWidgets(
-            [self.command, pbSave, pbClear, QLabel("MQTT Log level"), self.cbMQTTLog]
+        hl_command_mqttlog.addElements(
+            self.command, pbSave, pbClear, QLabel("MQTT Log level"), self.cbMQTTLog
         )
 
-        vl.addWidget(self.console)
-        vl.addLayout(hl_command_mqttlog)
+        vl.addElements(self.console, hl_command_mqttlog)
 
         w.setLayout(vl)
         self.setWidget(w)
@@ -252,12 +251,12 @@ class DeviceConsoleHistory(QDialog):
         gbxDevice = GroupBoxV("Commands history for:")
         gbDevice = QComboBox()
         gbDevice.addItems([d.p['FriendlyName1'] for d in devices])
-        gbxDevice.addWidget(gbDevice)
+        gbxDevice.addElements(gbDevice)
 
         self.lwCommands = QListWidget()
 
-        vl.addWidgets(
-            [gbxDevice, self.lwCommands, QLabel("Double-click a command to use it, ESC to close.")]
+        vl.addElements(
+            gbxDevice, self.lwCommands, QLabel("Double-click a command to use it, ESC to close.")
         )
         self.setLayout(vl)
 

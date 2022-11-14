@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QDir, QSettings
 from PyQt5.QtWidgets import QDialog, QHeaderView, QPushButton, QTableWidget, QTableWidgetItem
 
-from GUI import HLayout, VLayout
+from GUI.widgets import HLayout, VLayout
 
 
 class BSSIdDialog(QDialog):
@@ -36,9 +36,9 @@ class BSSIdDialog(QDialog):
         btnDel = QPushButton("Delete")
         btnCancel = QPushButton("Cancel")
         btnSave = QPushButton("Save")
-        hl_btns.addWidgets([btnAdd, btnDel, btnSave, btnCancel])
+        hl_btns.addElements(btnAdd, btnDel, btnSave, btnCancel)
         hl_btns.insertStretch(2)
-        vl.addLayout(hl_btns)
+        vl.addElements(hl_btns)
 
         self.setLayout(vl)
 

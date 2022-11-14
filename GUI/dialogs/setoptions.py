@@ -1,7 +1,7 @@
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QLabel
 
-from GUI import DictComboBox, GroupBoxV, VLayout
+from GUI.widgets import DictComboBox, GroupBoxV, VLayout
 from Util.setoptions import setoptions
 
 
@@ -21,7 +21,7 @@ class SetOptionsDialog(QDialog):
         for i, so in setoptions.items():
             gb = GroupBoxV("SetOption{}".format(i))
             cb = DictComboBox(so['parameters'])
-            gb.addWidgets([QLabel(so['description']), cb])
+            gb.addElements(QLabel(so['description']), cb)
 
             vl.addWidget(gb)
 

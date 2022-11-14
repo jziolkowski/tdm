@@ -1,7 +1,7 @@
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTabWidget, QWidget
 
-from GUI import Command, HTMLLabel, VLayout, docs_url
+from GUI.widgets import Command, HTMLLabel, VLayout, docs_url
 from Util.commands import commands
 from Util.setoptions import setoptions
 
@@ -48,12 +48,8 @@ class ButtonsDialog(QDialog):
         btns = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Close)
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
-        vl.addWidgets(
-            [
-                HTMLLabel(
-                    "<a href={}/Buttons-and-Switches>Buttons and Switches</a>".format(docs_url)
-                ),
-                btns,
-            ]
+        vl.addElements(
+            HTMLLabel("<a href={}/Buttons-and-Switches>Buttons and Switches</a>".format(docs_url)),
+            btns,
         )
         self.setLayout(vl)

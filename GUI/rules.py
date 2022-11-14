@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from GUI import CheckableAction, GroupBoxH, GroupBoxV, HLayout, Toolbar, VLayout
+from GUI.widgets import CheckableAction, GroupBoxH, GroupBoxV, HLayout, Toolbar, VLayout
 
 # TODO: triggers list
 # TODO: open/save rule from/to file
@@ -85,14 +85,14 @@ class RulesWidget(QWidget):
         self.gbTriggers = GroupBoxV("Triggers")
         self.triggers = QListWidget()
         self.triggers.setAlternatingRowColors(True)
-        self.gbTriggers.addWidget(self.triggers)
+        self.gbTriggers.addElements(self.triggers)
 
         self.gbEditor = GroupBoxV("Rule editor")
         self.editor = QPlainTextEdit()
         self.editor.setFont(fnt_mono)
         self.editor.setPlaceholderText("loading...")
         self.editor.textChanged.connect(self.update_counter)
-        self.gbEditor.addWidget(self.editor)
+        self.gbEditor.addElements(self.editor)
 
         # hl.addWidgets([self.gbTriggers, self.gbEditor])
         hl.addWidget(self.gbEditor)
@@ -110,7 +110,7 @@ class RulesWidget(QWidget):
         self.pbPollRTs = QPushButton("RuleTimers")
         self.pbPollRTs.setCheckable(True)
 
-        self.gbPolling.addWidgets([self.pbPollVars, self.pbPollMems, self.pbPollRTs])
+        self.gbPolling.addElements(self.pbPollVars, self.pbPollMems, self.pbPollRTs)
 
         # VARS
         # self.gbVars = GroupBoxV("VARs")
@@ -140,7 +140,7 @@ class RulesWidget(QWidget):
         # self.gbRTs.addWidget(self.lwRTs)
 
         # vl_helpers.addWidgets([self.gbPolling, self.gbVars, self.gbMems, self.gbRTs])
-        vl_helpers.addWidgets([self.gbPolling, self.lwVars, self.lwMems, self.lwRTs])
+        vl_helpers.addElements(self.gbPolling, self.lwVars, self.lwMems, self.lwRTs)
         vl_helpers.setStretch(1, 16)
         vl_helpers.setStretch(2, 16)
         vl_helpers.setStretch(3, 8)

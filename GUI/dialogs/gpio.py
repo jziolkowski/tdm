@@ -1,7 +1,7 @@
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QFormLayout, QGroupBox, QLabel, QMessageBox
 
-from GUI import DictComboBox, VLayout
+from GUI.widgets import DictComboBox, VLayout
 
 
 class GPIODialog(QDialog):
@@ -34,7 +34,7 @@ class GPIODialog(QDialog):
         gbxGPIO.setLayout(fl)
 
         vl = VLayout()
-        vl.addWidgets([gbxGPIO, btns])
+        vl.addElements(gbxGPIO, btns)
         self.setLayout(vl)
 
     def accept(self):

@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
     QPushButton,
 )
 
-from GUI import HLayout, SpinBox, VLayout
+from GUI.widgets import HLayout, SpinBox, VLayout
 
 
 class BrokerDialog(QDialog):
@@ -79,10 +79,10 @@ class BrokerDialog(QDialog):
         hlBtn = HLayout()
         btnSave = QPushButton("Save")
         btnCancel = QPushButton("Cancel")
-        hlBtn.addWidgets([btnSave, btnCancel])
+        hlBtn.addElements(btnSave, btnCancel)
 
         vl = VLayout()
-        vl.addWidgets([gbHost, gbtls, gbLogin, gbClientId, self.cbConnectStartup])
+        vl.addElements(gbHost, gbtls, gbLogin, gbClientId, self.cbConnectStartup)
         vl.addLayout(hlBtn)
 
         self.setLayout(vl)

@@ -29,12 +29,13 @@ try:
 except ImportError:
     pass
 
-from GUI import Toolbar, VLayout, icons  # noqa: F401
+from GUI import icons  # noqa: F401
 from GUI.console import ConsoleWidget
 from GUI.devices import DevicesListWidget
 from GUI.dialogs import BrokerDialog, BSSIdDialog, PatternsDialog
 from GUI.rules import RulesWidget
 from GUI.telemetry import TelemetryWidget
+from GUI.widgets import Toolbar, VLayout
 from Util import (
     TasmotaDevice,
     TasmotaEnvironment,
@@ -589,8 +590,9 @@ class MainWindow(QMainWindow):
                 frm_webui = QFrame()
                 frm_webui.setWindowTitle("WebUI [{}]".format(self.device.name))
                 frm_webui.setFrameShape(QFrame.StyledPanel)
-                frm_webui.setLayout(VLayout(0))
-                frm_webui.layout().addWidget(webui)
+                vl = VLayout(0)
+                vl.addElement(webui)
+                frm_webui.setLayout(vl)
                 frm_webui.destroyed.connect(self.updateMDI)
 
                 self.mdi.addSubWindow(frm_webui)
@@ -639,8 +641,6 @@ class MainWindow(QMainWindow):
 
 def start():
     app = QApplication(sys.argv)
-    # app.setOrganizationName("HRBL")
-    # app.setApplicationName("TDM")
     app.lastWindowClosed.connect(app.quit)
     app.setStyle("Fusion")
 
@@ -651,8 +651,9 @@ def start():
 
 
 if __name__ == '__main__':
-    try:
-        start()
-    except Exception as e:  # noqa: 722
-        logging.exception("EXCEPTION: %s", e)
-        logging.exception("TDM has crashed. Sorry for that. Check tdm.log for more information.")
+    start()
+    # try:
+    #     start()
+    # except Exception as e:  # noqa: 722
+    #     logging.exception("EXCEPTION: %s", e)
+    #     logging.exception("TDM has crashed. Sorry for that. Check tdm.log for more information.")

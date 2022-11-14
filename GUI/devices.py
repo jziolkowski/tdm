@@ -21,7 +21,6 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from GUI import SliderAction, SpinBox, TableView, Toolbar, VLayout, base_view, default_views
 from GUI.dialogs import (
     ButtonsDialog,
     GPIODialog,
@@ -32,6 +31,7 @@ from GUI.dialogs import (
     TemplateDialog,
     TimersDialog,
 )
+from GUI.widgets import SliderAction, SpinBox, TableView, Toolbar, VLayout, base_view, default_views
 from Util import TasmotaDevice, initial_commands, resets
 from Util.models import DeviceDelegate
 
@@ -47,7 +47,7 @@ class DevicesListWidget(QWidget):
         super(DevicesListWidget, self).__init__(*args, **kwargs)
         self.setWindowTitle("Devices list")
         self.setWindowState(Qt.WindowMaximized)
-        self.setLayout(VLayout(margin=0, spacing=0))
+        vl = VLayout(margin=0, spacing=0)
 
         self.mqtt = parent.mqtt
         self.env = parent.env
@@ -79,8 +79,7 @@ class DevicesListWidget(QWidget):
 
         self.pwm_sliders = []
 
-        self.layout().addWidget(self.tb)
-        self.layout().addWidget(self.tb_relays)
+        vl.addElements(self.tb, self.tb_relays)
         # self.layout().addWidget(self.tb_filter)
 
         self.device_list = TableView()
@@ -103,9 +102,9 @@ class DevicesListWidget(QWidget):
         self.device_list.sortByColumn(self.model.columnIndex("Device"), Qt.AscendingOrder)
         self.device_list.setContextMenuPolicy(Qt.CustomContextMenu)
         self.device_list.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.layout().addWidget(self.device_list)
 
-        self.layout().addWidget(self.tb_views)
+        vl.addElements(self.device_list, self.tb_views)
+        self.setLayout(vl)
 
         self.device_list.clicked.connect(self.select_device)
         self.device_list.customContextMenuRequested.connect(self.show_list_ctx_menu)

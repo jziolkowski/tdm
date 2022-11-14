@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QDir, QSettings, Qt
 from PyQt5.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QFormLayout, QGroupBox
 
-from GUI import SpinBox, VLayout
+from GUI.widgets import SpinBox, VLayout
 
 
 class PrefsDialog(QDialog):
@@ -52,6 +52,6 @@ class PrefsDialog(QDialog):
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
 
-        vl.addWidgets([gbDevices, gbConsole, btns])
+        vl.addElements(gbDevices, gbConsole, btns)
 
         self.setLayout(vl)

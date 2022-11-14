@@ -1,7 +1,7 @@
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QMessageBox
 
-from GUI import DictComboBox, GroupBoxV, VLayout
+from GUI.widgets import DictComboBox, GroupBoxV, VLayout
 
 
 class ModulesDialog(QDialog):
@@ -20,10 +20,10 @@ class ModulesDialog(QDialog):
         gbxModules = GroupBoxV("Select Module")
         self.gb = DictComboBox(self.device.modules)
         self.gb.setCurrentText(self.device.modules[str(self.device.p['Module'])])
-        gbxModules.addWidget(self.gb)
+        gbxModules.addElements(self.gb)
 
         vl = VLayout()
-        vl.addWidgets([gbxModules, btns])
+        vl.addElements(gbxModules, btns)
         self.setLayout(vl)
 
     def accept(self):
