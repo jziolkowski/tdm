@@ -22,7 +22,7 @@ class BrokerDialog(QDialog):
 
         self.setWindowTitle("MQTT Broker")
 
-        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, 'tdm', 'tdm')
+        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
 
         gbtls = QGroupBox(" TLS [optional]")
         tlsLayout = QFormLayout()
@@ -112,4 +112,4 @@ class BrokerDialog(QDialog):
         self.done(QDialog.Accepted)
 
     def random_generator(self, size=6, chars=string.ascii_uppercase + string.digits):
-        return ''.join(random.choice(chars) for x in range(size))
+        return "".join(random.choice(chars) for x in range(size))

@@ -9,13 +9,13 @@ with open("README.md", "r") as rme:
 with open("CHANGELOG.md", "r") as clog:
     changelog = clog.read()
 
-long_description = "{}\n\n# Changelog\n{}".format(readme, changelog)
+long_description = f"{readme}\n\n# Changelog\n{changelog}"
 
 if os.name == "nt":
     scripts = None
-    entry_points = {{'console_scripts': ['tdmgr=tdmgr:main']}}
+    entry_points = {{"console_scripts": ["tdmgr=tdmgr:main"]}}
 else:
-    scripts = ['tdmgr.py']
+    scripts = ["tdmgr.py"]
     entry_points = None
 
 
@@ -26,19 +26,19 @@ def get_version():
 
 
 setup(
-    name='tdmgr',
+    name="tdmgr",
     version=get_version(),
-    url='https://github.com/jziolkowski/tdm',
-    license='GPLv3',
-    author='jziolkowski',
-    author_email='jacek@ziolkowscy.com',
-    description='Tasmota Device Manager is able to find, monitor and do magic things. The easy way.'
-    ' Like a Superhero.',
+    url="https://github.com/jziolkowski/tdm",
+    license="GPLv3",
+    author="jziolkowski",
+    author_email="jacek@ziolkowscy.com",
+    description="Tasmota Device Manager is able to find, monitor and do magic things. The easy way."
+    " Like a Superhero.",
     long_description=long_description,
-    long_description_content_type='text/markdown',
-    python_requires='>=3.6',
+    long_description_content_type="text/markdown",
+    python_requires=">=3.6",
     install_requires=["paho_mqtt>=1.4", "PyQt5>=5.14.2,<6"],
-    packages=['GUI', 'Util'],
+    packages=["GUI", "Util"],
     entry_points=entry_points,
     scripts=scripts,
     classifiers=[

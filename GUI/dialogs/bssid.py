@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QDir, QSettings
+from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QDialog, QHeaderView, QPushButton, QTableWidget, QTableWidgetItem
 
 from GUI.widgets import HLayout, VLayout
@@ -11,7 +11,7 @@ class BSSIdDialog(QDialog):
         self.setMinimumWidth(400)
         self.setWindowTitle("BSSId aliases")
 
-        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
+        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
         self.settings.beginGroup("BSSId")
 
         vl = VLayout()

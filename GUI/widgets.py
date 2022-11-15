@@ -1,102 +1,15 @@
 from typing import Callable, List, Optional, Union
 
-from PyQt5.QtWidgets import QBoxLayout, QGroupBox, QHBoxLayout, QVBoxLayout
-
-
-class LayoutMixin(QBoxLayout):
-    def __init__(
-        self,
-        margin: Union[int, List[int]] = 3,
-        spacing: int = 3,
-        label: Optional[str] = None,
-        *args,
-        **kwargs
-    ):
-        super(LayoutMixin, self).__init__(*args, **kwargs)
-        if isinstance(margin, int):
-            self.setContentsMargins(margin, margin, margin, margin)
-        elif isinstance(margin, list):
-            self.setContentsMargins(margin[0], margin[1], margin[2], margin[3])
-
-        self.setSpacing(spacing)
-
-        if label:
-            self.addElements(QLabel(label))
-
-    def addElements(self, *elements):
-        for element in elements:
-            if isinstance(element, QWidget):
-                self.layout().addWidget(element)
-            elif isinstance(element, QBoxLayout):
-                self.layout().addLayout(element)
-
-    def addSpacer(self):
-        spacer = QWidget()
-        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.addElements(spacer)
-
-
-class VLayout(QVBoxLayout, LayoutMixin):
-    def __init__(
-        self,
-        margin: Union[int, List[int]] = 3,
-        spacing: int = 3,
-        label: Optional[str] = None,
-        *args,
-        **kwargs
-    ):
-        super(VLayout, self).__init__(margin, spacing, label, *args, **kwargs)
-
-
-class HLayout(QHBoxLayout, LayoutMixin):
-    def __init__(
-        self,
-        margin: Union[int, List[int]] = 3,
-        spacing: int = 3,
-        label: Optional[str] = None,
-        *args,
-        **kwargs
-    ):
-        super(HLayout, self).__init__(margin, spacing, label, *args, **kwargs)
-
-
-class GroupBoxBase(QGroupBox):
-    def __init__(self, title: str, *args, **kwargs):
-        super(GroupBoxBase, self).__init__(*args, **kwargs)
-        self.setTitle(title)
-
-    def addElements(self, *elements):
-        self.layout: Callable[..., Union[VLayout, HLayout]]
-        self.layout().addElements(*elements)
-
-
-class GroupBoxV(GroupBoxBase):
-    def __init__(
-        self, title: str, margin: Union[int, List[int]] = 3, spacing: int = 3, *args, **kwargs
-    ):
-        super(GroupBoxV, self).__init__(title, *args, **kwargs)
-
-        layout = VLayout(margin, spacing)
-        self.setLayout(layout)
-
-
-class GroupBoxH(GroupBoxBase):
-    def __init__(
-        self, title: str, margin: Union[int, List[int]] = 3, spacing: int = 3, *args, **kwargs
-    ):
-        super(GroupBoxH, self).__init__(title, *args, **kwargs)
-
-        layout = HLayout(margin, spacing)
-        self.setLayout(layout)
-
-
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QAction,
+    QBoxLayout,
     QComboBox,
     QDoubleSpinBox,
     QFrame,
+    QGroupBox,
+    QHBoxLayout,
     QHeaderView,
     QLabel,
     QLineEdit,
@@ -105,6 +18,7 @@ from PyQt5.QtWidgets import (
     QSpinBox,
     QTableView,
     QToolBar,
+    QVBoxLayout,
     QWidget,
     QWidgetAction,
 )
@@ -154,6 +68,93 @@ console_font = QFont("asd")
 console_font.setStyleHint(QFont.TypeWriter)
 
 docs_url = "https://tasmota.github.io/docs/"
+
+
+class LayoutMixin(QBoxLayout):
+    def __init__(
+        self,
+        margin: Union[int, List[int]] = 3,
+        spacing: int = 3,
+        label: Optional[str] = None,
+        *args,
+        **kwargs,
+    ):
+        super(LayoutMixin, self).__init__(*args, **kwargs)
+        if isinstance(margin, int):
+            self.setContentsMargins(margin, margin, margin, margin)
+        elif isinstance(margin, list):
+            self.setContentsMargins(margin[0], margin[1], margin[2], margin[3])
+
+        self.setSpacing(spacing)
+
+        if label:
+            self.addElements(QLabel(label))
+
+    def addElements(self, *elements):
+        for element in elements:
+            if isinstance(element, QWidget):
+                self.layout().addWidget(element)
+            elif isinstance(element, QBoxLayout):
+                self.layout().addLayout(element)
+
+    def addSpacer(self):
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.addElements(spacer)
+
+
+class VLayout(QVBoxLayout, LayoutMixin):
+    def __init__(
+        self,
+        margin: Union[int, List[int]] = 3,
+        spacing: int = 3,
+        label: Optional[str] = None,
+        *args,
+        **kwargs,
+    ):
+        super(VLayout, self).__init__(margin, spacing, label, *args, **kwargs)
+
+
+class HLayout(QHBoxLayout, LayoutMixin):
+    def __init__(
+        self,
+        margin: Union[int, List[int]] = 3,
+        spacing: int = 3,
+        label: Optional[str] = None,
+        *args,
+        **kwargs,
+    ):
+        super(HLayout, self).__init__(margin, spacing, label, *args, **kwargs)
+
+
+class GroupBoxBase(QGroupBox):
+    def __init__(self, title: str, *args, **kwargs):
+        super(GroupBoxBase, self).__init__(*args, **kwargs)
+        self.setTitle(title)
+
+    def addElements(self, *elements):
+        self.layout: Callable[..., Union[VLayout, HLayout]]
+        self.layout().addElements(*elements)
+
+
+class GroupBoxV(GroupBoxBase):
+    def __init__(
+        self, title: str, margin: Union[int, List[int]] = 3, spacing: int = 3, *args, **kwargs
+    ):
+        super(GroupBoxV, self).__init__(title, *args, **kwargs)
+
+        layout = VLayout(margin, spacing)
+        self.setLayout(layout)
+
+
+class GroupBoxH(GroupBoxBase):
+    def __init__(
+        self, title: str, margin: Union[int, List[int]] = 3, spacing: int = 3, *args, **kwargs
+    ):
+        super(GroupBoxH, self).__init__(title, *args, **kwargs)
+
+        layout = HLayout(margin, spacing)
+        self.setLayout(layout)
 
 
 class TableView(QTableView):
@@ -209,9 +210,9 @@ class SpinBox(QSpinBox):
     def __init__(self, *args, **kwargs):
         super(SpinBox, self).__init__(*args, **kwargs)
         self.setButtonSymbols(self.NoButtons)
-        self.setMinimum(kwargs.get('minimum', 1))
-        self.setMaximum(kwargs.get('maximum', 65535))
-        self.setSingleStep(kwargs.get('singleStep', 1))
+        self.setMinimum(kwargs.get("minimum", 1))
+        self.setMaximum(kwargs.get("maximum", 65535))
+        self.setSingleStep(kwargs.get("singleStep", 1))
         self.setAlignment(Qt.AlignCenter)
 
 
@@ -219,9 +220,9 @@ class DoubleSpinBox(QDoubleSpinBox):
     def __init__(self, *args, **kwargs):
         super(DoubleSpinBox, self).__init__(*args, **kwargs)
         self.setButtonSymbols(self.NoButtons)
-        self.setMinimum(kwargs.get('minimum', 1))
-        self.setMaximum(kwargs.get('maximum', 65535))
-        self.setDecimals(kwargs.get('precision', 1))
+        self.setMinimum(kwargs.get("minimum", 1))
+        self.setMaximum(kwargs.get("maximum", 65535))
+        self.setDecimals(kwargs.get("precision", 1))
         self.setAlignment(Qt.AlignCenter)
 
 
@@ -238,7 +239,7 @@ class Toolbar(QToolBar):
         iconsize=32,
         label_position=Qt.ToolButtonTextUnderIcon,
         *args,
-        **kwargs
+        **kwargs,
     ):
         super(Toolbar, self).__init__(*args, **kwargs)
         self.setMovable(False)
@@ -273,7 +274,7 @@ class DictComboBox(QComboBox):
 
 
 class SliderAction(QWidgetAction):
-    def __init__(self, parent, label='', *args, **kwargs):
+    def __init__(self, parent, label="", *args, **kwargs):
         super(SliderAction, self).__init__(parent, *args, **kwargs)
 
         w = QWidget()
@@ -297,7 +298,7 @@ class CmdWikiUrl(QLabel):
         self.setTextFormat(Qt.RichText)
         self.setTextInteractionFlags(Qt.TextBrowserInteraction)
         self.setOpenExternalLinks(True)
-        self.setText("<a href={}Commands/#{}>{}</a>".format(docs_url, cmd.lower(), title or cmd))
+        self.setText(f"<a href={docs_url}Commands/#{cmd.lower()}>{title or cmd}</a>")
 
 
 class HTMLLabel(QLabel):
@@ -319,40 +320,40 @@ class Command(QWidget):
         vl = VLayout()
 
         hl = HLayout(0)
-        hl.addWidget(QLabel("<b>{}</b>".format(command)))
+        hl.addWidget(QLabel(f"<b>{command}</b>"))
         hl.addStretch(1)
         hl.addWidget(CmdWikiUrl(command, "Wiki"))
 
         hl_input = HLayout(0)
 
-        if meta['type'] == "select":
+        if meta["type"] == "select":
             self.input = QComboBox()
-            for k, v in meta['parameters'].items():
+            for k, v in meta["parameters"].items():
                 self.input.addItem(
-                    "{} {}".format(v['description'], "(default)" if v.get("default") else ""), k
+                    f"{v['description']} {'(default)' if v.get('default') else ''}", k
                 )
 
-            if meta.get('editable'):
+            if meta.get("editable"):
                 self.input.setEditable(True)
 
             if value:
                 self.input.setCurrentIndex(value)
 
-        elif meta['type'] == "value":
+        elif meta["type"] == "value":
             self.input = SpinBox(
-                minimum=int(meta['parameters']['min']), maximum=int(meta['parameters']['max'])
+                minimum=int(meta["parameters"]["min"]), maximum=int(meta["parameters"]["max"])
             )
             self.input.setMinimumWidth(75)
             if value:
                 self.input.setValue(value)
             hl_input.addStretch(1)
-            default = meta['parameters'].get('default')
+            default = meta["parameters"].get("default")
             if default:
-                hl_input.addWidget(QLabel("Default: {}".format(default)))
+                hl_input.addWidget(QLabel(f"Default: {default}"))
         hl_input.addWidget(self.input)
 
         vl.addLayout(hl)
-        desc = QLabel(meta['description'])
+        desc = QLabel(meta["description"])
         desc.setWordWrap(True)
         vl.addWidget(desc)
         vl.addLayout(hl_input)
@@ -375,22 +376,20 @@ class CommandMultiSelect(QWidget):
         vl = VLayout()
 
         hl = HLayout(0)
-        hl.addWidget(QLabel("<b>{}</b>".format(command)))
+        hl.addWidget(QLabel(f"<b>{command}</b>"))
         hl.addStretch(1)
         hl.addWidget(CmdWikiUrl(command, "Wiki"))
         vl.addLayout(hl)
 
-        desc = QLabel(meta['description'])
+        desc = QLabel(meta["description"])
         desc.setWordWrap(True)
         vl.addWidget(desc)
 
         for i, val in enumerate(value):
             cb = QComboBox()
-            for k, v in meta['parameters'].items():
+            for k, v in meta["parameters"].items():
                 cb.addItem(
-                    "{}: {} {}".format(
-                        k, v['description'], "(default)" if v.get("default") else ""
-                    ),
+                    f"{k}: {v['description']} {'(default)' if v.get('default') else ''}",
                     k,
                 )
             cb.setCurrentIndex(val)
@@ -423,16 +422,16 @@ class Interlock(QWidget):
         hl.addWidget(CmdWikiUrl(command, "Wiki"))
         vl.addLayout(hl)
 
-        desc = QLabel(meta['description'])
+        desc = QLabel(meta["description"])
         desc.setWordWrap(True)
         vl.addWidget(desc)
 
         self.input = QComboBox()
 
         user_data = ["OFF", "ON"]
-        for k, v in meta['parameters'].items():
+        for k, v in meta["parameters"].items():
             self.input.addItem(
-                "{} {}".format(v['description'], "(default)" if v.get("default") else ""),
+                "{} {}".format(v["description"], "(default)" if v.get("default") else ""),
                 user_data[int(k)],
             )
 
@@ -453,7 +452,7 @@ class Interlock(QWidget):
                     group_value = group_value_list[i]
                     le.setText(group_value)
             hl_group = HLayout(0)
-            hl_group.addElements(QLabel("Group {}".format(i + 1)), le)
+            hl_group.addElements(QLabel(f"Group {i + 1}"), le)
             vl_groups.addLayout(hl_group)
             self.groups.append(le)
         vl.addLayout(vl_groups)
@@ -475,19 +474,19 @@ class PulseTime(QWidget):
         vl = VLayout()
 
         hl = HLayout(0)
-        hl.addWidget(QLabel("<b>{}</b>".format(command)))
+        hl.addWidget(QLabel(f"<b>{command}</b>"))
         hl.addStretch(1)
         hl.addWidget(CmdWikiUrl(command, "Wiki"))
         vl.addLayout(hl)
 
-        desc = QLabel(meta['description'])
+        desc = QLabel(meta["description"])
         desc.setWordWrap(True)
         vl.addWidget(desc)
 
         vl_groups = VLayout(0)
         for k in sorted(list(value.keys())):
             sb = SpinBox(
-                minimum=int(meta['parameters']['min']), maximum=int(meta['parameters']['max'])
+                minimum=int(meta["parameters"]["min"]), maximum=int(meta["parameters"]["max"])
             )
             sb.setValue(value[k])
             hl_group = HLayout(0)

@@ -29,7 +29,7 @@ class TimersDialog(QDialog):
         self.device = device
         self.timers = {}
         self.armKey = "Arm"
-        self.setWindowTitle("Timers [{}]".format(self.device.name))
+        self.setWindowTitle(f"Timers [{self.device.name}]")
 
         vl = VLayout()
 
@@ -38,7 +38,7 @@ class TimersDialog(QDialog):
         self.gbTimers.toggled.connect(self.toggleTimers)
 
         self.cbTimer = QComboBox()
-        self.cbTimer.addItems(["Timer{}".format(nr + 1) for nr in range(16)])
+        self.cbTimer.addItems([f"Timer{nr + 1}" for nr in range(16)])
         self.cbTimer.currentTextChanged.connect(self.loadTimer)
 
         hl_tmr_arm_rpt = HLayout(0)
@@ -59,8 +59,8 @@ class TimersDialog(QDialog):
 
         self.TimerMode = QButtonGroup()
         rbTime = QRadioButton("Time")
-        rbSunrise = QRadioButton("Sunrise ({})".format(self.device.p['Sunrise']))
-        rbSunset = QRadioButton("Sunset ({})".format(self.device.p['Sunset']))
+        rbSunrise = QRadioButton(f"Sunrise ({self.device.p['Sunrise']})")
+        rbSunset = QRadioButton(f"Sunset ({self.device.p['Sunset']})")
         self.TimerMode.addButton(rbTime, 0)
         self.TimerMode.addButton(rbSunrise, 1)
         self.TimerMode.addButton(rbSunset, 2)
@@ -118,7 +118,7 @@ class TimersDialog(QDialog):
         self.setLayout(vl)
 
     def toggleTimers(self, state):
-        self.sendCommand.emit(self.device.cmnd_topic('timers'), "ON" if state else "OFF")
+        self.sendCommand.emit(self.device.cmnd_topic("timers"), "ON" if state else "OFF")
 
     def loadTimer(self, timer=""):
         if not timer:
@@ -127,23 +127,23 @@ class TimersDialog(QDialog):
 
         if payload:
             self.blockSignals(True)
-            if 'Enable' in payload:
-                self.cbTimerArm.setChecked(payload['Enable'])
+            if "Enable" in payload:
+                self.cbTimerArm.setChecked(payload["Enable"])
                 self.armKey = "Enable"
             else:
-                self.cbTimerArm.setChecked(payload['Arm'])
+                self.cbTimerArm.setChecked(payload["Arm"])
                 self.armKey = "Arm"
-            self.cbTimerRpt.setChecked(payload['Repeat'])
-            self.cbxTimerAction.setCurrentIndex(payload['Action'])
+            self.cbTimerRpt.setChecked(payload["Repeat"])
+            self.cbxTimerAction.setCurrentIndex(payload["Action"])
 
-            output = payload.get('Output')
+            output = payload.get("Output")
             if output:
                 self.cbxTimerOut.setEnabled(True)
                 self.cbxTimerOut.setCurrentIndex(output - 1)
             else:
                 self.cbxTimerOut.setEnabled(False)
 
-            mode = payload.get('Mode', 0)
+            mode = payload.get("Mode", 0)
             self.TimerMode.button(mode).setChecked(True)
 
             h, m = map(int, payload["Time"].split(":"))
@@ -151,8 +151,8 @@ class TimersDialog(QDialog):
                 self.cbxTimerPM.setCurrentText("-")
                 h *= -1
             self.teTimerTime.setTime(QTime(h, m))
-            self.cbxTimerWnd.setCurrentText(str(payload['Window']).zfill(2))
-            for wd, v in enumerate(payload['Days']):
+            self.cbxTimerWnd.setCurrentText(str(payload["Window"]).zfill(2))
+            for wd, v in enumerate(payload["Days"]):
                 self.TimerWeekday.button(wd).setChecked(int(v))
 
             self.blockSignals(False)
@@ -160,7 +160,7 @@ class TimersDialog(QDialog):
 
     def describeTimer(self):
         if self.cbTimerArm.isChecked():
-            desc = {'days': '', 'repeat': '', 'timer': self.cbTimer.currentText().upper()}
+            desc = {"days": "", "repeat": "", "timer": self.cbTimer.currentText().upper()}
             repeat = self.cbTimerRpt.isChecked()
             out = self.cbxTimerOut.currentText()
             act = self.cbxTimerAction.currentText()
@@ -171,54 +171,58 @@ class TimersDialog(QDialog):
 
             if mode == 0:
                 if wnd == 0:
-                    desc['time'] = "at {}".format(time.toString("hh:mm"))
+                    desc["time"] = f"at {time.toString('hh:mm')}"
                 else:
-                    desc['time'] = "somewhere between {} and {}".format(
-                        time.addSecs(wnd * -1).toString("hh:mm"),
-                        time.addSecs(wnd).toString("hh:mm"),
+                    desc["time"] = (
+                        "somewhere between {time.addSecs(wnd * -1).toString('hh:mm')} "
+                        "and {time.addSecs(wnd).toString('hh:mm')}"
                     )
             else:
                 prefix = "before" if pm == "-" else "after"
                 mode_desc = "sunrise" if mode == 1 else "sunset"
-                window = "somewhere in a {} minute window centered around ".format(wnd // 30)
-                desc['time'] = "{}h{}m {} {}".format(time.hour(), time.minute(), prefix, mode_desc)
+                window = f"somewhere in a {wnd // 30} minute window centered around "
+                desc["time"] = f"{time.hour()}h{time.minute()}m {prefix} {mode_desc}"
 
                 if wnd > 0:
-                    desc['time'] = window + desc['time']
+                    desc["time"] = window + desc["time"]
 
             if repeat:
                 day_names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
                 days = [cb.isChecked() for cb in self.TimerWeekday.buttons()]
                 if days.count(True) == 7:
-                    desc['days'] = "everyday"
+                    desc["days"] = "everyday"
                 else:
                     days_list = [day_names[d] for d in range(7) if days[d]]
-                    desc['days'] = "on every {}".format(", ".join(days_list))
+                    desc["days"] = f"on every {', '.join(days_list)}"
             else:
-                desc['repeat'] = "only ONCE"
+                desc["repeat"] = "only ONCE"
 
             if act == "Rule":
-                desc['action'] = "trigger clock#Timer={}".format(self.cbTimer.currentIndex() + 1)
-                text = "{timer} will {action} {time} {days} {repeat}".format(**desc)
+                desc["action"] = f"trigger clock#Timer={self.cbTimer.currentIndex() + 1}"
+                text = (
+                    f"{desc['timer']} will {desc['action']} {desc['time']} {desc['days']} "
+                    f"{desc['repeat']}"
+                )
 
             elif self.cbxTimerOut.count() > 0:
 
                 if act == "Toggle":
-                    desc['action'] = "TOGGLE {}".format(out.upper())
+                    desc["action"] = f"TOGGLE {out.upper()}"
                 else:
-                    desc['action'] = "set {} to {}".format(out.upper(), act.upper())
+                    desc["action"] = f"set {out.upper()} to {act.upper()}"
 
-                text = "{timer} will {action} {time} {days} {repeat}".format(**desc)
-            else:
-                text = "{timer} will do nothing because there are no relays configured.".format(
-                    **desc
+                text = (
+                    f"{desc['timer']} will {desc['action']} {desc['time']} {desc['days']} "
+                    f"{desc['repeat']}"
                 )
+            else:
+                text = f"{desc['timer']} will do nothing because there are no relays configured."
 
             self.lbTimerDesc.setText(text)
 
         else:
             self.lbTimerDesc.setText(
-                "{} is not armed, it will do nothing.".format(self.cbTimer.currentText().upper())
+                f"{self.cbTimer.currentText().upper()} is not armed, it will do nothing."
             )
 
     def saveTimer(self):
@@ -234,7 +238,7 @@ class TimersDialog(QDialog):
         }
         self.sendCommand.emit(self.device.cmnd_topic(self.cbTimer.currentText()), dumps(payload))
         QMessageBox.information(
-            self, "Timer saved", "{} data sent to device.".format(self.cbTimer.currentText())
+            self, "Timer saved", f"{self.cbTimer.currentText()} data sent to device."
         )
 
     @pyqtSlot(str, str)
@@ -263,12 +267,12 @@ class TimersDialog(QDialog):
                     first = all[0]
 
                 except JSONDecodeError as e:
-                    error = "Timer loading error", "Can't load the timer from device.\n{}".format(e)
+                    error = "Timer loading error", f"Can't load the timer from device.\n{e}"
                     logging.critical(error)
                     QMessageBox.critical(self, error)
 
                 else:
-                    if first == 'Timers':
+                    if first == "Timers":
                         self.gbTimers.setChecked(payload[first] == "ON")
 
                         if len(all) > 1:
@@ -276,7 +280,7 @@ class TimersDialog(QDialog):
                             self.timers.update(payload)
                             self.loadTimer(self.cbTimer.currentText())
 
-                    elif first.startswith('Timers'):
+                    elif first.startswith("Timers"):
                         self.timers.update(payload[first])
-                        if first == 'Timers4':
+                        if first == "Timers4":
                             self.loadTimer(self.cbTimer.currentText())

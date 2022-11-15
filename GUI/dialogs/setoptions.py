@@ -10,7 +10,7 @@ class SetOptionsDialog(QDialog):
 
     def __init__(self, device, *args, **kwargs):
         super(SetOptionsDialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle("SetOptions [{}]".format(device.name))
+        self.setWindowTitle(f"SetOptions [{device.name}]")
         self.setMinimumWidth(300)
         self.device = device
 
@@ -19,9 +19,9 @@ class SetOptionsDialog(QDialog):
         vl = VLayout()
 
         for i, so in setoptions.items():
-            gb = GroupBoxV("SetOption{}".format(i))
-            cb = DictComboBox(so['parameters'])
-            gb.addElements(QLabel(so['description']), cb)
+            gb = GroupBoxV(f"SetOption{i}")
+            cb = DictComboBox(so["parameters"])
+            gb.addElements(QLabel(so["description"]), cb)
 
             vl.addWidget(gb)
 

@@ -9,7 +9,7 @@ class ModulesDialog(QDialog):
 
     def __init__(self, device, *args, **kwargs):
         super(ModulesDialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle("Module [{}]".format(device.name))
+        self.setWindowTitle(f"Module [{device.name}]")
         self.setMinimumWidth(300)
         self.device = device
 
@@ -19,7 +19,7 @@ class ModulesDialog(QDialog):
 
         gbxModules = GroupBoxV("Select Module")
         self.gb = DictComboBox(self.device.modules)
-        self.gb.setCurrentText(self.device.modules[str(self.device.p['Module'])])
+        self.gb.setCurrentText(self.device.modules[str(self.device.p["Module"])])
         gbxModules.addElements(self.gb)
 
         vl = VLayout()

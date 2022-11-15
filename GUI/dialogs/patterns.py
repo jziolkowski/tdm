@@ -18,7 +18,7 @@ class PatternsDialog(QDialog):
         self.setMinimumWidth(400)
         self.setWindowTitle("Autodiscovery patterns")
 
-        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, 'tdm', 'tdm')
+        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
         self.settings.beginGroup("Patterns")
 
         vl = VLayout()
@@ -81,8 +81,8 @@ class PatternsDialog(QDialog):
         for r in range(self.tw.rowCount()):
             val = self.tw.item(r, 0).text()
             # check for trailing /
-            if not val.endswith('/'):
-                val += '/'
+            if not val.endswith("/"):
+                val += "/"
             self.settings.setValue(str(r), val)
         self.settings.endGroup()
         self.done(QDialog.Accepted)

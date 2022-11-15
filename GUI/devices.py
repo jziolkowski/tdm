@@ -1,3 +1,4 @@
+import os
 from json import dumps
 
 from PyQt5.QtCore import QDir, QSettings, QSize, QSortFilterProxyModel, Qt, QUrl, pyqtSignal
@@ -58,7 +59,7 @@ class DevicesListWidget(QWidget):
         self.nam = QNetworkAccessManager()
         self.backup = bytes()
 
-        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
+        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
         views_order = self.settings.value("views_order", [])
 
         self.views = {}
@@ -199,8 +200,8 @@ class DevicesListWidget(QWidget):
         self.agRelays.setExclusive(False)
 
         for a in range(1, 9):
-            act = QAction(QIcon(":/P{}_OFF.png".format(a)), "")
-            act.setShortcut("F{}".format(a))
+            act = QAction(QIcon(f":/P{a}_OFF.png"), "")
+            act.setShortcut(f"F{a}")
             self.agRelays.addAction(act)
 
         self.agRelays.triggered.connect(self.toggle_power)
@@ -309,9 +310,8 @@ class DevicesListWidget(QWidget):
                 QMessageBox.question(
                     self,
                     "Confirm",
-                    "Do you want to remove the following device?\n'{}' ({})".format(
-                        self.device.p['DeviceName'], self.device.p['Topic']
-                    ),
+                    f"Do you want to remove the following device?\n'{self.device.p['DeviceName']}' "
+                    f"({self.device.p['Topic']})",
                 )
                 == QMessageBox.Yes
             ):
@@ -323,7 +323,7 @@ class DevicesListWidget(QWidget):
                 self,
                 "Set telemetry period",
                 "Input 1 to reset to default\n[Min: 10, Max: 3600]",
-                self.device.p['TelePeriod'],
+                self.device.p["TelePeriod"],
                 1,
                 3600,
             )
@@ -335,9 +335,7 @@ class DevicesListWidget(QWidget):
     def ctx_menu_config_backup(self):
         if self.device:
             self.backup = bytes()
-            self.dl = self.nam.get(
-                QNetworkRequest(QUrl("http://{}/dl".format(self.device.p['IPAddress'])))
-            )
+            self.dl = self.nam.get(QNetworkRequest(QUrl(f"http://{self.device.p['IPAddress']}/dl")))
             self.dl.readyRead.connect(self.get_dump)
             self.dl.finished.connect(self.save_dump)
 
@@ -346,7 +344,7 @@ class DevicesListWidget(QWidget):
             reply = QMessageBox.question(
                 self,
                 "OTA Upgrade",
-                "Are you sure to OTA upgrade from\n{}".format(self.device.p['OtaUrl']),
+                f"Are you sure to OTA upgrade from\n{self.device.p['OtaUrl']}",
                 QMessageBox.Yes | QMessageBox.No,
             )
             if reply == QMessageBox.Yes:
@@ -412,7 +410,7 @@ class DevicesListWidget(QWidget):
             color = self.device.color().get("Color")
             if color:
                 dlg = QColorDialog()
-                new_color = dlg.getColor(QColor("#{}".format(color)))
+                new_color = dlg.getColor(QColor(f"#{color}"))
                 if new_color.isValid():
                     new_color = new_color.name()
                     if new_color != color:
@@ -454,7 +452,7 @@ class DevicesListWidget(QWidget):
                 self,
                 "Set OTA URL",
                 '100 chars max. Set to "1" to reset to default.',
-                text=self.device.p['OtaUrl'],
+                text=self.device.p["OtaUrl"],
             )
             if ok:
                 self.mqtt.publish(self.device.cmnd_topic("otaurl"), payload=url)
@@ -483,7 +481,7 @@ class DevicesListWidget(QWidget):
                         new_value = cw.input.currentIndex()
 
                     if current_value != new_value:
-                        backlog.append("{} {}".format(c, new_value))
+                        backlog.append(f"{c} {new_value}")
 
                 so_error = False
                 for so, sow in buttons.setoption_widgets.items():
@@ -502,7 +500,7 @@ class DevicesListWidget(QWidget):
                         new_value = sow.input.currentIndex()
 
                     if not so_error and current_value and current_value != new_value:
-                        backlog.append("SetOption{} {}".format(so, new_value))
+                        backlog.append(f"SetOption{so} {new_value}")
 
                 if backlog:
                     backlog.append("status 3")
@@ -524,7 +522,7 @@ class DevicesListWidget(QWidget):
                         new_value = cw.input.currentIndex()
 
                     if current_value != new_value:
-                        backlog.append("{} {}".format(c, new_value))
+                        backlog.append(f"{c} {new_value}")
 
                 so_error = False
                 for so, sow in switches.setoption_widgets.items():
@@ -542,13 +540,13 @@ class DevicesListWidget(QWidget):
                         new_value = sow.input.currentIndex()
 
                     if not so_error and current_value != new_value:
-                        backlog.append("SetOption{} {}".format(so, new_value))
+                        backlog.append(f"SetOption{so} {new_value}")
 
-                for sw, sw_mode in enumerate(self.device.p['SwitchMode']):
+                for sw, sw_mode in enumerate(self.device.p["SwitchMode"]):
                     new_value = switches.sm.inputs[sw].currentIndex()
 
                     if sw_mode != new_value:
-                        backlog.append("switchmode{} {}".format(sw + 1, new_value))
+                        backlog.append(f"switchmode{sw + 1} {new_value}")
 
                 if backlog:
                     backlog.append("status")
@@ -571,7 +569,7 @@ class DevicesListWidget(QWidget):
                         new_value = cw.input.currentIndex()
 
                     if current_value != new_value:
-                        backlog.append("{} {}".format(c, new_value))
+                        backlog.append(f"{c} {new_value}")
 
                 so_error = False
                 for so, sow in power.setoption_widgets.items():
@@ -589,7 +587,7 @@ class DevicesListWidget(QWidget):
                         new_value = sow.input.currentIndex()
 
                     if not so_error and current_value != new_value:
-                        backlog.append("SetOption{} {}".format(so, new_value))
+                        backlog.append(f"SetOption{so} {new_value}")
 
                 new_interlock_value = power.ci.input.currentData()
                 new_interlock_grps = " ".join(
@@ -597,20 +595,20 @@ class DevicesListWidget(QWidget):
                 ).rstrip()
 
                 if new_interlock_value != self.device.p.get("Interlock", "OFF"):
-                    backlog.append("interlock {}".format(new_interlock_value))
+                    backlog.append(f"interlock {new_interlock_value}")
 
                 if new_interlock_grps != self.device.p.get("Groups", ""):
-                    backlog.append("interlock {}".format(new_interlock_grps))
+                    backlog.append(f"interlock {new_interlock_grps}")
 
                 for i, pt in enumerate(power.cpt.inputs):
-                    ptime = "PulseTime{}".format(i + 1)
+                    ptime = f"PulseTime{i + 1}"
                     current_ptime = self.device.p.get(ptime)
                     if current_ptime:
                         current_value = list(current_ptime.keys())[0]
                         new_value = str(pt.value())
 
                         if new_value != current_value:
-                            backlog.append("{} {}".format(ptime, new_value))
+                            backlog.append(f"{ptime} {new_value}")
 
                 if backlog:
                     backlog.append("status")
@@ -623,16 +621,16 @@ class DevicesListWidget(QWidget):
     def save_dump(self):
         fname = self.dl.header(QNetworkRequest.ContentDispositionHeader)
         if fname:
-            fname = fname.split('=')[1]
+            fname = fname.split("=")[1]
             save_file = QFileDialog.getSaveFileName(
-                self, "Save config backup", "{}/TDM/{}".format(QDir.homePath(), fname)
+                self, "Save config backup", os.path.join((QDir.homePath(), fname))
             )[0]
             if save_file:
                 with open(save_file, "wb") as f:
                     f.write(self.backup)
 
     def check_fulltopic(self, fulltopic):
-        fulltopic += "/" if not fulltopic.endswith('/') else ''
+        fulltopic += "/" if not fulltopic.endswith("/") else ""
         return "%prefix%" in fulltopic and "%topic%" in fulltopic
 
     def closeEvent(self, event):

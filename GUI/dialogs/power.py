@@ -11,7 +11,7 @@ class PowerDialog(QDialog):
 
     def __init__(self, device, *args, **kwargs):
         super(PowerDialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle("Power settings [{}]".format(device.name))
+        self.setWindowTitle(f"Power settings [{device.name}]")
         self.setMinimumWidth(300)
         self.device = device
 
@@ -45,7 +45,7 @@ class PowerDialog(QDialog):
 
         vl_so = VLayout(0, 0)
         for so in self.setoption_list:
-            cw = Command("SetOption{}".format(so), setoptions[str(so)], self.device.setoption(so))
+            cw = Command(f"SetOption{so}", setoptions[str(so)], self.device.setoption(so))
             vl_so.addWidget(cw)
             self.setoption_widgets[so] = cw
         vl_so.addStretch(1)
@@ -64,7 +64,7 @@ class PowerDialog(QDialog):
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
         vl.addElements(
-            HTMLLabel("<a href={}/Buttons-and-Switches>Buttons and Switches</a>".format(docs_url)),
+            HTMLLabel(f"<a href={docs_url}/Buttons-and-Switches>Buttons and Switches</a>"),
             btns,
         )
         self.setLayout(vl)
