@@ -321,7 +321,7 @@ def initial_commands():
         ["mqttlog", ""],  # will be removed after MqttLog will be added to Status 3
     ]
     for pt in range(8):
-        commands.append(["pulsetime{}".format(pt + 1), ""])
+        commands.append([f"pulsetime{pt + 1}", ""])
 
     return commands
 
@@ -333,10 +333,8 @@ def parse_topic(full_topic, topic):
     :return: If match is found, returns dictionary including device Topic,
         prefix (cmnd/tele/stat) and reply endpoint
     """
-    full_topic = (
-        "{}(?P<reply>.*)".format(full_topic)
-        .replace("%topic%", "(?P<topic>.*?)")
-        .replace("%prefix%", "(?P<prefix>.*?)")
+    full_topic = f"{full_topic}(?P<reply>.*)".replace("%topic%", "(?P<topic>.*?)").replace(
+        "%prefix%", "(?P<prefix>.*?)"
     )
     match = re.fullmatch(full_topic, topic)
     if match:
@@ -406,15 +404,15 @@ class TasmotaDevice(QObject):
 
     def build_topic(self, prefix):
         return (
-            self.p['FullTopic']
+            self.p["FullTopic"]
             .replace("%prefix%", prefix)
-            .replace("%topic%", self.p['Topic'])
+            .replace("%topic%", self.p["Topic"])
             .rstrip("/")
         )
 
     def cmnd_topic(self, command=""):
         if command:
-            return "{}/{}".format(self.build_topic("cmnd"), command)
+            return f"{self.build_topic('cmnd')}/{command}"
         return self.build_topic("cmnd")
 
     def stat_topic(self):
@@ -422,11 +420,11 @@ class TasmotaDevice(QObject):
 
     def tele_topic(self, endpoint=""):
         if endpoint:
-            return "{}/{}".format(self.build_topic("tele"), endpoint)
+            return f"{self.build_topic('tele')}/{endpoint}"
         return self.build_topic("tele")
 
     def is_default(self):
-        return self.p['FullTopic'] in ["%prefix%/%topic%/", "%topic%/%prefix%/"]
+        return self.p["FullTopic"] in ["%prefix%/%topic%/", "%topic%/%prefix%/"]
 
     def update_property(self, k, v):
         old = self.p.get(k)  # safely get the old value
@@ -439,38 +437,38 @@ class TasmotaDevice(QObject):
         self.p[k] = v  # store the new value
 
     def module(self):
-        mdl = self.p.get('Module')
+        mdl = self.p.get("Module")
         if mdl:
             return self.modules.get(str(mdl))
 
-        if self.p['LWT'] == 'Online':
+        if self.p["LWT"] == "Online":
             return "Fetching module name..."
 
     def matches(self, topic):
-        if topic == self.p['Topic']:
+        if topic == self.p["Topic"]:
             return True
-        parsed = parse_topic(self.p['FullTopic'], topic)
-        self.reply = parsed.get('reply')
-        self.prefix = parsed.get('prefix')
-        return parsed.get('topic') == self.p['Topic']
+        parsed = parse_topic(self.p["FullTopic"], topic)
+        self.reply = parsed.get("reply")
+        self.prefix = parsed.get("prefix")
+        return parsed.get("topic") == self.p["Topic"]
 
     def parse_message(self, topic, msg):
-        parse_statuses = ["STATUS{}".format(s) for s in [1, 2, 3, 4, 5, 6, 7, 9]]
+        parse_statuses = [f"STATUS{s}" for s in [1, 2, 3, 4, 5, 6, 7, 9]]
         if self.prefix in ("stat", "tele"):
             payload = None
 
-            if self.reply == 'STATUS':
+            if self.reply == "STATUS":
                 try:
                     payload = loads(msg)
                 except JSONDecodeError as e:
                     logging.critical("PARSER: Can't parse STATUS (%s): %s", e, msg)
 
                 if payload:
-                    payload = payload.get('Status', {})
+                    payload = payload.get("Status", {})
                     for k, v in payload.items():
                         if k == "FriendlyName":
                             for fnk, fnv in enumerate(v, start=1):
-                                self.update_property("FriendlyName{}".format(fnk), fnv)
+                                self.update_property(f"FriendlyName{fnk}", fnv)
                         else:
                             self.update_property(k, v)
 
@@ -485,15 +483,15 @@ class TasmotaDevice(QObject):
                     for k, v in payload.items():
                         self.update_property(k, v)
 
-            elif self.reply in ('STATE', 'STATUS11'):
+            elif self.reply in ("STATE", "STATUS11"):
                 try:
                     payload = loads(msg)
                 except JSONDecodeError as e:
                     logging.critical("PARSER: Can't parse %s (%s): %s", self.reply, e, msg)
 
                 if payload:
-                    if self.reply == 'STATUS11':
-                        payload = payload['StatusSTS']
+                    if self.reply == "STATUS11":
+                        payload = payload["StatusSTS"]
 
                     for k, v in payload.items():
                         if isinstance(v, dict):
@@ -502,15 +500,15 @@ class TasmotaDevice(QObject):
                         else:
                             self.update_property(k, v)
 
-            elif self.reply in ('SENSOR', 'STATUS8', 'STATUS10'):
+            elif self.reply in ("SENSOR", "STATUS8", "STATUS10"):
                 try:
                     payload = loads(msg)
                 except JSONDecodeError as e:
                     logging.critical("PARSER: Can't parse %s (%s): %s", self.reply, e, msg)
 
                 if payload:
-                    if self.reply in ('STATUS8', 'STATUS10'):
-                        payload = payload['StatusSNS']
+                    if self.reply in ("STATUS8", "STATUS10"):
+                        payload = payload["StatusSNS"]
 
                     self.t = payload
                     self.update_telemetry.emit()
@@ -526,7 +524,7 @@ class TasmotaDevice(QObject):
                     fk = keys[0]
 
                     if (
-                        self.reply == 'RESULT'
+                        self.reply == "RESULT"
                         and fk.startswith("Modules")
                         or self.reply == "MODULES"
                     ):
@@ -538,12 +536,12 @@ class TasmotaDevice(QObject):
                                 self.modules.update(v)
                             self.module_changed(self)
 
-                    elif self.reply == 'RESULT' and fk == 'NAME' or self.reply == "TEMPLATE":
-                        self.p['Template'] = payload
+                    elif self.reply == "RESULT" and fk == "NAME" or self.reply == "TEMPLATE":
+                        self.p["Template"] = payload
                         if self.module_changed:
                             self.module_changed(self)
 
-                    elif self.reply == 'RESULT' and fk.startswith("GPIOs") or self.reply == "GPIOS":
+                    elif self.reply == "RESULT" and fk.startswith("GPIOs") or self.reply == "GPIOS":
                         for k, v in payload.items():
                             if isinstance(v, list):
                                 for gp in v:
@@ -551,7 +549,7 @@ class TasmotaDevice(QObject):
                             elif isinstance(v, dict):
                                 self.gpios.update(v)
 
-                    elif self.reply == 'RESULT' and fk.startswith("GPIO") or self.reply == "GPIO":
+                    elif self.reply == "RESULT" and fk.startswith("GPIO") or self.reply == "GPIO":
                         for gp, gp_val in payload.items():
                             if not gp == "GPIO":
                                 if isinstance(gp_val, str):
@@ -565,17 +563,17 @@ class TasmotaDevice(QObject):
                             self.update_property(k, v)
 
     def power(self):
-        return {k: v for k, v in self.p.items() if k.startswith('POWER')}
+        return {k: v for k, v in self.p.items() if k.startswith("POWER")}
 
     def pulsetime(self):
         ptime = {}
         for k, v in self.p.items():
-            if k.startswith('PulseTime'):
+            if k.startswith("PulseTime"):
                 val = 0
                 if isinstance(v, dict):
                     first_key = list(v.keys())[0]
                     if first_key == "Set":
-                        val = v['Set']
+                        val = v["Set"]
                     else:
                         val = first_key
                 elif isinstance(v, str):
@@ -587,7 +585,7 @@ class TasmotaDevice(QObject):
         return {
             k: v
             for k, v in self.p.items()
-            if k.startswith('PWM') or (k != "Channel" and k.startswith("Channel"))
+            if k.startswith("PWM") or (k != "Channel" and k.startswith("Channel"))
         }
 
     def color(self):
@@ -603,7 +601,7 @@ class TasmotaDevice(QObject):
         else:
             reg = 2
 
-        so = self.p.get('SetOption')
+        so = self.p.get("SetOption")
         if so:
             if reg in (0, 2, 3):
                 options = int(so[reg], 16)
@@ -623,7 +621,7 @@ class TasmotaDevice(QObject):
 
     @property
     def name(self):
-        return self.p.get('DeviceName') or self.p.get('FriendlyName1', self.p['Topic'])
+        return self.p.get("DeviceName") or self.p.get("FriendlyName1", self.p["Topic"])
 
     def __repr__(self):
-        return "<TasmotaDevice {}: {}>".format(self.name, self.p['Topic'])
+        return f"<TasmotaDevice {self.name}: {self.p['Topic']}>"

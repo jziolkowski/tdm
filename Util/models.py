@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QAbstractTableModel, QDir, QModelIndex, QSettings, QSize, Qt
+from PyQt5.QtCore import QAbstractTableModel, QModelIndex, QSettings, QSize, Qt
 from PyQt5.QtGui import QColor, QIcon, QPen, QPixmap
 from PyQt5.QtWidgets import QStyle, QStyledItemDelegate
 
@@ -11,8 +11,8 @@ FirmwareRole = Qt.UserRole + 3
 class TasmotaDevicesModel(QAbstractTableModel):
     def __init__(self, tasmota_env):
         super().__init__()
-        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
-        self.devices = QSettings("{}/TDM/devices.cfg".format(QDir.homePath()), QSettings.IniFormat)
+        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
+        self.devices = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "devices")
         self.tasmota_env = tasmota_env
         self.columns = []
 
@@ -39,7 +39,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
             idx = self.index(row, power_idx)
             self.dataChanged.emit(idx, idx)
 
-        elif key in ("RSSI", "LWT", "DeviceName", 'FriendlyName1'):
+        elif key in ("RSSI", "LWT", "DeviceName", "FriendlyName1"):
             idx = self.index(row, self.columns.index("Device"))
             self.dataChanged.emit(idx, idx)
 
@@ -79,7 +79,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
                 elif col_name == "Module":
                     if val == 0:
-                        return d.p['Template'].get('NAME', "Fetching template name...")
+                        return d.p["Template"].get("NAME", "Fetching template name...")
                     else:
                         return d.module()
 
@@ -91,14 +91,14 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 elif col_name in ("Uptime", "Downtime") and val:
                     val = str(val)
                     if val.startswith("0T"):
-                        val = val.replace('0T', '')
-                    val = val.replace('T', 'd ')
+                        val = val.replace("0T", "")
+                    val = val.replace("T", "d ")
 
                 elif col_name == "Core" and val:
-                    return val.replace('_', '.')
+                    return val.replace("_", ".")
 
                 elif col_name == "Time" and val:
-                    return val.replace('T', ' ')
+                    return val.replace("T", " ")
 
                 elif col_name == "Power":
                     return d.power()
@@ -116,10 +116,10 @@ class TasmotaDevicesModel(QAbstractTableModel):
                     return d.tele_topic()
 
                 elif col_name == "FallbackTopic":
-                    return "cmnd/{}_fb/".format(d.p.get('MqttClient'))
+                    return f"cmnd/{d.p.get('MqttClient')}_fb/"
 
                 elif col_name == "BSSId":
-                    alias = self.settings.value("BSSId/{}".format(val))
+                    alias = self.settings.value(f"BSSId/{val}")
                     if alias:
                         return alias
 
@@ -130,19 +130,19 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 return val
 
             elif role == LWTRole:
-                val = d.p.get('LWT', 'Offline')
+                val = d.p.get("LWT", "Offline")
                 return val
 
             elif role == RestartReasonRole:
-                val = d.p.get('RestartReason')
+                val = d.p.get("RestartReason")
                 return val
 
             elif role == RSSIRole:
-                val = int(d.p.get('RSSI', 0))
+                val = int(d.p.get("RSSI", 0))
                 return val
 
             elif role == FirmwareRole:
-                val = d.p.get('Version', "")
+                val = d.p.get("Version", "")
                 return val
 
             elif role == Qt.TextAlignmentRole:
@@ -164,7 +164,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
                     return Qt.AlignCenter
 
             elif role == Qt.DecorationRole and col_name == "Device":
-                if d.p['LWT'] == "Online":
+                if d.p["LWT"] == "Online":
                     rssi = int(d.p.get("RSSI", 0))
 
                     if 0 < rssi < 50:
@@ -190,19 +190,19 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
             elif role == Qt.ToolTipRole:
                 if col_name == "Version":
-                    val = d.p.get('Version')
+                    val = d.p.get("Version")
                     if val:
                         return val[val.index("(") + 1 : val.index(")")]
                     return ""
 
                 elif col_name == "BSSId":
-                    return d.p.get('BSSId')
+                    return d.p.get("BSSId")
 
                 elif col_name == "Device":
                     fns = [d.name]
 
                     for i in range(2, 5):
-                        fn = d.p.get("FriendlyName{}".format(i))
+                        fn = d.p.get(f"FriendlyName{i}")
                         if fn:
                             fns.append(fn)
                     return "\n".join(fns)
@@ -219,7 +219,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
             device = self.deviceAtRow(pos)
             self.tasmota_env.devices.pop(self.tasmota_env.devices.index(device))
 
-            topic = device.p['Topic']
+            topic = device.p["Topic"]
             self.settings.beginGroup("Devices")
             if topic in self.settings.childGroups():
                 self.settings.remove(topic)
@@ -231,7 +231,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
     def deleteDevice(self, idx):
         row = idx.row()
-        mac = self.deviceAtRow(row).p['Mac'].replace(":", "-")
+        mac = self.deviceAtRow(row).p["Mac"].replace(":", "-")
         self.devices.remove(mac)
         self.devices.sync()
         self.removeRows(row, 1)
@@ -339,12 +339,10 @@ class DeviceDelegate(QStyledItemDelegate):
                         y = option.rect.y() + (option.rect.height() - 24) // 2
 
                         if num == 1:
-                            p.drawPixmap(x, y, 24, 24, QPixmap(":/P_{}".format(index.data()[k])))
+                            p.drawPixmap(x, y, 24, 24, QPixmap(f":/P_{index.data()[k]}"))
 
                         else:
-                            p.drawPixmap(
-                                x, y, 24, 24, QPixmap(":/P{}_{}".format(i + 1, index.data()[k]))
-                            )
+                            p.drawPixmap(x, y, 24, 24, QPixmap(f":/P{i + 1}_{index.data()[k]}"))
 
                 else:
                     i = 0
@@ -359,9 +357,7 @@ class DeviceDelegate(QStyledItemDelegate):
                                     y,
                                     24,
                                     24,
-                                    QPixmap(
-                                        ":/P{}_{}".format(i + 1, list(index.data().values())[i])
-                                    ),
+                                    QPixmap(f":/P{i + 1}_{list(index.data().values())[i]}"),
                                 )
                             i += 1
 
@@ -377,7 +373,7 @@ class DeviceDelegate(QStyledItemDelegate):
                     p.save()
                     if len(color) > 6:
                         color = color[:6]
-                    p.fillRect(rect.adjusted(2, 2, -1, -1), QColor("#{}".format(color)))
+                    p.fillRect(rect.adjusted(2, 2, -1, -1), QColor(f"#{color}"))
 
                     dimmer = d.get("Dimmer")
                     if dimmer:
@@ -386,7 +382,7 @@ class DeviceDelegate(QStyledItemDelegate):
                         else:
                             pen.setColor(QColor("white"))
                         p.setPen(pen)
-                        p.drawText(rect, Qt.AlignCenter, "{}%".format(dimmer))
+                        p.drawText(rect, Qt.AlignCenter, f"{dimmer}%")
 
                     pen.setColor(QColor("#cccccc"))
                     p.setPen(pen)

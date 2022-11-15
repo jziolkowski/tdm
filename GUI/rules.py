@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from GUI import CheckableAction, GroupBoxH, GroupBoxV, HLayout, Toolbar, VLayout
+from GUI.widgets import CheckableAction, GroupBoxH, GroupBoxV, HLayout, Toolbar, VLayout
 
 # TODO: triggers list
 # TODO: open/save rule from/to file
@@ -26,16 +26,16 @@ class RulesWidget(QWidget):
     def __init__(self, device, *args, **kwargs):
         super(RulesWidget, self).__init__(*args, **kwargs)
         self.device = device
-        self.setWindowTitle("Rules [{}]".format(self.device.name))
+        self.setWindowTitle(f"Rules [{self.device.name}]")
 
         self.poll_timer = QTimer()
         self.poll_timer.timeout.connect(self.poll)
         self.poll_timer.start(1000)
 
-        self.vars = [''] * 16
+        self.vars = [""] * 16
         self.var = None
 
-        self.mems = [''] * 16
+        self.mems = [""] * 16
         self.mem = None
 
         self.rts = [0] * 8
@@ -49,7 +49,7 @@ class RulesWidget(QWidget):
 
         self.cbRule = QComboBox()
         self.cbRule.setMinimumWidth(100)
-        self.cbRule.addItems(["Rule{}".format(nr + 1) for nr in range(3)])
+        self.cbRule.addItems([f"Rule{nr + 1}" for nr in range(3)])
         self.cbRule.currentTextChanged.connect(self.load_rule)
 
         tb.addWidget(self.cbRule)
@@ -85,14 +85,14 @@ class RulesWidget(QWidget):
         self.gbTriggers = GroupBoxV("Triggers")
         self.triggers = QListWidget()
         self.triggers.setAlternatingRowColors(True)
-        self.gbTriggers.addWidget(self.triggers)
+        self.gbTriggers.addElements(self.triggers)
 
         self.gbEditor = GroupBoxV("Rule editor")
         self.editor = QPlainTextEdit()
         self.editor.setFont(fnt_mono)
         self.editor.setPlaceholderText("loading...")
         self.editor.textChanged.connect(self.update_counter)
-        self.gbEditor.addWidget(self.editor)
+        self.gbEditor.addElements(self.editor)
 
         # hl.addWidgets([self.gbTriggers, self.gbEditor])
         hl.addWidget(self.gbEditor)
@@ -110,13 +110,13 @@ class RulesWidget(QWidget):
         self.pbPollRTs = QPushButton("RuleTimers")
         self.pbPollRTs.setCheckable(True)
 
-        self.gbPolling.addWidgets([self.pbPollVars, self.pbPollMems, self.pbPollRTs])
+        self.gbPolling.addElements(self.pbPollVars, self.pbPollMems, self.pbPollRTs)
 
         # VARS
         # self.gbVars = GroupBoxV("VARs")
         self.lwVars = QListWidget()
         self.lwVars.setAlternatingRowColors(True)
-        self.lwVars.addItems(["VAR{}: <unknown>".format(i) for i in range(1, 17)])
+        self.lwVars.addItems([f"VAR{i}: <unknown>" for i in range(1, 17)])
         self.lwVars.clicked.connect(self.select_var)
         self.lwVars.doubleClicked.connect(self.set_var)
         # self.gbVars.addWidget(self.lwVars)
@@ -125,7 +125,7 @@ class RulesWidget(QWidget):
         # self.gbMems = GroupBoxV("MEMs")
         self.lwMems = QListWidget()
         self.lwMems.setAlternatingRowColors(True)
-        self.lwMems.addItems(["MEM{}: <unknown>".format(i) for i in range(1, 17)])
+        self.lwMems.addItems([f"MEM{i}: <unknown>" for i in range(1, 17)])
         self.lwMems.clicked.connect(self.select_mem)
         self.lwMems.doubleClicked.connect(self.set_mem)
         # self.gbMems.addWidget(self.lwMems)
@@ -134,19 +134,16 @@ class RulesWidget(QWidget):
         # self.gbRTs = GroupBoxV("Rule timers")
         self.lwRTs = QListWidget()
         self.lwRTs.setAlternatingRowColors(True)
-        self.lwRTs.addItems(["RuleTimer{}: <unknown>".format(i) for i in range(1, 9)])
+        self.lwRTs.addItems([f"RuleTimer{1}: <unknown>" for i in range(1, 9)])
         self.lwRTs.clicked.connect(self.select_rt)
         self.lwRTs.doubleClicked.connect(self.set_rt)
         # self.gbRTs.addWidget(self.lwRTs)
 
         # vl_helpers.addWidgets([self.gbPolling, self.gbVars, self.gbMems, self.gbRTs])
-        vl_helpers.addWidgets([self.gbPolling, self.lwVars, self.lwMems, self.lwRTs])
-        vl_helpers.setStretch(1, 16)
-        vl_helpers.setStretch(2, 16)
-        vl_helpers.setStretch(3, 8)
+        vl_helpers.addElements(self.gbPolling, self.lwVars, self.lwMems, self.lwRTs)
+        vl_helpers.setStretches((1, 16), (2, 16), (3, 8))
         hl.addLayout(vl_helpers)
-        hl.setStretch(0, 3)
-        hl.setStretch(1, 1)
+        hl.setStretches((0, 3), (1, 1))
         # hl.setStretch(2, 1)
 
         vl.addLayout(hl)
@@ -172,7 +169,7 @@ class RulesWidget(QWidget):
     def clean_rule(self):
         re_spaces = re.compile(r"\s{2,}")
         rule = self.editor.toPlainText().replace("\t", " ").replace("\n", " ")
-        rule = re.sub(re_spaces, ' ', rule)
+        rule = re.sub(re_spaces, " ", rule)
         return rule
 
     def upload_rule(self):
@@ -182,7 +179,7 @@ class RulesWidget(QWidget):
         self.sendCommand.emit(self.device.cmnd_topic(self.cbRule.currentText()), rule)
 
     def update_counter(self):
-        self.counter.setText("Remaining: {}".format(511 - len(self.clean_rule())))
+        self.counter.setText(f"Remaining: {511 - len(self.clean_rule())}")
 
     def poll(self):
         if self.pbPollVars.isChecked():
@@ -200,12 +197,12 @@ class RulesWidget(QWidget):
     def set_var(self, idx):
         curr = self.vars[self.var]
         new, ok = QInputDialog.getText(
-            self, "Set VAR", "Set VAR{} value. Empty to clear.".format(self.var + 1), text=curr
+            self, "Set VAR", f"Set VAR{self.var + 1} value. Empty to clear.", text=curr
         )
         if ok:
-            if new == '':
+            if new == "":
                 new = '"'
-            self.sendCommand.emit(self.device.cmnd_topic("var{}".format(self.var + 1)), new)
+            self.sendCommand.emit(self.device.cmnd_topic(f"var{self.var + 1}"), new)
 
     def select_mem(self, idx):
         self.mem = idx.row()
@@ -213,12 +210,12 @@ class RulesWidget(QWidget):
     def set_mem(self, idx):
         curr = self.mems[self.mem]
         new, ok = QInputDialog.getText(
-            self, "Set mem", "Set mem{} value. Empty to clear.".format(self.mem + 1), text=curr
+            self, "Set mem", f"Set mem{self.mem + 1} value. Empty to clear.", text=curr
         )
         if ok:
-            if new == '':
+            if new == "":
                 new = '"'
-            self.sendCommand.emit(self.device.cmnd_topic("mem{}".format(self.mem + 1)), new)
+            self.sendCommand.emit(self.device.cmnd_topic(f"mem{self.mem + 1}"), new)
 
     def select_rt(self, idx):
         self.rt = idx.row()
@@ -226,21 +223,19 @@ class RulesWidget(QWidget):
     def set_rt(self, idx):
         curr = self.rts[self.rt]
         new, ok = QInputDialog.getInt(
-            self, "Set ruletimer", "Set ruletimer{} value.".format(self.rt + 1), value=curr
+            self, "Set ruletimer", f"Set ruletimer{self.rt + 1} value.", value=curr
         )
         if ok:
-            self.sendCommand.emit(
-                self.device.cmnd_topic("ruletimer{}".format(self.rt + 1)), str(new)
-            )
+            self.sendCommand.emit(self.device.cmnd_topic(f"ruletimer{self.rt + 1}"), str(new))
 
     def display_rule(self, payload, rule):
         if type(payload[rule]) is dict:
             payload = payload[rule]
-            self.actEnabled.setChecked(payload['State'] == "ON")
+            self.actEnabled.setChecked(payload["State"] == "ON")
         else:
             self.actEnabled.setChecked(payload[rule] == "ON")
         rules = (
-            payload['Rules']
+            payload["Rules"]
             .replace(" on ", "\non ")
             .replace(" do ", " do\n\t")
             .replace(" endon", "\nendon ")
@@ -250,8 +245,8 @@ class RulesWidget(QWidget):
             self.editor.setPlaceholderText("rule buffer is empty")
         self.editor.setPlainText(rules)
 
-        self.actOnce.setChecked(payload['Once'] == 'ON')
-        self.actStopOnError.setChecked(payload['StopOnError'] == 'ON')
+        self.actOnce.setChecked(payload["Once"] == "ON")
+        self.actStopOnError.setChecked(payload["StopOnError"] == "ON")
 
     @pyqtSlot(str, str)
     def parseMessage(self, topic, msg):
@@ -283,38 +278,36 @@ class RulesWidget(QWidget):
                         fk = keys[0]
 
                         if (
-                            self.device.reply == 'RESULT'
+                            self.device.reply == "RESULT"
                             and fk == "T1"
                             or self.device.reply == "RULETIMER"
                         ):
                             for i, rt in enumerate(payload.keys()):
-                                self.lwRTs.item(i).setText(
-                                    "RuleTimer{}: {}".format(i + 1, payload[rt])
-                                )
+                                self.lwRTs.item(i).setText(f"RuleTimer{i + 1}: {payload[rt]}")
                                 self.rts[i] = payload[rt]
 
                         elif (
-                            self.device.reply == 'RESULT'
+                            self.device.reply == "RESULT"
                             and fk.startswith("Var")
                             or self.device.reply.startswith("VAR")
                         ):
                             for k, v in payload.items():
                                 row = int(k.replace("Var", "")) - 1
-                                self.lwVars.item(row).setText("VAR{}: {}".format(row + 1, v))
+                                self.lwVars.item(row).setText(f"VAR{row + 1}: {v}")
                                 self.vars[row] = v
 
                         elif (
-                            self.device.reply == 'RESULT'
+                            self.device.reply == "RESULT"
                             and fk.startswith("Mem")
                             or self.device.reply.startswith("MEM")
                         ):
                             for k, v in payload.items():
                                 row = int(k.replace("Mem", "")) - 1
-                                self.lwMems.item(row).setText("MEM{}: {}".format(row + 1, v))
+                                self.lwMems.item(row).setText(f"MEM{row + 1}: {v}")
                                 self.mems[row] = v
 
                         elif (
-                            self.device.reply == 'RESULT'
+                            self.device.reply == "RESULT"
                             and fk.startswith("Rule")
                             or self.device.reply.startswith("RULE")
                         ):
@@ -337,13 +330,13 @@ class RuleHighLighter(QSyntaxHighlighter):
         QSyntaxHighlighter.__init__(self, document)
 
         rules = []
-        rules += [(r'(?:^|\s+)(%s)(?:\s+|$)' % cw, self.control) for cw in self.control_words]
+        rules += [(r"(?:^|\s+)(%s)(?:\s+|$)" % cw, self.control) for cw in self.control_words]
 
         # TODO: make the command regex work both inline and after line break
         rules += [
-            (r'\s+(.*#.*)\s+do', self.trigger),
+            (r"\s+(.*#.*)\s+do", self.trigger),
             # (r'(?:do^\s+|do\s+)(.*)(?:\s+endon|\nendon)', self.command),
-            (r'do\r\n\s+(.*)', self.command),
+            (r"do\r\n\s+(.*)", self.command),
         ]
         self.rules = [(re.compile(pat, re.IGNORECASE), fmt) for (pat, fmt) in rules]
 

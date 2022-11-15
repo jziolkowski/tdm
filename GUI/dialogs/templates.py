@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
     QMessageBox,
 )
 
-from GUI import DictComboBox, VLayout
+from GUI.widgets import DictComboBox, VLayout
 from Util import template_adc
 
 
@@ -20,7 +20,7 @@ class TemplateDialog(QDialog):
 
     def __init__(self, device, *args, **kwargs):
         super(TemplateDialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle("Template [{}]".format(device.name))
+        self.setWindowTitle(f"Template [{device.name}]")
         self.setMinimumWidth(300)
         self.device = device
 
@@ -33,26 +33,26 @@ class TemplateDialog(QDialog):
 
         gbxTmpl = QGroupBox("Configure template")
         fl = QFormLayout()
-        if self.device.p['Template']:
+        if self.device.p["Template"]:
             btns.addButton(QDialogButtonBox.Save)
             btns.accepted.connect(self.accept)
 
-            tpl = self.device.p['Template']
+            tpl = self.device.p["Template"]
             self.leName = QLineEdit()
             self.leName.setMaxLength(14)
-            self.leName.setText(tpl['NAME'])
+            self.leName.setText(tpl["NAME"])
             fl.addRow("Name", self.leName)
 
             self.gbxBase = DictComboBox(self.device.modules)
-            self.gbxBase.setCurrentText(self.device.modules[str(tpl['BASE'])])
+            self.gbxBase.setCurrentText(self.device.modules[str(tpl["BASE"])])
             fl.addRow("Based on", self.gbxBase)
 
             for i, g in enumerate([0, 1, 2, 3, 4, 5, 9, 10, 12, 13, 14, 15, 16]):
                 gbx = DictComboBox(gpios)
-                gbx.setCurrentText(gpios.get(str(tpl['GPIO'][i])))
+                gbx.setCurrentText(gpios.get(str(tpl["GPIO"][i])))
 
                 fl.addRow(
-                    "<font color='{}'>GPIO{}</font>".format('red' if g in [9, 10] else 'black', g),
+                    f"<font color='{'red' if g in [9, 10] else 'black'}'>GPIO{g}</font>",
                     gbx,
                 )
                 self.gb[i] = gbx
@@ -66,7 +66,7 @@ class TemplateDialog(QDialog):
         gbxTmpl.setLayout(fl)
 
         vl = VLayout()
-        vl.addWidgets([gbxTmpl, btns])
+        vl.addElements(gbxTmpl, btns)
         self.setLayout(vl)
 
     def accept(self):

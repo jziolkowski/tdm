@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidget, QListWidgetItem
 
-from GUI import VLayout
+from GUI.widgets import VLayout
 
 
 class ClearLWTDialog(QDialog):
@@ -33,7 +33,7 @@ class ClearLWTDialog(QDialog):
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
 
-        vl.addWidgets([sel_btns, self.lw, btns])
+        vl.addElements(sel_btns, self.lw, btns)
         self.setLayout(vl)
 
     def select(self, state):

@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 
 from PyQt5.QtCore import (
@@ -27,8 +28,8 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from GUI import GroupBoxV, HLayout, VLayout, console_font
-from Util import commands
+from GUI.widgets import GroupBoxV, HLayout, VLayout, console_font
+from Util.commands import commands
 
 
 class ConsoleWidget(QDockWidget):
@@ -38,10 +39,10 @@ class ConsoleWidget(QDockWidget):
     def __init__(self, device, *args, **kwargs):
         super().__init__()
         self.setAllowedAreas(Qt.BottomDockWidgetArea)
-        self.setWindowTitle("Console [{}]".format(device.name))
+        self.setWindowTitle(f"Console [{device.name}]")
         self.device = device
 
-        self.settings = QSettings("{}/TDM/tdm.cfg".format(QDir.homePath()), QSettings.IniFormat)
+        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
 
         console_font_size = self.settings.value("console_font_size", 9, int)
         console_font.setPointSize(console_font_size)
@@ -108,12 +109,11 @@ class ConsoleWidget(QDockWidget):
 
         self.cbMQTTLog.currentIndexChanged.connect(self.change_mqttlog)
 
-        hl_command_mqttlog.addWidgets(
-            [self.command, pbSave, pbClear, QLabel("MQTT Log level"), self.cbMQTTLog]
+        hl_command_mqttlog.addElements(
+            self.command, pbSave, pbClear, QLabel("MQTT Log level"), self.cbMQTTLog
         )
 
-        vl.addWidget(self.console)
-        vl.addLayout(hl_command_mqttlog)
+        vl.addElements(self.console, hl_command_mqttlog)
 
         w.setLayout(vl)
         self.setWidget(w)
@@ -126,7 +126,7 @@ class ConsoleWidget(QDockWidget):
     def consoleAppend(self, topic, msg, retained=False):
         if self.device.matches(topic):
             tstamp = QTime.currentTime().toString("HH:mm:ss")
-            self.console.appendPlainText("[{}] {} {}".format(tstamp, topic, msg))
+            self.console.appendPlainText(f"[{tstamp}] {topic} {msg}")
 
     def eventFilter(self, obj, e):
         if obj == self.command and e.type() == QEvent.KeyPress:
@@ -143,7 +143,7 @@ class ConsoleWidget(QDockWidget):
 
                     if e.key() == Qt.Key_Down:
                         self.command.completer().setModel(QStringListModel(history))
-                        self.command.setText(' ')
+                        self.command.setText(" ")
                         self.command.completer().complete()
             return False
 
@@ -152,7 +152,7 @@ class ConsoleWidget(QDockWidget):
     def command_enter(self):
         cmd_input = self.command.text()
         if len(cmd_input) > 0 and cmd_input != " ":
-            split_cmd_input = cmd_input.split(' ')
+            split_cmd_input = cmd_input.split(" ")
             cmd = split_cmd_input[0]
 
             payload = " ".join(split_cmd_input[1:])
@@ -170,9 +170,11 @@ class ConsoleWidget(QDockWidget):
         self.sendCommand.emit(self.device.cmnd_topic("MqttLog"), str(idx))
 
     def save_console(self):
-        new_fname = "{}/TDM/{} {}.log".format(
-            QDir.homePath(), self.device.name, datetime.now().strftime("%Y%m%d-%H%M%S")
+        new_fname = os.path.join(
+            QDir.homePath(),
+            f"TDM_{self.device.name}_{datetime.now().strftime('%Y%m%d-%H%M%S')}.log",
         )
+
         file, ok = QFileDialog.getSaveFileName(self, "Save console", new_fname, "Log files | *.log")
         if ok:
             with open(file, "w") as f:
@@ -200,14 +202,14 @@ class JSONHighLighter(QSyntaxHighlighter):
     tstamp.setForeground(QColor("gray"))
 
     STYLES = {
-        'keyword': keyword,
-        'brace': braces,
-        'error': error,
-        'tstamp': tstamp,
-        'command': command,
+        "keyword": keyword,
+        "brace": braces,
+        "error": error,
+        "tstamp": tstamp,
+        "command": command,
     }
 
-    braces = [r'\{', r'\}']
+    braces = [r"\{", r"\}"]
 
     def __init__(self, document):
         QSyntaxHighlighter.__init__(self, document)
@@ -215,15 +217,15 @@ class JSONHighLighter(QSyntaxHighlighter):
         rules = []
 
         rules += [
-            (r'\[.*\] ', 0, self.STYLES['tstamp']),
-            (r'\s.*(stat|tele).*\s', 0, self.STYLES['brace']),
-            (r'\s.*cmnd.*\s', 0, self.STYLES['command']),
-            (r'\"\w*\"(?=:)', 0, self.STYLES['keyword']),
-            (r':\"\w*\"', 0, self.STYLES['error']),
-            (r'\{\"Command\":\"Unknown\"\}', 0, self.STYLES['error']),
+            (r"\[.*\] ", 0, self.STYLES["tstamp"]),
+            (r"\s.*(stat|tele).*\s", 0, self.STYLES["brace"]),
+            (r"\s.*cmnd.*\s", 0, self.STYLES["command"]),
+            (r"\"\w*\"(?=:)", 0, self.STYLES["keyword"]),
+            (r":\"\w*\"", 0, self.STYLES["error"]),
+            (r"\{\"Command\":\"Unknown\"\}", 0, self.STYLES["error"]),
         ]
 
-        rules += [(r'%s' % b, 0, self.STYLES['brace']) for b in self.braces]
+        rules += [(r"%s" % b, 0, self.STYLES["brace"]) for b in self.braces]
 
         self.rules = [(QRegExp(pat), index, fmt) for (pat, index, fmt) in rules]
 
@@ -251,13 +253,13 @@ class DeviceConsoleHistory(QDialog):
 
         gbxDevice = GroupBoxV("Commands history for:")
         gbDevice = QComboBox()
-        gbDevice.addItems([d.p['FriendlyName1'] for d in devices])
-        gbxDevice.addWidget(gbDevice)
+        gbDevice.addItems([d.p["FriendlyName1"] for d in devices])
+        gbxDevice.addElements(gbDevice)
 
         self.lwCommands = QListWidget()
 
-        vl.addWidgets(
-            [gbxDevice, self.lwCommands, QLabel("Double-click a command to use it, ESC to close.")]
+        vl.addElements(
+            gbxDevice, self.lwCommands, QLabel("Double-click a command to use it, ESC to close.")
         )
         self.setLayout(vl)
 

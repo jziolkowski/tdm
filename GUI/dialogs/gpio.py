@@ -1,7 +1,7 @@
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QFormLayout, QGroupBox, QLabel, QMessageBox
 
-from GUI import DictComboBox, VLayout
+from GUI.widgets import DictComboBox, VLayout
 
 
 class GPIODialog(QDialog):
@@ -9,7 +9,7 @@ class GPIODialog(QDialog):
 
     def __init__(self, device, *args, **kwargs):
         super(GPIODialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle("GPIO [{}]".format(device.name))
+        self.setWindowTitle(f"GPIO [{device.name}]")
         self.setMinimumWidth(300)
         self.device = device
 
@@ -34,11 +34,11 @@ class GPIODialog(QDialog):
         gbxGPIO.setLayout(fl)
 
         vl = VLayout()
-        vl.addWidgets([gbxGPIO, btns])
+        vl.addElements(gbxGPIO, btns)
         self.setLayout(vl)
 
     def accept(self):
-        payload = ["{} {}".format(k, gb.currentData()) for k, gb in self.gb.items()]
+        payload = [f"{k} {gb.currentData()}" for k, gb in self.gb.items()]
         self.sendCommand.emit(self.device.cmnd_topic("backlog"), "; ".join(payload))
         QMessageBox.information(self, "GPIO saved", "Device will restart.")
         self.done(QDialog.Accepted)

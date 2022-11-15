@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
     QPushButton,
 )
 
-from GUI import HLayout, SpinBox, VLayout
+from GUI.widgets import HLayout, SpinBox, VLayout
 
 
 class BrokerDialog(QDialog):
@@ -22,7 +22,7 @@ class BrokerDialog(QDialog):
 
         self.setWindowTitle("MQTT Broker")
 
-        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, 'tdm', 'tdm')
+        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
 
         gbtls = QGroupBox(" TLS [optional]")
         tlsLayout = QFormLayout()
@@ -79,10 +79,10 @@ class BrokerDialog(QDialog):
         hlBtn = HLayout()
         btnSave = QPushButton("Save")
         btnCancel = QPushButton("Cancel")
-        hlBtn.addWidgets([btnSave, btnCancel])
+        hlBtn.addElements(btnSave, btnCancel)
 
         vl = VLayout()
-        vl.addWidgets([gbHost, gbtls, gbLogin, gbClientId, self.cbConnectStartup])
+        vl.addElements(gbHost, gbtls, gbLogin, gbClientId, self.cbConnectStartup)
         vl.addLayout(hlBtn)
 
         self.setLayout(vl)
@@ -112,4 +112,4 @@ class BrokerDialog(QDialog):
         self.done(QDialog.Accepted)
 
     def random_generator(self, size=6, chars=string.ascii_uppercase + string.digits):
-        return ''.join(random.choice(chars) for x in range(size))
+        return "".join(random.choice(chars) for x in range(size))

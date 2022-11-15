@@ -1,15 +1,15 @@
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QMessageBox
 
-from GUI import DictComboBox, GroupBoxV, VLayout
+from GUI.widgets import DictComboBox, GroupBoxV, VLayout
 
 
-class ModuleDialog(QDialog):
+class ModulesDialog(QDialog):
     sendCommand = pyqtSignal(str, str)
 
     def __init__(self, device, *args, **kwargs):
-        super(ModuleDialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle("Module [{}]".format(device.name))
+        super(ModulesDialog, self).__init__(*args, **kwargs)
+        self.setWindowTitle(f"Module [{device.name}]")
         self.setMinimumWidth(300)
         self.device = device
 
@@ -19,11 +19,11 @@ class ModuleDialog(QDialog):
 
         gbxModules = GroupBoxV("Select Module")
         self.gb = DictComboBox(self.device.modules)
-        self.gb.setCurrentText(self.device.modules[str(self.device.p['Module'])])
-        gbxModules.addWidget(self.gb)
+        self.gb.setCurrentText(self.device.modules[str(self.device.p["Module"])])
+        gbxModules.addElements(self.gb)
 
         vl = VLayout()
-        vl.addWidgets([gbxModules, btns])
+        vl.addElements(gbxModules, btns)
         self.setLayout(vl)
 
     def accept(self):

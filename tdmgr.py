@@ -22,22 +22,20 @@ from PyQt5.QtWidgets import (
     QStatusBar,
 )
 
-from GUI.ClearLWT import ClearLWTDialog
-from GUI.Prefs import PrefsDialog
+from GUI.dialogs import ClearLWTDialog, PrefsDialog
 
 try:
     from PyQt5.QtWebEngineWidgets import QWebEngineView
 except ImportError:
     pass
 
-from GUI import Toolbar, VLayout, icons  # noqa: F401
-from GUI.Broker import BrokerDialog
-from GUI.BSSID import BSSIdDialog
-from GUI.Console import ConsoleWidget
-from GUI.Devices import ListWidget
-from GUI.Patterns import PatternsDialog
-from GUI.Rules import RulesWidget
-from GUI.Telemetry import TelemetryWidget
+from GUI import icons  # noqa: F401
+from GUI.console import ConsoleWidget
+from GUI.devices import DevicesListWidget
+from GUI.dialogs import BrokerDialog, BSSIdDialog, PatternsDialog
+from GUI.rules import RulesWidget
+from GUI.telemetry import TelemetryWidget
+from GUI.widgets import Toolbar, VLayout
 from Util import (
     TasmotaDevice,
     TasmotaEnvironment,
@@ -61,7 +59,7 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__(*args, **kwargs)
         self._version = __version__
         self.setWindowIcon(QIcon(":/logo.png"))
-        self.setWindowTitle("Tasmota Device Manager {}".format(self._version))
+        self.setWindowTitle(f"Tasmota Device Manager {self._version}")
 
         self.menuBar().setNativeMenuBar(False)
 
@@ -73,20 +71,16 @@ class MainWindow(QMainWindow):
         self.mqtt_queue = []
         self.fulltopic_queue = []
 
-        # ensure TDM directory exists in the user directory
-        if not os.path.isdir("{}/TDM".format(QDir.homePath())):
-            os.mkdir("{}/TDM".format(QDir.homePath()))
-
-        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, 'tdm', 'tdm')
-        self.devices = QSettings(QSettings.IniFormat, QSettings.UserScope, 'tdm', 'devices')
+        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
+        self.devices = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "devices")
         self.setMinimumSize(QSize(1000, 600))
 
         # configure logging
         logging.basicConfig(
-            filename="{}/TDM/tdm.log".format(QDir.homePath()),
+            filename=os.path.join(QDir.tempPath(), "tdm.log"),
             level=self.settings.value("loglevel", "INFO"),
             datefmt="%Y-%m-%d %H:%M:%S",
-            format='%(asctime)s [%(levelname)s] %(message)s',
+            format="%(asctime)s [%(levelname)s] %(message)s",
         )
         logging.info("### TDM START ###")
 
@@ -99,7 +93,7 @@ class MainWindow(QMainWindow):
                 self.devices.value("device_name"),
             )
             device.debug = self.devices.value("debug", False, bool)
-            device.p['Mac'] = mac.replace("-", ":")
+            device.p["Mac"] = mac.replace("-", ":")
             device.env = self.env
             self.env.devices.append(device)
 
@@ -155,7 +149,7 @@ class MainWindow(QMainWindow):
         self.mqtt.messageSignal.connect(self.mqtt_message)
 
     def add_devices_tab(self):
-        self.devices_list = ListWidget(self)
+        self.devices_list = DevicesListWidget(self)
         sub = self.mdi.addSubWindow(self.devices_list)
         sub.setWindowState(Qt.WindowMaximized)
         self.devices_list.deviceSelected.connect(self.selectDevice)
@@ -165,7 +159,7 @@ class MainWindow(QMainWindow):
         self.devices_list.openWebUI.connect(self.openWebUI)
 
     def load_window_state(self):
-        wndGeometry = self.settings.value('window_geometry')
+        wndGeometry = self.settings.value("window_geometry")
         if wndGeometry:
             self.restoreGeometry(wndGeometry)
 
@@ -223,7 +217,7 @@ class MainWindow(QMainWindow):
         if state:
             if self.mqtt.state == self.mqtt.Connected:
                 for d in self.env.devices:
-                    self.mqtt.publish(d.cmnd_topic('STATUS'), payload=8)
+                    self.mqtt.publish(d.cmnd_topic("STATUS"), payload=8)
             self.auto_timer.setInterval(self.settings.value("autotelemetry", 5000, int))
             self.auto_timer.start()
         else:
@@ -238,17 +232,17 @@ class MainWindow(QMainWindow):
     def auto_telemetry(self):
         if self.mqtt.state == self.mqtt.Connected:
             for d in self.env.devices:
-                self.mqtt.publish(d.cmnd_topic('STATUS'), payload=8)
+                self.mqtt.publish(d.cmnd_topic("STATUS"), payload=8)
 
     def mqtt_connect(self):
         self.broker_tls = self.settings.value("tls", False, bool)
-        self.broker_tls_file = self.settings.value("tls_file", '', str)
+        self.broker_tls_file = self.settings.value("tls_file", "", str)
         self.broker_tls_insecure = self.settings.value("tls_insecure", False, bool)
         self.broker_tls_version = self.settings.value("tls_version")
-        self.broker_hostname = self.settings.value('hostname', 'localhost')
-        self.broker_port = self.settings.value('port', 1883, int)
-        self.broker_username = self.settings.value('username')
-        self.broker_password = self.settings.value('password')
+        self.broker_hostname = self.settings.value("hostname", "localhost")
+        self.broker_port = self.settings.value("port", 1883, int)
+        self.broker_username = self.settings.value("username")
+        self.broker_password = self.settings.value("password")
 
         if self.broker_tls:
             self.mqtt.setSSL(
@@ -276,11 +270,8 @@ class MainWindow(QMainWindow):
         self.actToggleConnect.setIcon(QIcon(":/connect.png"))
         self.actToggleConnect.setText("Disconnect")
         self.statusBar().showMessage(
-            "Connected to {}:{} as {}".format(
-                self.broker_hostname,
-                self.broker_port,
-                self.broker_username if self.broker_username else '[anonymous]',
-            )
+            f"Connected to {self.broker_hostname}:{self.broker_port} as "
+            f"{self.broker_username if self.broker_username else '[anonymous]'}"
         )
 
         self.mqtt_subscribe()
@@ -302,7 +293,7 @@ class MainWindow(QMainWindow):
 
         # check if custom patterns can be matched by default patterns
         for pat in custom_patterns:
-            if pat.startswith("%prefix%") or pat.split('/')[1] == "%prefix%":
+            if pat.startswith("%prefix%") or pat.split("/")[1] == "%prefix%":
                 continue  # do nothing, default subcriptions will match this topic
             else:
                 self.topics += expand_fulltopic(pat)
@@ -310,10 +301,10 @@ class MainWindow(QMainWindow):
         for d in self.env.devices:
             # if device has a non-standard pattern, check if the pattern is found in
             # the custom patterns
-            if not d.is_default() and d.p['FullTopic'] not in custom_patterns:
+            if not d.is_default() and d.p["FullTopic"] not in custom_patterns:
                 # if pattern is not found then add the device topics to subscription list.
                 # if the pattern is found, it will be matched without implicit subscription
-                self.topics += expand_fulltopic(d.p['FullTopic'])
+                self.topics += expand_fulltopic(d.p["FullTopic"])
 
         # passing a list of tuples as recommended by paho
         self.mqtt.subscribe([(topic, 0) for topic in self.topics])
@@ -341,7 +332,7 @@ class MainWindow(QMainWindow):
             4: "Bad username or password",
             5: "Not authorized",
         }
-        self.statusBar().showMessage("Connection error: {}".format(reason[rc]))
+        self.statusBar().showMessage(f"Connection error: {reason[rc]}")
         self.actToggleConnect.setChecked(False)
 
     def mqtt_message(self, topic, msg):
@@ -353,7 +344,7 @@ class MainWindow(QMainWindow):
                     msg = "Offline"
                 device.update_property("LWT", msg)
 
-                if msg == 'Online':
+                if msg == "Online":
                     # known device came online, query initial state
                     self.initial_query(device, True)
 
@@ -382,8 +373,8 @@ class MainWindow(QMainWindow):
                     )
                     if match:
                         # assume that the matched topic is the one configured in device settings
-                        possible_topic = match.groupdict().get('topic')
-                        if possible_topic not in ('tele', 'stat'):
+                        possible_topic = match.groupdict().get("topic")
+                        if possible_topic not in ("tele", "stat"):
                             # if the assumed topic is different from tele or stat, there is a chance
                             # that it's a valid topic. query the assumed device for its FullTopic.
                             # False positives won't reply.
@@ -402,7 +393,7 @@ class MainWindow(QMainWindow):
                 "FULLTOPIC"
             ):  # reply from an unknown device
                 # STAGE 2
-                full_topic = loads(msg).get('FullTopic')
+                full_topic = loads(msg).get("FullTopic")
                 if full_topic:
                     # the device replies with its FullTopic
                     # here the Topic is extracted using the returned FullTopic, identifying the
@@ -415,20 +406,20 @@ class MainWindow(QMainWindow):
                             "DISCOVERY: topic %s is matched by fulltopic %s", topic, full_topic
                         )
 
-                        d = self.env.find_device(topic=parsed['topic'])
+                        d = self.env.find_device(topic=parsed["topic"])
                         if d:
                             d.update_property("FullTopic", full_topic)
                         else:
                             logging.info(
                                 "DISCOVERY: Discovered topic=%s with fulltopic=%s",
-                                parsed['topic'],
+                                parsed["topic"],
                                 full_topic,
                             )
-                            d = TasmotaDevice(parsed['topic'], full_topic)
+                            d = TasmotaDevice(parsed["topic"], full_topic)
                             self.env.devices.append(d)
                             self.device_model.addDevice(d)
                             logging.debug(
-                                "DISCOVERY: Sending initial query to topic %s", parsed['topic']
+                                "DISCOVERY: Sending initial query to topic %s", parsed["topic"]
                             )
                             self.initial_query(d, True)
                             tele_topic = d.tele_topic("LWT")
@@ -444,19 +435,19 @@ class MainWindow(QMainWindow):
             if not fname.endswith(".csv"):
                 fname += ".csv"
 
-            with open(fname, "w", encoding='utf8') as f:
+            with open(fname, "w", encoding="utf8") as f:
                 column_titles = [
-                    'mac',
-                    'topic',
-                    'friendly_name',
-                    'full_topic',
-                    'cmnd_topic',
-                    'stat_topic',
-                    'tele_topic',
-                    'module',
-                    'module_id',
-                    'firmware',
-                    'core',
+                    "mac",
+                    "topic",
+                    "friendly_name",
+                    "full_topic",
+                    "cmnd_topic",
+                    "stat_topic",
+                    "tele_topic",
+                    "module",
+                    "module_id",
+                    "firmware",
+                    "core",
                 ]
                 c = csv.writer(f)
                 c.writerow(column_titles)
@@ -553,7 +544,7 @@ class MainWindow(QMainWindow):
         if self.device:
             tele_widget = TelemetryWidget(self.device)
             self.addDockWidget(Qt.RightDockWidgetArea, tele_widget)
-            self.mqtt_publish(self.device.cmnd_topic('STATUS'), "8")
+            self.mqtt_publish(self.device.cmnd_topic("STATUS"), "8")
 
     @pyqtSlot()
     def openConsole(self):
@@ -582,18 +573,19 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot()
     def openWebUI(self):
-        if self.device and self.device.p.get('IPAddress'):
-            url = QUrl("http://{}".format(self.device.p['IPAddress']))
+        if self.device and self.device.p.get("IPAddress"):
+            url = QUrl(f"http://{self.device.p['IPAddress']}")
 
             try:
                 webui = QWebEngineView()
                 webui.load(url)
 
                 frm_webui = QFrame()
-                frm_webui.setWindowTitle("WebUI [{}]".format(self.device.name))
+                frm_webui.setWindowTitle(f"WebUI [{self.device.name}]")
                 frm_webui.setFrameShape(QFrame.StyledPanel)
-                frm_webui.setLayout(VLayout(0))
-                frm_webui.layout().addWidget(webui)
+                vl = VLayout(0)
+                vl.addElements(webui)
+                frm_webui.setLayout(vl)
                 frm_webui.destroyed.connect(self.updateMDI)
 
                 self.mdi.addSubWindow(frm_webui)
@@ -601,7 +593,7 @@ class MainWindow(QMainWindow):
                 frm_webui.setWindowState(Qt.WindowMaximized)
 
             except NameError:
-                QDesktopServices.openUrl(QUrl("http://{}".format(self.device.p['IPAddress'])))
+                QDesktopServices.openUrl(QUrl(f"http://{self.device.p['IPAddress']}"))
 
     def updateMDI(self):
         if len(self.mdi.subWindowList()) == 1:
@@ -621,9 +613,9 @@ class MainWindow(QMainWindow):
         self.settings.sync()
 
         for d in self.env.devices:
-            mac = d.p.get('Mac')
-            topic = d.p['Topic']
-            full_topic = d.p['FullTopic']
+            mac = d.p.get("Mac")
+            topic = d.p["Topic"]
+            full_topic = d.p["FullTopic"]
             device_name = d.name
 
             if mac:
@@ -633,7 +625,7 @@ class MainWindow(QMainWindow):
                 self.devices.setValue("device_name", device_name)
 
                 for i, h in enumerate(d.history):
-                    self.devices.setValue("history/{}".format(i), h)
+                    self.devices.setValue(f"history/{i}", h)
                 self.devices.endGroup()
         self.devices.sync()
 
@@ -642,8 +634,6 @@ class MainWindow(QMainWindow):
 
 def start():
     app = QApplication(sys.argv)
-    # app.setOrganizationName("HRBL")
-    # app.setApplicationName("TDM")
     app.lastWindowClosed.connect(app.quit)
     app.setStyle("Fusion")
 
@@ -653,9 +643,13 @@ def start():
     sys.exit(app.exec_())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    # start()
     try:
         start()
     except Exception as e:  # noqa: 722
         logging.exception("EXCEPTION: %s", e)
-        logging.exception("TDM has crashed. Sorry for that. Check tdm.log for more information.")
+        print(
+            f"TDM has crashed. Sorry for that. Check {os.path.join(QDir.tempPath(), 'tdm.log')} "
+            f"for more information."
+        )

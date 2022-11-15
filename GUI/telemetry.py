@@ -44,7 +44,7 @@ class TelemetryWidget(QDockWidget):
         if not item:
             item = QTreeWidgetItem()
             item.setText(0, name)
-            item.setIcon(0, QIcon("GUI/icons/{}".format(item_icons.get(name, ""))))
+            item.setIcon(0, QIcon(f"GUI/icons/{item_icons.get(name, '')}"))
             self.tree.addTopLevelItem(item)
             self.tree_items[name] = item
         return item
@@ -57,7 +57,7 @@ class TelemetryWidget(QDockWidget):
             if not item:
                 item = QTreeWidgetItem()
                 item.setText(0, name)
-                item.setIcon(0, QIcon("GUI/icons/{}".format(item_icons.get(name, ""))))
+                item.setIcon(0, QIcon(f"GUI/icons/{item_icons.get(name, '')}"))
                 _top_item.addChild(item)
                 nested_items[name] = item
             return item
@@ -88,13 +88,11 @@ class TelemetryWidget(QDockWidget):
                 if isinstance(v, dict):
                     for nested_key, nested_v in v.items():
                         nested_item = self.get_nested_item(key, nested_key)
-                        nested_item.setText(
-                            1, "{} {}".format(nested_v, item_units.get(nested_key, ""))
-                        )
+                        nested_item.setText(1, f"{nested_v} {item_units.get(nested_key, '')}")
 
                 else:
                     item = self.get_top_item(key)
-                    item.setText(1, "{}".format(v))
+                    item.setText(1, v)
 
         self.tree.expandAll()
         self.tree.resizeColumnToContents(0)

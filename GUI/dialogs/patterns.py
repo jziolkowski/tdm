@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QTableWidgetItem,
 )
 
-from GUI import HLayout, VLayout
+from GUI.widgets import HLayout, VLayout
 
 
 class PatternsDialog(QDialog):
@@ -18,7 +18,7 @@ class PatternsDialog(QDialog):
         self.setMinimumWidth(400)
         self.setWindowTitle("Autodiscovery patterns")
 
-        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, 'tdm', 'tdm')
+        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
         self.settings.beginGroup("Patterns")
 
         vl = VLayout()
@@ -34,16 +34,14 @@ class PatternsDialog(QDialog):
             self.tw.insertRow(row)
             self.tw.setItem(row, 0, QTableWidgetItem(self.settings.value(k)))
 
-        vl.addWidgets(
-            [
-                QLabel(
-                    "Add your modified FullTopic patterns to enable auto-discovery of such devices"
-                    "\nPatterns MUST include %prefix%, %topic% and trailing /\n"
-                    "Default Tasmota FullTopics are built-in\n\n"
-                    "You have to reconnect to your Broker after topic changes."
-                ),
-                self.tw,
-            ]
+        vl.addElements(
+            QLabel(
+                "Add your modified FullTopic patterns to enable auto-discovery of such devices"
+                "\nPatterns MUST include %prefix%, %topic% and trailing /\n"
+                "Default Tasmota FullTopics are built-in\n\n"
+                "You have to reconnect to your Broker after topic changes."
+            ),
+            self.tw,
         )
 
         hl_btns = HLayout([0, 3, 0, 3])
@@ -51,7 +49,7 @@ class PatternsDialog(QDialog):
         btnDel = QPushButton("Delete")
         btnCancel = QPushButton("Cancel")
         btnSave = QPushButton("Save")
-        hl_btns.addWidgets([btnAdd, btnDel, btnSave, btnCancel])
+        hl_btns.addElements(btnAdd, btnDel, btnSave, btnCancel)
         hl_btns.insertStretch(2)
         vl.addLayout(hl_btns)
 
@@ -83,8 +81,8 @@ class PatternsDialog(QDialog):
         for r in range(self.tw.rowCount()):
             val = self.tw.item(r, 0).text()
             # check for trailing /
-            if not val.endswith('/'):
-                val += '/'
+            if not val.endswith("/"):
+                val += "/"
             self.settings.setValue(str(r), val)
         self.settings.endGroup()
         self.done(QDialog.Accepted)
