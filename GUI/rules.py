@@ -141,12 +141,9 @@ class RulesWidget(QWidget):
 
         # vl_helpers.addWidgets([self.gbPolling, self.gbVars, self.gbMems, self.gbRTs])
         vl_helpers.addElements(self.gbPolling, self.lwVars, self.lwMems, self.lwRTs)
-        vl_helpers.setStretch(1, 16)
-        vl_helpers.setStretch(2, 16)
-        vl_helpers.setStretch(3, 8)
+        vl_helpers.setStretches((1, 16), (2, 16), (3, 8))
         hl.addLayout(vl_helpers)
-        hl.setStretch(0, 3)
-        hl.setStretch(1, 1)
+        hl.setStretches((0, 3), (1, 1))
         # hl.setStretch(2, 1)
 
         vl.addLayout(hl)

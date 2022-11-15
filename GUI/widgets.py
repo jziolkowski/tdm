@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, Union
+from typing import Callable, List, Optional, Union, Tuple
 
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QFont
@@ -96,6 +96,10 @@ class LayoutMixin(QBoxLayout):
                 self.layout().addWidget(element)
             elif isinstance(element, QBoxLayout):
                 self.layout().addLayout(element)
+
+    def setStretches(self, *stretches: Tuple[int, int]):
+        for stretch in stretches:
+            self.layout().setStretch(stretch[0], stretch[1])
 
     def addSpacer(self):
         spacer = QWidget()
@@ -283,9 +287,7 @@ class SliderAction(QWidgetAction):
         self.slider.setObjectName(label)
         self.value = QLabel("0")
         hl.addElements(QLabel(label), self.slider, self.value)
-        hl.setStretch(0, 1)
-        hl.setStretch(1, 2)
-        hl.setStretch(2, 1)
+        hl.setStretches((0, 1), (1, 2), (2, 1))
         w.setLayout(hl)
         self.setDefaultWidget(w)
 
