@@ -437,9 +437,8 @@ class TasmotaDevice(QObject):
         self.p[k] = v  # store the new value
 
     def module(self):
-        mdl = self.p.get("Module")
-        if mdl:
-            return self.modules.get(str(mdl))
+        if mdl := self.p.get("Module"):
+            return self.modules.get(str(mdl), '')
 
         if self.p["LWT"] == "Online":
             return "Fetching module name..."

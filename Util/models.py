@@ -1,11 +1,34 @@
-from PyQt5.QtCore import QAbstractTableModel, QModelIndex, QSettings, QSize, Qt
-from PyQt5.QtGui import QColor, QIcon, QPen, QPixmap
+from enum import Enum, auto
+
+from PyQt5.QtCore import QAbstractTableModel, QModelIndex, QRect, QRectF, QSettings, QSize, Qt
+from PyQt5.QtGui import (
+    QColor,
+    QFont,
+    QFontMetrics,
+    QIcon,
+    QPainter,
+    QPainterPath,
+    QPalette,
+    QPen,
+    QPixmap,
+)
 from PyQt5.QtWidgets import QStyle, QStyledItemDelegate
 
-LWTRole = Qt.UserRole
-RestartReasonRole = Qt.UserRole + 1
-RSSIRole = Qt.UserRole + 2
-FirmwareRole = Qt.UserRole + 3
+
+class DeviceRoles(int, Enum):
+    LWTRole = Qt.UserRole
+    RestartReasonRole = auto()
+    RSSIRole = auto()
+    FirmwareRole = auto()
+    PowerRole = auto()
+    ColorRole = auto()
+    ModuleRole = auto()
+    HardwareRole = auto()
+
+
+class SetOptionRoles(int, Enum):
+    NrRole = Qt.UserRole
+    MetaRole = auto()
 
 
 class TasmotaDevicesModel(QAbstractTableModel):
@@ -34,13 +57,14 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
     def notify_change(self, d, key):
         row = self.tasmota_env.devices.index(d)
-        if key.startswith("POWER") and "Power" in self.columns:
-            power_idx = self.columns.index("Power")
-            idx = self.index(row, power_idx)
-            self.dataChanged.emit(idx, idx)
+        # if key.startswith("POWER") and "Power" in self.columns:
+        #     power_idx = self.columns.index("Power")
+        #     idx = self.index(row, power_idx)
+        #     self.dataChanged.emit(idx, idx)
 
-        elif key in ("RSSI", "LWT", "DeviceName", "FriendlyName1"):
-            idx = self.index(row, self.columns.index("Device"))
+        if key in ("RSSI", "LWT", "COLOR") or key.startswith("POWER"):
+            device_name_idx = self.columns.index("Device")
+            idx = self.index(row, device_name_idx)
             self.dataChanged.emit(idx, idx)
 
         elif key in self.columns:
@@ -129,21 +153,29 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
                 return val
 
-            elif role == LWTRole:
-                val = d.p.get("LWT", "Offline")
-                return val
+            elif role == DeviceRoles.LWTRole:
+                return d.p.get("LWT", "Offline")
 
-            elif role == RestartReasonRole:
-                val = d.p.get("RestartReason")
-                return val
+            elif role == DeviceRoles.RestartReasonRole:
+                return d.p.get("RestartReason")
 
-            elif role == RSSIRole:
-                val = int(d.p.get("RSSI", 0))
-                return val
+            elif role == DeviceRoles.RSSIRole:
+                return int(d.p.get("RSSI", 0))
 
-            elif role == FirmwareRole:
-                val = d.p.get("Version", "")
-                return val
+            elif role == DeviceRoles.FirmwareRole:
+                return d.p.get("Version", "")
+
+            elif role == DeviceRoles.PowerRole:
+                return d.power()
+
+            elif role == DeviceRoles.ColorRole:
+                return d.color()
+
+            elif role == DeviceRoles.ModuleRole:
+                return d.module()
+
+            elif role == DeviceRoles.HardwareRole:
+                return getattr(d.p, 'Hardware', 'ESP8266')
 
             elif role == Qt.TextAlignmentRole:
                 # Left-aligned columns
@@ -244,150 +276,257 @@ class DeviceDelegate(QStyledItemDelegate):
     def __init__(self):
         super(DeviceDelegate, self).__init__()
 
+        self.font_8pt = QFont()
+        self.font_8pt.setPointSize(8)
+
+        self.module_font = QFont(self.font_8pt)
+        self.module_font.setCapitalization(QFont.AllUppercase)
+        self.module_font.setWeight(75)
+
+        self.module_rect_h = 0
+        self.devicename_rect_h = 0
+        self.hardware_rect_h = 0
+
+        palette = QPalette()
+        self.mid_pen = QPen(palette.color(QPalette.Mid))
+        self.text_pen = QPen(palette.color(QPalette.Text))
+        self.hltext_pen = QPen(palette.color(QPalette.HighlightedText))
+
     def sizeHint(self, option, index):
-        col = index.column()
-        col_name = index.model().sourceModel().columns[col]
-        if col_name == "LWT":
-            return QSize(16, 28)
+        # col = index.column()
+        # col_name = index.model().sourceModel().columns[col]
 
-        elif col_name == "Power":
-            num = len(index.data().keys())
-            if num <= 4:
-                return QSize(24 * len(index.data().keys()), 28)
-            else:
-                return QSize(24 * 4, 48)
+        fm_module = QFontMetrics(self.module_font)
+        self.module_rect = fm_module.boundingRect(
+            option.rect, Qt.AlignCenter, index.data(DeviceRoles.ModuleRole)
+        )
+        self.module_rect_h = self.module_rect.height()
 
-        return QStyledItemDelegate.sizeHint(self, option, index)
+        fm_device = option.fontMetrics
+        self.devicename_rect = fm_device.boundingRect(option.rect, Qt.AlignCenter, "Ay")
+
+        fm_hardware = QFontMetrics(self.font_8pt)
+        self.hardware_rect = fm_hardware.boundingRect(
+            option.rect, Qt.AlignCenter, index.data(DeviceRoles.HardwareRole)
+        )
+        # print(self.hardware_rect)
+
+        heights = [self.devicename_rect.height(), self.module_rect.height()]
+
+        s = QSize(
+            QStyledItemDelegate().sizeHint(option, index).width(), 2 * len(heights) + sum(heights)
+        )
+        return s
 
     def paint(self, p, option, index):
-        if option.state & QStyle.State_Selected:
+        power_x = 0
+        selected = option.state & QStyle.State_Selected
+
+        if selected:
             p.fillRect(option.rect, option.palette.highlight())
+            mark_rect = QRect(option.rect)
+            mark_rect.setWidth(5)
+            # p.fillRect(mark_rect, QColor(index.row(), index.row(), index.row()))
+            pen = self.hltext_pen
+        else:
+            pen = self.text_pen
+        p.setPen(pen)
 
         col = index.column()
         col_name = index.model().sourceModel().columns[col]
 
         if col_name == "Device":
-            if index.data():
-                px = QPixmap(":/status_offline.png")
-                if index.data(LWTRole) == "Online":
-                    rssi = index.data(RSSIRole)
+            # draw signal strength icon
+            px = QPixmap(":/signal0.png")
+            if index.data(DeviceRoles.LWTRole) == "Online":
+                rssi = index.data(DeviceRoles.RSSIRole)
+                if 0 < rssi < 35:
+                    px = QPixmap(":/signal1.png")
 
-                    if rssi > 0 and rssi < 50:
-                        px = QPixmap(":/status_low.png")
+                elif rssi < 50:
+                    px = QPixmap(":/signal2.png")
 
-                    elif rssi < 75:
-                        px = QPixmap(":/status_medium.png")
+                elif rssi < 85:
+                    px = QPixmap(":/signal3.png")
 
-                    elif rssi >= 75:
-                        px = QPixmap(":/status_high.png")
+                elif rssi >= 85:
+                    px = QPixmap(":/signal4.png")
 
-                px_y = (option.rect.height() - 24) // 2
-                p.drawPixmap(option.rect.x() + 2, option.rect.y() + px_y, px.scaled(24, 24))
+                px_y = 2
+                px_rect = QRect(option.rect.x() + 2, option.rect.y() + px_y, 24, 24)
+                p.drawPixmap(px_rect, px.scaled(24, 24))
+                rssi_rect = QRect(
+                    option.rect.x() + 2, option.rect.y() + 2 + px_rect.height(), 24, 8
+                )
+                p.save()
+                p.setFont(self.font_8pt)
+                p.drawText(rssi_rect, Qt.AlignCenter, str(rssi))
+                p.restore()
+                # p.drawRect(px_rect)
+            # draw device friendly name (italic gray for offline)
+            p.save()
+            module_rect = option.rect.adjusted(28, 2, 0, 0)
+            module_rect.setHeight(self.module_rect_h)
 
-                p.drawText(
-                    option.rect.adjusted(28, 0, 0, 0), Qt.AlignVCenter | Qt.AlignLeft, index.data()
+            hardware_rect = QRect(
+                module_rect.right() + 2,
+                module_rect.top(),
+                module_rect.width(),
+                self.hardware_rect_h,
+            )
+
+            device_rect = QRect(
+                module_rect.left(),
+                module_rect.bottom() + 2,
+                module_rect.width(),
+                self.devicename_rect.height(),
+            )
+            for rect in [module_rect, device_rect, hardware_rect]:
+                p.drawRect(rect)
+
+            if index.data(DeviceRoles.LWTRole) != "Online":
+                pen = QPen(self.mid_pen)
+                font = QFont()
+                font.setItalic(True)
+                p.setFont(font)
+                p.setPen(pen)
+            p.setFont(self.module_font)
+            p.drawText(
+                module_rect, Qt.AlignVCenter | Qt.AlignLeft, f"{index.data(DeviceRoles.ModuleRole)}"
+            )
+            p.setFont(self.font_8pt)
+            p.setPen(self.mid_pen)
+            p.drawText(
+                hardware_rect,
+                Qt.AlignVCenter | Qt.AlignLeft,
+                str(index.data(DeviceRoles.HardwareRole)),
+            )
+            p.restore()
+            p.drawText(device_rect, Qt.AlignVCenter | Qt.AlignLeft, index.data())
+
+            alerts = []
+            if index.data(DeviceRoles.RestartReasonRole) == "Exception":
+                alerts.append("Exception")
+
+            if "minimal" in index.data(DeviceRoles.FirmwareRole).lower():
+                alerts.append("Minimal")
+
+            p.setRenderHint(QPainter.Antialiasing, True)
+            rect_h = 24
+            y = option.rect.y() + 0.5 + (option.rect.height() - rect_h) / 2
+            if alerts:
+                message = ", ".join(alerts)
+                p.save()
+
+                alerts_width = p.boundingRect(option.rect, Qt.AlignCenter, message).width() + 4
+                device_name_width = (
+                    36 + p.boundingRect(option.rect, Qt.AlignCenter, index.data()).width()
                 )
 
-                alerts = []
-                if index.data(RestartReasonRole) == "Exception":
-                    alerts.append("Exception")
+                exc_rect = QRectF(device_name_width, y, alerts_width, rect_h)
 
-                if "minimal" in index.data(FirmwareRole).lower():
-                    alerts.append("Minimal")
+                path = QPainterPath()
+                path.addRoundedRect(exc_rect, 3, 3)
 
-                if alerts:
-                    message = ", ".join(alerts)
-                    p.save()
-                    pen = QPen(p.pen())
-                    pen.setColor(QColor("red"))
-                    p.setPen(pen)
-                    text_width = p.boundingRect(option.rect, Qt.AlignCenter, message).width()
-                    exc_rect = option.rect.adjusted(option.rect.width() - text_width - 8, 4, -4, -4)
-                    p.drawText(exc_rect, Qt.AlignCenter, message)
-                    p.drawRect(exc_rect)
-                    p.restore()
+                inner_path = QPainterPath()
+                inner_path.addRoundedRect(exc_rect.adjusted(2, 2, -2, -2), 3, 3)
 
-        elif col_name == "RSSI":
-            if index.data():
-                rect = option.rect.adjusted(4, 4, -4, -4)
-                rssi = index.data()
-                pen = QPen(p.pen())
-
-                p.save()
-                if rssi > 0 and rssi < 50:
-                    color = QColor("#ef4522")
-                elif rssi > 75:
-                    color = QColor("#7eca27")
-                elif rssi > 0:
-                    color = QColor("#fcdd0f")
-                p.fillRect(rect.adjusted(2, 2, -1, -1), color)
-
-                p.drawText(rect, Qt.AlignCenter, str(rssi))
-
-                pen.setColor(QColor("#cccccc"))
+                if selected:
+                    pen = self.hltext_pen
+                else:
+                    pen = QPen(QColor("red"))
                 p.setPen(pen)
-                p.drawRect(rect)
+
+                p.drawPath(path)
+                p.drawText(exc_rect, Qt.AlignCenter, message)
                 p.restore()
 
-        elif col_name == "Power":
-            if isinstance(index.data(), dict):
-                num = len(index.data().keys())
+            # draw relay icons
+            power_data = index.data(DeviceRoles.PowerRole)
+            if isinstance(power_data, dict):
+                num = len(power_data.keys())
+                power_x = option.rect.right() - num * 27 - 2
 
-                if num <= 4:
-                    for i, k in enumerate(sorted(index.data().keys())):
-                        x = option.rect.x() + i * 24 + (option.rect.width() - num * 24) // 2
-                        y = option.rect.y() + (option.rect.height() - 24) // 2
+                for i, k in enumerate(sorted(power_data.keys())):
+                    rect = QRectF(power_x + 27 * i, y, rect_h, rect_h)
+                    path = QPainterPath()
+                    path.addRoundedRect(rect, 3, 3)
 
-                        if num == 1:
-                            p.drawPixmap(x, y, 24, 24, QPixmap(f":/P_{index.data()[k]}"))
+                    inner_path = QPainterPath()
+                    inner_path.addRoundedRect(rect.adjusted(2, 2, -2, -2), 3, 3)
 
-                        else:
-                            p.drawPixmap(x, y, 24, 24, QPixmap(f":/P{i + 1}_{index.data()[k]}"))
-
-                else:
-                    i = 0
-                    for row in range(2):
-                        for col in range(4):
-                            x = col * 24 + option.rect.x()
-                            y = option.rect.y() + row * 24
-
-                            if i < num:
-                                p.drawPixmap(
-                                    x,
-                                    y,
-                                    24,
-                                    24,
-                                    QPixmap(f":/P{i + 1}_{list(index.data().values())[i]}"),
-                                )
-                            i += 1
-
-        elif col_name == "Color":
-            if index.data():
-                rect = option.rect.adjusted(4, 4, -4, -4)
-                d = index.data()
-                pen = QPen(p.pen())
-
-                color = d.get("Color")
-                so = d.get(68)
-                if color and not so:
                     p.save()
+                    if power_data[k] == "ON":
+                        pen = self.hltext_pen
+                        p.setPen(pen)
+                        p.fillPath(inner_path, QColor("#8BC34A"))
+
+                    else:
+                        p.setPen(self.mid_pen)
+
+                    if num > 1:
+                        p.drawText(rect, Qt.AlignCenter, f"{i + 1}")
+
+                    p.setPen(self.mid_pen)
+                    p.drawPath(path)
+
+                    p.restore()
+
+            # draw color frame
+            color_data = index.data(DeviceRoles.ColorRole)
+            if isinstance(color_data, dict):
+                color = color_data.get("Color")
+                so = color_data.get(68)
+                if color and not so:
+                    rect = QRectF(power_x - 53, y, 50, rect_h)
+                    path = QPainterPath()
+                    path.addRoundedRect(rect, 3, 3)
+
+                    inner_path = QPainterPath()
+                    inner_path.addRoundedRect(rect.adjusted(2, 2, -2, -2), 3, 3)
+
                     if len(color) > 6:
                         color = color[:6]
-                    p.fillRect(rect.adjusted(2, 2, -1, -1), QColor(f"#{color}"))
-
-                    dimmer = d.get("Dimmer")
-                    if dimmer:
-                        if dimmer >= 60:
-                            pen.setColor(QColor("black"))
-                        else:
-                            pen.setColor(QColor("white"))
-                        p.setPen(pen)
-                        p.drawText(rect, Qt.AlignCenter, f"{dimmer}%")
-
-                    pen.setColor(QColor("#cccccc"))
-                    p.setPen(pen)
-                    p.drawRect(rect)
+                    p.fillPath(inner_path, QColor("#{}".format(color)))
+                    p.save()
+                    p.setPen(self.mid_pen)
+                    p.drawPath(path)
                     p.restore()
+
+                    dimmer = color_data.get("Dimmer")
+                    if dimmer:
+                        p.drawText(rect, Qt.AlignCenter, "{}%".format(dimmer))
+
+            p.setRenderHint(QPainter.Antialiasing, False)
+
+        # elif col_name == "Wifi.RSSI":
+        #     if index.data():
+        #         rect = option.rect.adjusted(4, 4, -4, -4)
+        #         rssi = index.data()
+        #         pen = QPen(p.pen())
+        #
+        #         p.save()
+        #
+        #         if 0 < rssi < 35:
+        #             color = QColor("#e74c3c")
+        #
+        #         elif rssi < 50:
+        #             color = QColor("#ec8826")
+        #
+        #         elif rssi < 85:
+        #             color = QColor("#f1c40f")
+        #
+        #         elif rssi >= 85:
+        #             color = QColor("#8bc34a")
+        #
+        #         p.fillRect(rect.adjusted(2, 2, -1, -1), color)
+        #
+        #         p.drawText(rect, Qt.AlignCenter, str(rssi))
+        #
+        #         pen.setColor(QColor("#cccccc"))
+        #         p.setPen(pen)
+        #         p.drawRect(rect)
+        #         p.restore()
 
         else:
             QStyledItemDelegate.paint(self, p, option, index)

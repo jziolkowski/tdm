@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, Union, Tuple
+from typing import Callable, List, Optional, Tuple, Union
 
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QFont
