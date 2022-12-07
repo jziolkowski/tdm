@@ -199,9 +199,10 @@ class DevicesListWidget(QWidget):
         self.agRelays.setVisible(False)
         self.agRelays.setExclusive(False)
 
-        for a in range(1, 9):
+        for a in range(1, 33):
             act = QAction(QIcon(f":/P{a}_OFF.png"), "")
-            act.setShortcut(f"F{a}")
+            if a <= 12:
+                act.setShortcut(f"F{a}")
             self.agRelays.addAction(act)
 
         self.agRelays.triggered.connect(self.toggle_power)
@@ -396,8 +397,7 @@ class DevicesListWidget(QWidget):
     def toggle_power(self, action):
         if self.device:
             idx = self.agRelays.actions().index(action)
-            relay = sorted(list(self.device.power().keys()))[idx]
-            self.mqtt.publish(self.device.cmnd_topic(relay), "toggle")
+            self.mqtt.publish(self.device.cmnd_topic(f'POWER{idx+1}'), "toggle")
 
     def toggle_power_all(self, action):
         if self.device:

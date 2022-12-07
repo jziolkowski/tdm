@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import sys
+from dataclasses import dataclass
 from json import loads
 
 from PyQt5.QtCore import QDir, QSettings, QSize, Qt, QTimer, QUrl, pyqtSlot
@@ -54,12 +55,19 @@ __version__ = "0.2.13"
 __tasmota_minimum__ = "6.6.0.17"
 
 
+@dataclass
+class CmdLineSettings:
+    config_location: str
+
+
 class MainWindow(QMainWindow):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, cmdline_settings: CmdLineSettings, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self._version = __version__
         self.setWindowIcon(QIcon(":/logo.png"))
         self.setWindowTitle(f"Tasmota Device Manager {self._version}")
+
+        self.cmdline_settings = cmdline_settings
 
         self.menuBar().setNativeMenuBar(False)
 
@@ -637,9 +645,17 @@ def start():
     app.lastWindowClosed.connect(app.quit)
     app.setStyle("Fusion")
 
-    MW = MainWindow()
-    MW.show()
+    config_location = ''
+    if len(sys.argv) > 1:
+        _config_location = sys.argv[1]
+        if not os.path.exists(_config_location):
+            os.mkdir(_config_location)
+        config_location = _config_location
 
+    cmdline_settings = CmdLineSettings(config_location=config_location)
+
+    MW = MainWindow(cmdline_settings)
+    MW.show()
     sys.exit(app.exec_())
 
 

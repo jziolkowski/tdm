@@ -562,7 +562,11 @@ class TasmotaDevice(QObject):
                             self.update_property(k, v)
 
     def power(self):
-        return {k: v for k, v in self.p.items() if k.startswith("POWER")}
+        power_dict = {k: v for k, v in self.p.items() if k.startswith("POWER")}
+        # if len(power_dict.keys()) > 1:
+        #     return OrderedDict(sorted(power_dict.items(),
+        #     key=lambda x: int(x[0].lstrip('POWER'))))
+        return power_dict
 
     def pulsetime(self):
         ptime = {}
