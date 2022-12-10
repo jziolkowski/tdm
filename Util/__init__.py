@@ -2,6 +2,7 @@ import logging
 import re
 from json import JSONDecodeError, loads
 
+from pkg_resources import parse_version
 from PyQt5.QtCore import QObject, pyqtSignal
 
 commands = [
@@ -322,6 +323,9 @@ def initial_commands():
     ]
     for pt in range(8):
         commands.append([f"pulsetime{pt + 1}", ""])
+    for sht in range(4):
+        commands.append([f"shutterrelay{sht + 1}", ""])
+        commands.append([f"shutterposition{sht + 1}", ""])
 
     return commands
 
@@ -563,10 +567,30 @@ class TasmotaDevice(QObject):
 
     def power(self):
         power_dict = {k: v for k, v in self.p.items() if k.startswith("POWER")}
-        # if len(power_dict.keys()) > 1:
-        #     return OrderedDict(sorted(power_dict.items(),
-        #     key=lambda x: int(x[0].lstrip('POWER'))))
-        return power_dict
+        relay_count = len(power_dict.keys())
+        if relay_count == 1:
+            return {1: power_dict.get('POWER1', power_dict.get('POWER', 'OFF'))}
+        if relay_count > 1:
+            relays = dict(
+                sorted({int(k.replace('POWER', '')): v for k, v in power_dict.items()}.items())
+            )
+            for shutter, shutter_relay in self.shutters().items():
+                if shutter_relay != 0:
+                    for s in range(shutter_relay, shutter_relay + 2):
+                        relays.pop(s, None)
+            return relays
+        return {}
+
+    def shutters(self):
+        return {
+            k: self.p[f"ShutterRelay{k}"]
+            for k in range(1, 5)
+            if f"ShutterRelay{k}" in self.p and self.p[f"ShutterRelay{k}"] != 0
+        }
+
+    def shutter_positions(self):
+        x = {k: self.p[f"Shutter{k}"] for k in range(1, 5) if f"Shutter{k}" in self.p}
+        return x
 
     def pulsetime(self):
         ptime = {}
@@ -625,6 +649,15 @@ class TasmotaDevice(QObject):
     @property
     def name(self):
         return self.p.get("DeviceName") or self.p.get("FriendlyName1", self.p["Topic"])
+
+    def version(self, short=True):
+        if version := self.p.get("Version"):
+            if short and '(' in version:
+                return parse_version(version[0 : version.index("(")])
+            return version
+
+    def version_above(self, target_version: str):
+        return (version := self.version()) and version >= parse_version(target_version) or False
 
     def __repr__(self):
         return f"<TasmotaDevice {self.name}: {self.p['Topic']}>"

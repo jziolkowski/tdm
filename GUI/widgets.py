@@ -1,7 +1,7 @@
 from typing import Callable, List, Optional, Tuple, Union
 
 from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import (
     QAction,
     QBoxLayout,
@@ -255,6 +255,11 @@ class Toolbar(QToolBar):
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.addWidget(spacer)
+
+    def add_action(self, icon: str, text: str, slot: Callable, shortcut: Optional[str] = None):
+        action = self.addAction(QIcon(icon), text, slot)
+        if shortcut:
+            action.setShortcut(shortcut)
 
 
 class ChannelSlider(QSlider):
