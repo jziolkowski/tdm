@@ -74,7 +74,7 @@ class DeviceDelegate(QStyledItemDelegate):
                 return 0
 
             hint_height = max(42, get_relays_height(), 6 + SHUTTER_RECT_SIZE.height())
-            return QSize(QStyledItemDelegate().sizeHint(option, index).height(), hint_height)
+            return QSize(QStyledItemDelegate().sizeHint(option, index).width(), hint_height)
         return QStyledItemDelegate().sizeHint(option, index)
 
     @staticmethod
