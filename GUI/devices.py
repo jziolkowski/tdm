@@ -273,8 +273,7 @@ class DevicesListWidget(QWidget):
     def ctx_menu_restart(self):
         if self.device:
             self.mqtt.publish(self.device.cmnd_topic("restart"), payload="1")
-            for k in list(self.device.power().keys()):
-                self.device.p.pop(k)
+            self.remove_power_items()
 
     def ctx_menu_reset(self):
         if self.device:
@@ -283,18 +282,22 @@ class DevicesListWidget(QWidget):
             )
             if ok:
                 self.mqtt.publish(self.device.cmnd_topic("reset"), payload=reset.split(":")[0])
-                for k in list(self.device.power().keys()):
-                    self.device.p.pop(k)
+                self.remove_power_items()
 
     def ctx_menu_refresh(self):
         if self.device:
-            for k in list(self.device.power().keys()):
-                self.device.p.pop(k)
+            self.remove_power_items()
 
             for c in initial_commands():
                 cmd, payload = c
                 cmd = self.device.cmnd_topic(cmd)
                 self.mqtt.publish(cmd, payload, 1)
+
+    def remove_power_items(self):
+        keys = self.device.power().keys()
+        self.device.p.pop("POWER", None)
+        for k in keys:
+            self.device.p.pop(f"POWER{k}", None)
 
     def ctx_menu_delete_device(self):
         if self.device:
@@ -407,7 +410,7 @@ class DevicesListWidget(QWidget):
     def move_shutter(self, action):
         idx = 1 + self.agShutters.actions().index(action)
         shutter = (idx + 1) // 2
-        action = "ShutterStopClose" if idx % 2 == 0 else "ShutterStopOpen"
+        action = "ShutterClose" if idx % 2 == 0 else "ShutterOpen"
         self.mqtt.publish(self.device.cmnd_topic(f"{action}{shutter}"))
 
     def set_color(self):

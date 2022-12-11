@@ -194,7 +194,6 @@ class DeviceDelegate(QStyledItemDelegate):
                 shutters_rect = self.get_item_rect(option, x_pos, shutter_rect_size)
 
                 if shutter_pos_data := index.data(DeviceRoles.ShutterPositionsRole):
-                    print(shutter_data, shutter_pos_data)
                     self.draw_shutters_state(p, shutters_rect, shutter_pos_data)
                 x_pos = shutters_rect.left() - 5
 
