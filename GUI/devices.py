@@ -1,7 +1,7 @@
 import os
 from json import dumps
 
-from PyQt5.QtCore import QDir, QSettings, QSize, QSortFilterProxyModel, Qt, QUrl, pyqtSignal
+from PyQt5.QtCore import QDir, QSettings, QSortFilterProxyModel, Qt, QUrl, pyqtSignal
 from PyQt5.QtGui import QColor, QIcon
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from PyQt5.QtWidgets import (
@@ -22,6 +22,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from GUI.common import ARROW_DN, ARROW_UP, make_relay_pixmap
 from GUI.delegates.devices import DeviceDelegate
 from GUI.dialogs import (
     ButtonsDialog,
@@ -82,7 +83,6 @@ class DevicesListWidget(QWidget):
         vl.addElements(self.tb, self.tb_relays)
 
         self.device_list = TableView()
-        self.device_list.setIconSize(QSize(24, 24))
         self.model = parent.device_model
         self.model.setupColumns(self.views["Home"])
 
@@ -166,8 +166,9 @@ class DevicesListWidget(QWidget):
         self.ctx_menu.addAction(QIcon(":/delete.png"), "Delete", self.ctx_menu_delete_device)
 
         self.agAllPower = QActionGroup(self)
-        self.agAllPower.addAction(QIcon(":/P_ON.png"), "All ON")
-        self.agAllPower.addAction(QIcon(":/P_OFF.png"), "All OFF")
+        for idx, label in enumerate(["ON", "OFF"]):
+            px = make_relay_pixmap(label, filled=not idx)
+            self.agAllPower.addAction(QIcon(px), f"All relays {label}")
         self.agAllPower.setEnabled(False)
         self.agAllPower.setExclusive(False)
         self.agAllPower.triggered.connect(self.toggle_power_all)
@@ -178,13 +179,26 @@ class DevicesListWidget(QWidget):
         self.agRelays.setExclusive(False)
 
         for a in range(1, 33):
-            act = QAction(f'{a}')
+            px = make_relay_pixmap(a)
+            act = QAction(QIcon(px), f'Relay {a} TOGGLE')
             if a <= 12:
                 act.setShortcut(f"F{a}")
             self.agRelays.addAction(act)
 
         self.agRelays.triggered.connect(self.toggle_power)
         self.tb_relays.addActions(self.agRelays.actions())
+
+        self.agShutters = QActionGroup(self)
+        self.agShutters.setVisible(False)
+        self.agShutters.setExclusive(False)
+        for shutter_idx in range(1, 5):
+            for idx, arrow in enumerate([ARROW_UP, ARROW_DN]):
+                px = make_relay_pixmap(arrow)
+                self.agShutters.addAction(
+                    QAction(QIcon(px), f"Shutter {shutter_idx} {'UP' if idx == 0 else 'DOWN'}")
+                )
+        self.agShutters.triggered.connect(self.move_shutter)
+        self.tb_relays.addActions(self.agShutters.actions())
 
         self.tb_relays.addSeparator()
         self.actColor = self.tb_relays.addAction(QIcon(":/color.png"), "Color", self.set_color)
@@ -334,26 +348,33 @@ class DevicesListWidget(QWidget):
 
     def select_device(self, idx):
         self.idx = self.sorted_device_model.mapToSource(idx)
-        self.device = self.model.deviceAtRow(self.idx.row())
+        self.device: TasmotaDevice = self.model.deviceAtRow(self.idx.row())
         self.deviceSelected.emit(self.device)
 
-        relays = self.device.power()
-        self.agAllPower.setEnabled(len(relays) >= 1)
+        self.agAllPower.setEnabled(False)
+        self.agRelays.setVisible(False)
+        self.agShutters.setVisible(False)
+        if relays := self.device.power():
+            self.agAllPower.setEnabled(True)
 
-        for i, a in enumerate(self.agRelays.actions()):
-            a.setVisible(len(relays) > 1 and i < len(relays))
+            for i, a in enumerate(self.agRelays.actions()):
+                a.setVisible(i + 1 in relays.keys())
 
-        color = self.device.color().get("Color", False)
-        has_color = bool(color)
-        self.actColor.setEnabled(has_color and not self.device.setoption(68))
+        if shutters := self.device.shutters():
+            for s in range(len(shutters.keys())):
+                self.agShutters.actions()[2 * s].setVisible(True)
+                self.agShutters.actions()[2 * s + 1].setVisible(True)
 
-        self.actChannels.setEnabled(has_color)
+        self.actColor.setEnabled(False)
+        self.actChannels.setEnabled(False)
+        if color := self.device.color():
+            self.actColor.setEnabled(not color[68])
+            self.actChannels.setEnabled(True)
 
-        if has_color:
             self.actChannels.menu().clear()
 
             max_val = 100
-            if self.device.setoption(15) == 0:
+            if color[15] == 0:
                 max_val = 1023
 
             for k, v in self.device.pwm().items():
@@ -363,8 +384,7 @@ class DevicesListWidget(QWidget):
                 self.mChannels.addAction(channel)
                 channel.slider.valueChanged.connect(self.set_channel)
 
-            dimmer = self.device.color().get("Dimmer")
-            if dimmer:
+            if dimmer := self.device.color().get("Dimmer"):
                 saDimmer = SliderAction(self, "Dimmer")
                 saDimmer.slider.setValue(int(dimmer))
                 self.mChannels.addAction(saDimmer)
@@ -384,10 +404,15 @@ class DevicesListWidget(QWidget):
                 for r in sorted(self.device.power().keys()):
                     self.mqtt.publish(self.device.cmnd_topic(r), idx ^ 1)
 
+    def move_shutter(self, action):
+        idx = 1 + self.agShutters.actions().index(action)
+        shutter = (idx + 1) // 2
+        action = "ShutterStopClose" if idx % 2 == 0 else "ShutterStopOpen"
+        self.mqtt.publish(self.device.cmnd_topic(f"{action}{shutter}"))
+
     def set_color(self):
         if self.device:
-            color = self.device.color().get("Color")
-            if color:
+            if color := self.device.color().get("Color"):
                 dlg = QColorDialog()
                 new_color = dlg.getColor(QColor(f"#{color}"))
                 if new_color.isValid():

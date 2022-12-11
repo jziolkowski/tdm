@@ -177,6 +177,8 @@ class TableView(QTableView):
         self.setSelectionBehavior(QTableView.SelectRows)
         self.setSelectionMode(QTableView.SingleSelection)
 
+        self.setIconSize(QSize(24, 24))
+
         self.setEditTriggers(self.NoEditTriggers)
 
     def setColumnTitles(self, titles):

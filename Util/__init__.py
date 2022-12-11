@@ -581,14 +581,14 @@ class TasmotaDevice(QObject):
             return relays
         return {}
 
-    def shutters(self):
+    def shutters(self) -> dict:
         return {
             k: self.p[f"ShutterRelay{k}"]
             for k in range(1, 5)
             if f"ShutterRelay{k}" in self.p and self.p[f"ShutterRelay{k}"] != 0
         }
 
-    def shutter_positions(self):
+    def shutter_positions(self) -> dict:
         x = {k: self.p[f"Shutter{k}"] for k in range(1, 5) if f"Shutter{k}" in self.p}
         return x
 
@@ -617,7 +617,8 @@ class TasmotaDevice(QObject):
 
     def color(self):
         color = {k: self.p[k] for k in ["Color", "Dimmer", "HSBColor"] if k in self.p.keys()}
-        color.update({17: self.setoption(17), 68: self.setoption(68)})
+        if color:
+            color.update({15: self.setoption(15), 17: self.setoption(17), 68: self.setoption(68)})
         return color
 
     def setoption(self, o):
@@ -649,6 +650,10 @@ class TasmotaDevice(QObject):
     @property
     def name(self):
         return self.p.get("DeviceName") or self.p.get("FriendlyName1", self.p["Topic"])
+
+    @property
+    def is_online(self):
+        return self.p.get("LWT", "Offline") == 'Online'
 
     def version(self, short=True):
         if version := self.p.get("Version"):

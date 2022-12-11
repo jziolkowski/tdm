@@ -70,100 +70,95 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
     def data(self, idx, role=Qt.DisplayRole):
         if idx.isValid():
-            row = idx.row()
-            col = idx.column()
-            col_name = self.columns[col]
+            row, col_name = idx.row(), self.columns[idx.column()]
             d: TasmotaDevice = self.tasmota_env.devices[row]
 
+            val = d.p.get(col_name, "")
+
             if role in [Qt.DisplayRole, Qt.EditRole]:
-                val = d.p.get(col_name, "")
-
                 if col_name == "Device":
-                    val = d.name
+                    return d.name
 
-                elif col_name == "Module":
+                if col_name == "Module":
                     if val == 0:
                         return d.p["Template"].get("NAME", "Fetching template name...")
                     else:
                         return d.module()
 
-                elif col_name == "Version" and val:
+                if col_name == "Version" and val:
                     if self.devices_short_version and "(" in val:
                         return val[0 : val.index("(")]
                     return val.replace("(", " (")
 
-                elif col_name in ("Uptime", "Downtime") and val:
-                    val = str(val)
+                if col_name in ("Uptime", "Downtime") and val:
+                    # val = str(val)
                     if val.startswith("0T"):
                         val = val.replace("0T", "")
-                    val = val.replace("T", "d ")
+                    return val.replace("T", "d ")
 
-                elif col_name == "Core" and val:
+                if col_name == "Core" and val:
                     return val.replace("_", ".")
 
-                elif col_name == "Time" and val:
+                if col_name == "Time" and val:
                     return val.replace("T", " ")
 
-                elif col_name == "Power":
+                if col_name == "Power":
                     return d.power()
 
-                elif col_name == "Color":
+                if col_name == "Color":
                     return d.color()
 
-                elif col_name == "CommandTopic":
+                if col_name == "CommandTopic":
                     return d.cmnd_topic()
 
-                elif col_name == "StatTopic":
+                if col_name == "StatTopic":
                     return d.stat_topic()
 
-                elif col_name == "TeleTopic":
+                if col_name == "TeleTopic":
                     return d.tele_topic()
 
-                elif col_name == "FallbackTopic":
+                if col_name == "FallbackTopic":
                     return f"cmnd/{d.p.get('MqttClient')}_fb/"
 
-                elif col_name == "BSSId":
-                    alias = self.settings.value(f"BSSId/{val}")
-                    if alias:
-                        return alias
+                if col_name == "BSSId" and (alias := self.settings.value(f"BSSId/{val}")):
+                    return alias
 
-                elif col_name == "RSSI":
-                    val = int(d.p.get("RSSI", 0))
-                    return val
+                if col_name == "RSSI":
+                    return int(d.p.get("RSSI", 0))
 
                 return val
 
-            elif role == DeviceRoles.LWTRole:
-                return d.p.get("LWT", "Offline") == 'Online'
+            if role == DeviceRoles.LWTRole:
+                return d.is_online
 
-            elif role == DeviceRoles.RestartReasonRole:
+            if role == DeviceRoles.RestartReasonRole:
                 return d.p.get("RestartReason")
 
-            elif role == DeviceRoles.RSSIRole:
+            if role == DeviceRoles.RSSIRole:
                 return int(d.p.get("RSSI", 0))
 
-            elif role == DeviceRoles.FirmwareRole:
+            if role == DeviceRoles.FirmwareRole:
                 return d.p.get("Version", "")
 
-            elif role == DeviceRoles.PowerRole:
+            if role == DeviceRoles.PowerRole:
                 return d.power()
 
-            elif role == DeviceRoles.ShuttersRole:
+            if role == DeviceRoles.ShuttersRole:
                 return d.shutters()
 
-            elif role == DeviceRoles.ShutterPositionsRole:
+            if role == DeviceRoles.ShutterPositionsRole:
                 return d.shutter_positions()
 
-            elif role == DeviceRoles.ColorRole:
+            if role == DeviceRoles.ColorRole:
                 return d.color()
 
-            elif role == DeviceRoles.ModuleRole:
+            if role == DeviceRoles.ModuleRole:
                 return d.module()
 
-            elif role == DeviceRoles.HardwareRole:
+            if role == DeviceRoles.HardwareRole:
                 return getattr(d.p, 'Hardware', 'ESP8266')
 
-            elif role == Qt.TextAlignmentRole:
+            if role == Qt.TextAlignmentRole:
                 # Left-aligned columns
                 if col_name in (
                     "Device",
@@ -175,53 +170,31 @@ class TasmotaDevicesModel(QAbstractTableModel):
                     return Qt.AlignLeft | Qt.AlignVCenter | Qt.TextWordWrap
 
                 # Right-aligned columns
-                elif col_name in ("Uptime"):
+                if col_name in ("Uptime"):
                     return Qt.AlignRight | Qt.AlignVCenter
+                return Qt.AlignCenter
 
-                else:
-                    return Qt.AlignCenter
+            if role == Qt.InitialSortOrderRole:
+                if val and col_name in ("Uptime", "Downtime"):
+                    days, hms = val.split("T")
+                    h, m, s = hms.split(":")
+                    return int(s) + int(m) * 60 + int(h) * 3600 + int(days) * 86400
+                return idx.data()
 
-            # elif role == Qt.DecorationRole and col_name == "Device":
-            #     if d.p["LWT"] == "Online":
-            #         rssi = int(d.p.get("RSSI", 0))
-            #
-            #         if 0 < rssi < 50:
-            #             return QIcon(":/status_low.png")
-            #
-            #         elif rssi < 75:
-            #             return QIcon(":/status_medium.png")
-            #
-            #         elif rssi >= 75:
-            #             return QIcon(":/status_high.png")
-            #
-            #     return QIcon(":/status_offline.png")
-
-            elif role == Qt.InitialSortOrderRole:
-                if col_name in ("Uptime", "Downtime"):
-                    val = d.p.get(col_name, "")
-                    if val:
-                        d, hms = val.split("T")
-                        h, m, s = hms.split(":")
-                        return int(s) + int(m) * 60 + int(h) * 3600 + int(d) * 86400
-                else:
-                    return idx.data()
-
-            elif role == Qt.ToolTipRole:
+            if role == Qt.ToolTipRole:
                 if col_name == "Version":
-                    val = d.p.get("Version")
-                    if val:
+                    if val := d.p.get("Version"):
                         return val[val.index("(") + 1 : val.index(")")]
                     return ""
 
-                elif col_name == "BSSId":
+                if col_name == "BSSId":
                     return d.p.get("BSSId")
 
-                elif col_name == "Device":
+                if col_name == "Device":
                     fns = [d.name]
 
                     for i in range(2, 5):
-                        fn = d.p.get(f"FriendlyName{i}")
-                        if fn:
+                        if fn := d.p.get(f"FriendlyName{i}"):
                             fns.append(fn)
                     return "\n".join(fns)
 

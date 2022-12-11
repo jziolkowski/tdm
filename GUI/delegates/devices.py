@@ -5,7 +5,16 @@ from PyQt5.QtCore import QPoint, QRect, QSize, Qt
 from PyQt5.QtGui import QColor, QFont, QPainter, QPalette, QPen, QPixmap
 from PyQt5.QtWidgets import QStyle, QStyledItemDelegate
 
-from GUI.common import ARROW_DN, ARROW_UP, RSSI_FULL, RSSI_GOOD, RSSI_LOW, RSSI_MEDIUM
+from GUI.common import (
+    ARROW_DN,
+    ARROW_UP,
+    GREEN,
+    RECT_SIZE,
+    RSSI_FULL,
+    RSSI_GOOD,
+    RSSI_LOW,
+    RSSI_MEDIUM,
+)
 from models.common import DeviceRoles
 
 
@@ -16,7 +25,6 @@ class RectSpacing:
 
 
 RECT_ADJUSTMENT = (2, 2, -1, -1)
-RECT_SIZE = QSize(24, 24)
 SHUTTER_RECT_SIZE = QSize(
     RECT_SIZE.width() * 3 + RectSpacing.h * 2, RECT_SIZE.height() * 2 + RectSpacing.v
 )
@@ -101,7 +109,7 @@ class DeviceDelegate(QStyledItemDelegate):
         p.save()
         if state == "ON":
             p.setPen(self.hltext_pen)
-            p.fillRect(inner_rect, QColor("#8BC34A"))
+            p.fillRect(inner_rect, GREEN)
 
         p.drawText(rect, Qt.AlignCenter, f'{relay}')
         p.restore()
@@ -276,7 +284,7 @@ class DeviceDelegate(QStyledItemDelegate):
             if direction != 0:
                 p.save()
                 p.setPen(self.hltext_pen)
-                p.fillRect(state_rect, QColor("#8BC34A"))
+                p.fillRect(state_rect, GREEN)
                 p.drawText(state_rect, Qt.AlignCenter, f"{arrow_direction[direction]}  {position}")
                 p.restore()
             else:
