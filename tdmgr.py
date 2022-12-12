@@ -23,6 +23,7 @@ from PyQt5.QtWidgets import (
 )
 
 from GUI.dialogs import ClearLWTDialog, PrefsDialog
+from models.devices import TasmotaDevicesModel
 
 try:
     from PyQt5.QtWebEngineWidgets import QWebEngineView
@@ -45,7 +46,6 @@ from Util import (
     initial_commands,
     parse_topic,
 )
-from Util.models import TasmotaDevicesModel
 from Util.mqtt import MqttClient
 
 # TODO: rework device export
@@ -639,7 +639,6 @@ def start():
 
     MW = MainWindow()
     MW.show()
-
     sys.exit(app.exec_())
 
 

@@ -79,12 +79,12 @@ class ConsoleWidget(QDockWidget):
 
         command_cpl.activated.connect(self.command.clear, Qt.QueuedConnection)
 
-        pbSave = QPushButton(QIcon("GUI/icons/save.png"), "")
+        pbSave = QPushButton(QIcon(":/save.png"), "")
         pbSave.setFlat(True)
         pbSave.setToolTip("Save console")
         pbSave.clicked.connect(self.save_console)
 
-        pbClear = QPushButton(QIcon("GUI/icons/clear.png"), "")
+        pbClear = QPushButton(QIcon(":/clear.png"), "")
         pbClear.setFlat(True)
         pbClear.setToolTip("Clear console")
         pbClear.clicked.connect(self.clear_console)

@@ -2,279 +2,9 @@ import logging
 import re
 from json import JSONDecodeError, loads
 
+from pkg_resources import parse_version
 from PyQt5.QtCore import QObject, pyqtSignal
 
-commands = [
-    "Backlog",
-    "BlinkCount",
-    "BlinkTime",
-    "ButtonDebounce",
-    "FanSpeed",
-    "Interlock",
-    "LedMask",
-    "LedPower",
-    "LedPower",
-    "LedState",
-    "Power",
-    "PowerOnState",
-    "PulseTime",
-    "SwitchDebounce",
-    "SwitchMode",
-    "Delay",
-    "Emulation",
-    "Event",
-    "FriendlyName",
-    "Gpios",
-    "Gpio",
-    "I2Cscan",
-    "LogHost",
-    "LogPort",
-    "Modules",
-    "Module",
-    "OtaUrl",
-    "Pwm",
-    "PwmFrequency",
-    "PwmRange",
-    "Reset",
-    "Restart",
-    "Template",
-    "SaveData",
-    "SerialLog",
-    "Sleep",
-    "State",
-    "Status",
-    "SysLog",
-    "Timezone",
-    "TimeSTD",
-    "TimeDST",
-    "Upgrade",
-    "Upload",
-    "WebLog",
-    "AP",
-    "Hostname",
-    "IPAddress1",
-    "IPAddress2",
-    "IPAddress3",
-    "IPAddress4",
-    "NtpServer",
-    "Password",
-    "Ssid",
-    "WebPassword",
-    "WebSend",
-    "WebServer",
-    "WebRefresh",
-    "WebColor",
-    "WifiConfig",
-    "ButtonRetain",
-    "ButtonTopic",
-    "FullTopic",
-    "GroupTopic",
-    "MqttClient",
-    "MqttFingerprint",
-    "MqttHost",
-    "MqttPassword",
-    "MqttPort",
-    "MqttRetry",
-    "MqttUser",
-    "PowerRetain",
-    "Prefix1",
-    "Prefix2",
-    "Prefix3",
-    "Publish",
-    "Publish2",
-    "SensorRetain",
-    "StateText1",
-    "StateText2",
-    "StateText3",
-    "StateText4",
-    "SwitchRetain",
-    "SwitchTopic",
-    "TelePeriod",
-    "Topic",
-    "Rule",
-    "RuleTimer",
-    "Mem",
-    "Var",
-    "Add",
-    "Sub",
-    "Mult",
-    "Scale",
-    "CalcRes",
-    "Latitude",
-    "Longitude",
-    "Timers",
-    "Timer",
-    "AdcParam",
-    "Altitude",
-    "AmpRes",
-    "Counter",
-    "CounterDebounce",
-    "CounterType",
-    "EnergyRes",
-    "HumRes",
-    "PressRes",
-    "Sensor13",
-    "Sensor15",
-    "Sensor20",
-    "Sensor27",
-    "Sensor34",
-    "TempRes",
-    "VoltRes",
-    "WattRes",
-    "WeightRes",
-    "AmpRes",
-    "CurrentHigh",
-    "CurrentLow",
-    "CurrentSet",
-    "EnergyRes",
-    "EnergyReset",
-    "EnergyReset1",
-    "EnergyReset2",
-    "EnergyReset3",
-    "FreqRes",
-    "FrequencySet",
-    "MaxPower",
-    "MaxPowerHold",
-    "MaxPowerWindow",
-    "PowerDelta",
-    "PowerHigh",
-    "PowerLow",
-    "PowerSet",
-    "Status",
-    "VoltageHigh",
-    "VoltageLow",
-    "VoltageSet",
-    "VoltRes",
-    "WattRes",
-    "Channel",
-    "Color",
-    "Color2",
-    "Color3",
-    "Color4",
-    "Color5",
-    "Color6",
-    "CT",
-    "Dimmer",
-    "Fade",
-    "HsbColor",
-    "HsbColor1",
-    "HsbColor2",
-    "HsbColor3",
-    "Led",
-    "LedTable",
-    "Pixels",
-    "Rotation",
-    "Scheme",
-    "Speed",
-    "Wakeup",
-    "WakeupDuration",
-    "White",
-    "Width1",
-    "Width2",
-    "Width3",
-    "Width4",
-    "RfCode",
-    "RfHigh",
-    "RfHost",
-    "RfKey",
-    "RfLow",
-    "RfRaw",
-    "RfSync",
-    "IRsend",
-    "IRhvac",
-    "SetOption0",
-    "SetOption1",
-    "SetOption2",
-    "SetOption3",
-    "SetOption4",
-    "SetOption8",
-    "SetOption10",
-    "SetOption11",
-    "SetOption12",
-    "SetOption13",
-    "SetOption15",
-    "SetOption16",
-    "SetOption17",
-    "SetOption18",
-    "SetOption19",
-    "SetOption20",
-    "SetOption21",
-    "SetOption24",
-    "SetOption26",
-    "SetOption28",
-    "SetOption29",
-    "SetOption30",
-    "SetOption31",
-    "SetOption32",
-    "SetOption33",
-    "SetOption34",
-    "SetOption36",
-    "SetOption37",
-    "SetOption38",
-    "SetOption51",
-    "SetOption52",
-    "SetOption53",
-    "SetOption54",
-    "SetOption55",
-    "SetOption56",
-    "SetOption57",
-    "SetOption58",
-    "SetOption59",
-    "SetOption60",
-    "SetOption61",
-    "SetOption62",
-    "SetOption63",
-    "SetOption64",
-    "Baudrate",
-    "SBaudrate",
-    "SerialDelimiter",
-    "SerialDelimiter",
-    "SerialSend",
-    "SerialSend2",
-    "SerialSend3",
-    "SerialSend4",
-    "SerialSend5",
-    "SSerialSend",
-    "SSerialSend2",
-    "SSerialSend3",
-    "SSerialSend4",
-    "SSerialSend5",
-    "MP3DAC",
-    "MP3Device",
-    "MP3EQ",
-    "MP3Pause",
-    "MP3Play",
-    "MP3Reset",
-    "MP3Stop",
-    "MP3Track",
-    "MP3Volume",
-    "DomoticzIdx",
-    "DomoticzKeyIdx",
-    "DomoticzSensorIdx",
-    "DomoticzSwitchIdx",
-    "DomoticzUpdateTimer",
-    "KnxTx_Cmnd",
-    "KnxTx_Val",
-    "KNX_ENABLED",
-    "KNX_ENHANCED",
-    "KNX_PA",
-    "KNX_GA",
-    "KNX_GA",
-    "KNX_CB",
-    "KNX_CB",
-    "Display",
-    "DisplayAddress",
-    "DisplayDimmer",
-    "DisplayMode",
-    "DisplayModel",
-    "DisplayRefresh",
-    "DisplaySize",
-    "DisplayRotate",
-    "DisplayText",
-    "DisplayCols",
-    "DisplayRows",
-    "DisplayFont",
-]
 
 prefixes = ["tele", "stat", "cmnd"]
 default_patterns = [
@@ -322,6 +52,9 @@ def initial_commands():
     ]
     for pt in range(8):
         commands.append([f"pulsetime{pt + 1}", ""])
+    for sht in range(4):
+        commands.append([f"shutterrelay{sht + 1}", ""])
+        commands.append([f"shutterposition{sht + 1}", ""])
 
     return commands
 
@@ -437,9 +170,8 @@ class TasmotaDevice(QObject):
         self.p[k] = v  # store the new value
 
     def module(self):
-        mdl = self.p.get("Module")
-        if mdl:
-            return self.modules.get(str(mdl))
+        if mdl := self.p.get("Module"):
+            return self.modules.get(str(mdl), '')
 
         if self.p["LWT"] == "Online":
             return "Fetching module name..."
@@ -563,7 +295,31 @@ class TasmotaDevice(QObject):
                             self.update_property(k, v)
 
     def power(self):
-        return {k: v for k, v in self.p.items() if k.startswith("POWER")}
+        power_dict = {k: v for k, v in self.p.items() if k.startswith("POWER")}
+        relay_count = len(power_dict.keys())
+        if relay_count == 1:
+            return {1: power_dict.get('POWER1', power_dict.get('POWER', 'OFF'))}
+        if relay_count > 1:
+            relays = dict(
+                sorted({int(k.replace('POWER', '')): v for k, v in power_dict.items()}.items())
+            )
+            for shutter, shutter_relay in self.shutters().items():
+                if shutter_relay != 0:
+                    for s in range(shutter_relay, shutter_relay + 2):
+                        relays.pop(s, None)
+            return relays
+        return {}
+
+    def shutters(self) -> dict:
+        return {
+            k: self.p[f"ShutterRelay{k}"]
+            for k in range(1, 5)
+            if f"ShutterRelay{k}" in self.p and self.p[f"ShutterRelay{k}"] != 0
+        }
+
+    def shutter_positions(self) -> dict:
+        x = {k: self.p[f"Shutter{k}"] for k in range(1, 5) if f"Shutter{k}" in self.p}
+        return x
 
     def pulsetime(self):
         ptime = {}
@@ -590,7 +346,8 @@ class TasmotaDevice(QObject):
 
     def color(self):
         color = {k: self.p[k] for k in ["Color", "Dimmer", "HSBColor"] if k in self.p.keys()}
-        color.update({17: self.setoption(17), 68: self.setoption(68)})
+        if color:
+            color.update({15: self.setoption(15), 17: self.setoption(17), 68: self.setoption(68)})
         return color
 
     def setoption(self, o):
@@ -622,6 +379,19 @@ class TasmotaDevice(QObject):
     @property
     def name(self):
         return self.p.get("DeviceName") or self.p.get("FriendlyName1", self.p["Topic"])
+
+    @property
+    def is_online(self):
+        return self.p.get("LWT", "Offline") == 'Online'
+
+    def version(self, short=True):
+        if version := self.p.get("Version"):
+            if short and '(' in version:
+                return parse_version(version[0 : version.index("(")])
+            return version
+
+    def version_above(self, target_version: str):
+        return (version := self.version()) and version >= parse_version(target_version) or False
 
     def __repr__(self):
         return f"<TasmotaDevice {self.name}: {self.p['Topic']}>"
