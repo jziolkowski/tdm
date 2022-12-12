@@ -232,33 +232,30 @@ class DeviceDelegate(QStyledItemDelegate):
         p.restore()
 
     def draw_relay_state(self, p: QPainter, target_rect: QRect, relay_data: dict):
-        def get_point():
-            return QPoint(
-                target_rect.x() + (RECT_SIZE.width() + RectSpacing.h) * relay_col,
-                target_rect.y() + RectSpacing.v * relay_row + relay_row * RECT_SIZE.height(),
-            )
-
         cols, _ = self.get_layout(relay_data)
         relay_row, relay_col = 0, 0
         for relay, relay_state in relay_data.items():
-            rect = QRect(get_point(), RECT_SIZE)
+            rect = QRect(self.get_point(target_rect, RECT_SIZE, relay_col, relay_row), RECT_SIZE)
             self.draw_relay_rect(p, rect, relay, relay_state)
             relay_col += 1
             if relay_col == cols:
                 relay_row += 1
                 relay_col = 0
 
-    def draw_shutters_state(self, p: QPainter, target_rect: QRect, shutter_pos_data: dict):
-        def get_point():
-            return QPoint(
-                target_rect.x() + (SHUTTER_RECT_SIZE.width() + RectSpacing.h) * shutter_col,
-                target_rect.y() + RectSpacing.v * shutter_row + shutter_row * RECT_SIZE.height(),
-            )
+    @staticmethod
+    def get_point(target_rect: QRect, item_size: QSize, col: int, row: int = 0):
+        return QPoint(
+            target_rect.x() + (item_size.width() + RectSpacing.h) * col,
+            target_rect.y() + RectSpacing.v * row + row * item_size.height(),
+        )
 
+    def draw_shutters_state(self, p: QPainter, target_rect: QRect, shutter_pos_data: dict):
         cols, _ = self.get_layout(shutter_pos_data)
-        shutter_row, shutter_col = 0, 0
+        shutter_col = 0
         for shutter, shutter_state in shutter_pos_data.items():
-            rect = QRect(get_point(), SHUTTER_RECT_SIZE)
+            rect = QRect(
+                self.get_point(target_rect, SHUTTER_RECT_SIZE, shutter_col), SHUTTER_RECT_SIZE
+            )
             title_rect = QRect(rect)
             title_rect.setHeight(RECT_SIZE.height())
 
@@ -290,6 +287,7 @@ class DeviceDelegate(QStyledItemDelegate):
                 p.drawText(state_rect, Qt.AlignCenter, f"{position}")
             for r in [title_rect, rect]:
                 p.drawRect(r)
+            shutter_col += 1
 
     def draw_rssi_rect(self, p: QPainter, rect, index):
         if index.data():
