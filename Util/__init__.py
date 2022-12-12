@@ -384,6 +384,11 @@ class TasmotaDevice(QObject):
     def is_online(self):
         return self.p.get("LWT", "Offline") == 'Online'
 
+    @property
+    def url(self):
+        if url := self.p.get("IPAddress", None):
+            return f"http://{url}"
+
     def version(self, short=True):
         if version := self.p.get("Version"):
             if short and '(' in version:

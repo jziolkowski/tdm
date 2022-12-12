@@ -573,27 +573,9 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot()
     def openWebUI(self):
-        if self.device and self.device.p.get("IPAddress"):
-            url = QUrl(f"http://{self.device.p['IPAddress']}")
+        if self.device and (url := self.device.url):
+            QDesktopServices.openUrl(QUrl(url))
 
-            try:
-                webui = QWebEngineView()
-                webui.load(url)
-
-                frm_webui = QFrame()
-                frm_webui.setWindowTitle(f"WebUI [{self.device.name}]")
-                frm_webui.setFrameShape(QFrame.StyledPanel)
-                vl = VLayout(0)
-                vl.addElements(webui)
-                frm_webui.setLayout(vl)
-                frm_webui.destroyed.connect(self.updateMDI)
-
-                self.mdi.addSubWindow(frm_webui)
-                self.mdi.setViewMode(QMdiArea.TabbedView)
-                frm_webui.setWindowState(Qt.WindowMaximized)
-
-            except NameError:
-                QDesktopServices.openUrl(QUrl(f"http://{self.device.p['IPAddress']}"))
 
     def updateMDI(self):
         if len(self.mdi.subWindowList()) == 1:
