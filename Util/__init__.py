@@ -5,7 +5,6 @@ from json import JSONDecodeError, loads
 from pkg_resources import parse_version
 from PyQt5.QtCore import QObject, pyqtSignal
 
-
 prefixes = ["tele", "stat", "cmnd"]
 default_patterns = [
     "%prefix%/%topic%/",  # = %prefix%/%topic% (Tasmota default)
@@ -383,6 +382,11 @@ class TasmotaDevice(QObject):
     @property
     def is_online(self):
         return self.p.get("LWT", "Offline") == 'Online'
+
+    @property
+    def url(self):
+        if url := self.p.get("IPAddress", None):
+            return f"http://{url}"
 
     def version(self, short=True):
         if version := self.p.get("Version"):
