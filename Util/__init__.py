@@ -5,7 +5,6 @@ from json import JSONDecodeError, loads
 from pkg_resources import parse_version
 from PyQt5.QtCore import QObject, pyqtSignal
 
-
 prefixes = ["tele", "stat", "cmnd"]
 default_patterns = [
     "%prefix%/%topic%/",  # = %prefix%/%topic% (Tasmota default)

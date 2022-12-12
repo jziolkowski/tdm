@@ -13,7 +13,6 @@ from PyQt5.QtWidgets import (
     QApplication,
     QDialog,
     QFileDialog,
-    QFrame,
     QInputDialog,
     QMainWindow,
     QMdiArea,
@@ -22,21 +21,14 @@ from PyQt5.QtWidgets import (
     QStatusBar,
 )
 
-from GUI.dialogs import ClearLWTDialog, PrefsDialog
-from models.devices import TasmotaDevicesModel
-
-try:
-    from PyQt5.QtWebEngineWidgets import QWebEngineView
-except ImportError:
-    pass
-
 from GUI import icons  # noqa: F401
 from GUI.console import ConsoleWidget
 from GUI.devices import DevicesListWidget
-from GUI.dialogs import BrokerDialog, BSSIdDialog, PatternsDialog
+from GUI.dialogs import BrokerDialog, BSSIdDialog, ClearLWTDialog, PatternsDialog, PrefsDialog
 from GUI.rules import RulesWidget
 from GUI.telemetry import TelemetryWidget
-from GUI.widgets import Toolbar, VLayout
+from GUI.widgets import Toolbar
+from models.devices import TasmotaDevicesModel
 from Util import (
     TasmotaDevice,
     TasmotaEnvironment,
@@ -575,7 +567,6 @@ class MainWindow(QMainWindow):
     def openWebUI(self):
         if self.device and (url := self.device.url):
             QDesktopServices.openUrl(QUrl(url))
-
 
     def updateMDI(self):
         if len(self.mdi.subWindowList()) == 1:
