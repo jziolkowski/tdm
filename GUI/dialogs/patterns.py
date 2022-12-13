@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
     QLabel,
     QPushButton,
     QTableWidget,
-    QTableWidgetItem,
+    QTableWidgetItem, QMessageBox,
 )
 
 from GUI.widgets import HLayout, VLayout
@@ -62,6 +62,27 @@ class PatternsDialog(QDialog):
         btnSave.clicked.connect(self.accept)
         btnCancel.clicked.connect(self.reject)
 
+        self.tw.cellChanged.connect(self.validate_pattern)
+
+    def validate_pattern(self, row, col):
+        val = self.tw.item(row, 0).text()
+        errors = []
+
+        if not val.endswith("/"):
+            errors.append("Missing trailing slash")
+
+        for required_token in ["%prefix%", "%topic%"]:
+            if required_token not in val:
+                errors.append(f"{required_token} is required in the pattern.")
+
+        for wrong_token in ["#", "$"]:
+            if wrong_token in val:
+                errors.append(f"Wrong character in pattern: {wrong_token}.")
+
+        if errors:
+            errors_str = '\n'.join(errors)
+            QMessageBox.critical(self, "Error", f"Problem(s) with pattern {val}:\n {errors_str}")
+
     def select(self, idx):
         self.idx = idx
 
@@ -80,9 +101,6 @@ class PatternsDialog(QDialog):
 
         for r in range(self.tw.rowCount()):
             val = self.tw.item(r, 0).text()
-            # check for trailing /
-            if not val.endswith("/"):
-                val += "/"
             self.settings.setValue(str(r), val)
         self.settings.endGroup()
         self.done(QDialog.Accepted)
