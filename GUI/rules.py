@@ -1,11 +1,13 @@
+import os
 import re
 from copy import deepcopy
 from json import JSONDecodeError, loads
 
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QDir, Qt, QTimer, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QColor, QFont, QIcon, QSyntaxHighlighter, QTextCharFormat
 from PyQt5.QtWidgets import (
     QComboBox,
+    QFileDialog,
     QInputDialog,
     QLabel,
     QListWidget,
@@ -15,15 +17,15 @@ from PyQt5.QtWidgets import (
 )
 
 from GUI.widgets import CheckableAction, GroupBoxH, GroupBoxV, HLayout, Toolbar, VLayout
+from Util import TasmotaDevice
 
 # TODO: triggers list
-# TODO: open/save rule from/to file
 
 
 class RulesWidget(QWidget):
     sendCommand = pyqtSignal(str, str)
 
-    def __init__(self, device, *args, **kwargs):
+    def __init__(self, device: TasmotaDevice, *args, **kwargs):
         super(RulesWidget, self).__init__(*args, **kwargs)
         self.device = device
         self.setWindowTitle(f"Rules [{self.device.name}]")
@@ -69,13 +71,16 @@ class RulesWidget(QWidget):
         self.actUpload = tb.addAction(QIcon(":/upload.png"), "Upload")
         self.actUpload.triggered.connect(self.upload_rule)
 
-        # tb.addSeparator()
-        # self.actLoad = tb.addAction(QIcon(":/open.png"), "Load...")
-        # self.actSave = tb.addAction(QIcon(":/save.png"), "Save...")
+        tb.addSeparator()
+        self.actLoad = tb.addAction(QIcon(":/open.png"), "Load...")
+        self.actLoad.triggered.connect(self.load_rule_from_file)
+        self.actSave = tb.addAction(QIcon(":/save.png"), "Save...")
+        self.actSave.triggered.connect(self.save_to_file)
 
         tb.addSpacer()
 
         self.counter = QLabel("Remaining: 511")
+        self.counter.setHidden(self.device.version_above('8.2.0.6'))
         tb.addWidget(self.counter)
 
         vl.addWidget(tb)
@@ -91,7 +96,7 @@ class RulesWidget(QWidget):
         self.editor = QPlainTextEdit()
         self.editor.setFont(fnt_mono)
         self.editor.setPlaceholderText("loading...")
-        self.editor.textChanged.connect(self.update_counter)
+        self.editor.textChanged.connect(self.rule_changed)
         self.gbEditor.addElements(self.editor)
 
         # hl.addWidgets([self.gbTriggers, self.gbEditor])
@@ -113,38 +118,30 @@ class RulesWidget(QWidget):
         self.gbPolling.addElements(self.pbPollVars, self.pbPollMems, self.pbPollRTs)
 
         # VARS
-        # self.gbVars = GroupBoxV("VARs")
         self.lwVars = QListWidget()
         self.lwVars.setAlternatingRowColors(True)
         self.lwVars.addItems([f"VAR{i}: <unknown>" for i in range(1, 17)])
         self.lwVars.clicked.connect(self.select_var)
         self.lwVars.doubleClicked.connect(self.set_var)
-        # self.gbVars.addWidget(self.lwVars)
 
         # MEMS
-        # self.gbMems = GroupBoxV("MEMs")
         self.lwMems = QListWidget()
         self.lwMems.setAlternatingRowColors(True)
         self.lwMems.addItems([f"MEM{i}: <unknown>" for i in range(1, 17)])
         self.lwMems.clicked.connect(self.select_mem)
         self.lwMems.doubleClicked.connect(self.set_mem)
-        # self.gbMems.addWidget(self.lwMems)
 
         # RuleTimers
-        # self.gbRTs = GroupBoxV("Rule timers")
         self.lwRTs = QListWidget()
         self.lwRTs.setAlternatingRowColors(True)
         self.lwRTs.addItems([f"RuleTimer{1}: <unknown>" for i in range(1, 9)])
         self.lwRTs.clicked.connect(self.select_rt)
         self.lwRTs.doubleClicked.connect(self.set_rt)
-        # self.gbRTs.addWidget(self.lwRTs)
 
-        # vl_helpers.addWidgets([self.gbPolling, self.gbVars, self.gbMems, self.gbRTs])
         vl_helpers.addElements(self.gbPolling, self.lwVars, self.lwMems, self.lwRTs)
         vl_helpers.setStretches((1, 16), (2, 16), (3, 8))
         hl.addLayout(vl_helpers)
         hl.setStretches((0, 3), (1, 1))
-        # hl.setStretch(2, 1)
 
         vl.addLayout(hl)
         self.setLayout(vl)
@@ -152,6 +149,24 @@ class RulesWidget(QWidget):
     def load_rule(self, text):
         self.editor.setPlaceholderText("loading...")
         self.sendCommand.emit(self.device.cmnd_topic(text), "")
+
+    def load_rule_from_file(self):
+        filename, ok = QFileDialog.getOpenFileName(
+            self, "Load rules from text file", QDir.homePath(), "Text files | *.txt"
+        )
+        if ok:
+            with open(filename, "r") as rules_file:
+                rule = self.unfold_rule(rules_file.read())
+                self.editor.setPlainText(rule)
+
+    def save_to_file(self):
+        new_fname = f"{self.device.name} {self.cbRule.currentText()}.txt"
+        file, ok = QFileDialog.getSaveFileName(
+            self, "Save rule", os.path.join(QDir.homePath(), new_fname), "Text files | *.txt"
+        )
+        if ok:
+            with open(file, "w") as f:
+                f.write(self.editor.toPlainText())
 
     def toggle_rule(self, state):
         self.sendCommand.emit(self.device.cmnd_topic(self.cbRule.currentText()), str(int(state)))
@@ -177,6 +192,9 @@ class RulesWidget(QWidget):
         if len(rule) == 0:
             rule = '""'
         self.sendCommand.emit(self.device.cmnd_topic(self.cbRule.currentText()), rule)
+
+    def rule_changed(self):
+        self.update_counter()
 
     def update_counter(self):
         self.counter.setText(f"Remaining: {511 - len(self.clean_rule())}")
@@ -234,19 +252,21 @@ class RulesWidget(QWidget):
             self.actEnabled.setChecked(payload["State"] == "ON")
         else:
             self.actEnabled.setChecked(payload[rule] == "ON")
-        rules = (
-            payload["Rules"]
-            .replace(" on ", "\non ")
-            .replace(" do ", " do\n\t")
-            .replace(" endon", "\nendon ")
-            .rstrip(" ")
-        )
+        rules = self.unfold_rule(payload["Rules"])
         if len(rules) == 0:
             self.editor.setPlaceholderText("rule buffer is empty")
         self.editor.setPlainText(rules)
 
         self.actOnce.setChecked(payload["Once"] == "ON")
         self.actStopOnError.setChecked(payload["StopOnError"] == "ON")
+
+    def unfold_rule(self, rules: str):
+        return (
+            rules.replace(" on ", "\non ")
+            .replace(" do ", " do\n\t")
+            .replace(" endon", "\nendon ")
+            .rstrip(" ")
+        )
 
     @pyqtSlot(str, str)
     def parseMessage(self, topic, msg):
