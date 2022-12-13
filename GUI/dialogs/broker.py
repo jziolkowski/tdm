@@ -2,7 +2,6 @@ import random
 import ssl
 import string
 
-from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -17,12 +16,12 @@ from GUI.widgets import HLayout, SpinBox, VLayout
 
 
 class BrokerDialog(QDialog):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, settings, *args, **kwargs):
         super(BrokerDialog, self).__init__(*args, **kwargs)
 
         self.setWindowTitle("MQTT Broker")
 
-        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
+        self.settings = settings
 
         gbtls = QGroupBox(" TLS [optional]")
         tlsLayout = QFormLayout()

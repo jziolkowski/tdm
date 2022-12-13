@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+import argparse
 import csv
 import logging
 import os
+import pathlib
 import re
 import sys
 from json import loads
@@ -47,7 +49,9 @@ __tasmota_minimum__ = "6.6.0.17"
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self, settings: QSettings, devices: QSettings, log_path: str, debug: bool, *args, **kwargs
+    ):
         super(MainWindow, self).__init__(*args, **kwargs)
         self._version = __version__
         self.setWindowIcon(QIcon(":/logo.png"))
@@ -63,17 +67,18 @@ class MainWindow(QMainWindow):
         self.mqtt_queue = []
         self.fulltopic_queue = []
 
-        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
-        self.devices = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "devices")
+        self.settings = settings
+        self.devices = devices
         self.setMinimumSize(QSize(1000, 600))
 
         # configure logging
         logging.basicConfig(
-            filename=os.path.join(QDir.tempPath(), "tdm.log"),
-            level=self.settings.value("loglevel", "INFO"),
+            filename=log_path,
+            level="DEBUG" if debug else "INFO",
             datefmt="%Y-%m-%d %H:%M:%S",
             format="%(asctime)s [%(levelname)s] %(message)s",
         )
+        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
         logging.info("### TDM START ###")
 
         # load devices from the devices file, create TasmotaDevices and add the to the environment
@@ -97,7 +102,7 @@ class MainWindow(QMainWindow):
 
             self.devices.endGroup()
 
-        self.device_model = TasmotaDevicesModel(self.env)
+        self.device_model = TasmotaDevicesModel(self.settings, self.devices, self.env)
 
         self.setup_mqtt()
         self.setup_main_layout()
@@ -201,7 +206,7 @@ class MainWindow(QMainWindow):
                 self.mqtt.publish(cmd, payload, 1)
 
     def setup_broker(self):
-        brokers_dlg = BrokerDialog()
+        brokers_dlg = BrokerDialog(self.settings)
         if brokers_dlg.exec_() == QDialog.Accepted and self.mqtt.state == self.mqtt.Connected:
             self.mqtt.disconnect()
 
@@ -463,10 +468,10 @@ class MainWindow(QMainWindow):
                     )
 
     def bssid(self):
-        BSSIdDialog().exec_()
+        BSSIdDialog(self.settings).exec_()
 
     def patterns(self):
-        PatternsDialog().exec_()
+        PatternsDialog(self.settings).exec_()
 
     # def openhab(self):
     #     OpenHABDialog(self.env).exec_()
@@ -486,7 +491,7 @@ class MainWindow(QMainWindow):
                     logging.info("MQTT: Cleared %s", topic)
 
     def prefs(self):
-        dlg = PrefsDialog()
+        dlg = PrefsDialog(self.settings)
         if dlg.exec_() == QDialog.Accepted:
 
             devices_short_version = self.settings.value("devices_short_version", True, bool)
@@ -541,7 +546,7 @@ class MainWindow(QMainWindow):
     @pyqtSlot()
     def openConsole(self):
         if self.device:
-            console_widget = ConsoleWidget(self.device)
+            console_widget = ConsoleWidget(self.settings, self.device)
             self.mqtt.messageSignal.connect(console_widget.consoleAppend)
             console_widget.sendCommand.connect(self.mqtt.publish)
             self.addDockWidget(Qt.BottomDockWidgetArea, console_widget)
@@ -605,20 +610,60 @@ class MainWindow(QMainWindow):
         e.accept()
 
 
-def start():
+def get_settings(args):
+    if args.local:
+        return QSettings("tdm.cfg", QSettings.IniFormat)
+    if args.config_location:
+        return QSettings(os.path.join(args.config_location, "tdm.cfg"), QSettings.IniFormat)
+    return QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
+
+
+def get_devices(args):
+    if args.local:
+        return QSettings("devices.cfg", QSettings.IniFormat)
+    if args.config_location:
+        return QSettings(os.path.join(args.config_location, "devices.cfg"), QSettings.IniFormat)
+    return QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "devices")
+
+
+def get_log_path(args):
+    if args.local:
+        return "tdm.log"
+    if args.log_location:
+        return os.path.join(args.log_location, "tdm.log")
+    return os.path.join(QDir.tempPath(), "tdm.log")
+
+
+def start(args):
     app = QApplication(sys.argv)
     app.lastWindowClosed.connect(app.quit)
     app.setStyle("Fusion")
 
-    MW = MainWindow()
+    settings, devices, log_path = get_settings(args), get_devices(args), get_log_path(args)
+    MW = MainWindow(settings, devices, log_path, args.debug)
     MW.show()
     sys.exit(app.exec_())
 
 
+def setup_parser():
+    parser = argparse.ArgumentParser(prog='Tasmota Device Manager')
+    parser.add_argument('--debug', action='store_true', help='Enable debugging')
+    parser.add_argument(
+        '--local',
+        action='store_true',
+        help='Store configuration and logs in the directory where TDM was started',
+    )
+    parser.add_argument('--config-location', type=pathlib.Path)
+    parser.add_argument('--log-location', type=pathlib.Path)
+    return parser
+
+
 if __name__ == "__main__":
+    parser = setup_parser()
+    args = parser.parse_args()
     # start()
     try:
-        start()
+        start(args)
     except Exception as e:  # noqa: 722
         logging.exception("EXCEPTION: %s", e)
         print(

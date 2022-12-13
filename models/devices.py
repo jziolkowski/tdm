@@ -1,14 +1,14 @@
-from PyQt5.QtCore import QAbstractTableModel, QModelIndex, QSettings, Qt
+from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt
 
 from models.common import DeviceRoles
 from Util import TasmotaDevice
 
 
 class TasmotaDevicesModel(QAbstractTableModel):
-    def __init__(self, tasmota_env):
+    def __init__(self, settings, devices, tasmota_env):
         super().__init__()
-        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
-        self.devices = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "devices")
+        self.settings = settings
+        self.devices = devices
         self.tasmota_env = tasmota_env
         self.columns = []
 

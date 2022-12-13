@@ -1,7 +1,7 @@
 import os
 from json import dumps
 
-from PyQt5.QtCore import QDir, QSettings, QSortFilterProxyModel, Qt, QUrl, pyqtSignal
+from PyQt5.QtCore import QDir, QSortFilterProxyModel, Qt, QUrl, pyqtSignal
 from PyQt5.QtGui import QColor, QIcon
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from PyQt5.QtWidgets import (
@@ -60,7 +60,7 @@ class DevicesListWidget(QWidget):
         self.nam = QNetworkAccessManager()
         self.backup = bytes()
 
-        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
+        self.settings = parent.settings
         views_order = self.settings.value("views_order", [])
 
         self.views = {}
