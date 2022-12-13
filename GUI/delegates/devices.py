@@ -121,7 +121,7 @@ class DeviceDelegate(QStyledItemDelegate):
         return QRect(
             QPoint(
                 x_pos - size.width(),
-                option.rect.top() + (option.rect.height() - size.height()) / 2,
+                option.rect.top() + (option.rect.height() - size.height()) // 2,
             ),
             size,
         )
@@ -223,7 +223,7 @@ class DeviceDelegate(QStyledItemDelegate):
             rssi = index.data(DeviceRoles.RSSIRole)
             px = get_pixmap_for_rssi(rssi)
 
-        px_y = option.rect.y() + (option.rect.height() - 38) / 2
+        px_y = option.rect.y() + (option.rect.height() - 38) // 2
         px_rect = QRect(option.rect.x() + 2, px_y, 24, 24)
         p.drawPixmap(px_rect, px.scaled(24, 24))
         rssi_rect = QRect(option.rect.x() + 2, px_rect.y() + px_rect.height() + 2, 24, 12)
