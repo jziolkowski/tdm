@@ -166,9 +166,10 @@ class DevicesListWidget(QWidget):
         self.ctx_menu.addAction(QIcon(":/delete.png"), "Delete", self.ctx_menu_delete_device)
 
         self.agAllPower = QActionGroup(self)
-        for idx, label in enumerate(["ON", "OFF"]):
-            px = make_relay_pixmap(label, filled=not idx)
-            self.agAllPower.addAction(QIcon(px), f"All relays {label}")
+        for label, shortcut, fill in [("ON", "Ctrl+F1", True), ("OFF", "Ctrl+F2", False)]:
+            px = make_relay_pixmap(label, filled=fill)
+            act = self.agAllPower.addAction(QIcon(px), f"All relays {label}")
+            act.setShortcut(shortcut)
         self.agAllPower.setEnabled(False)
         self.agAllPower.setExclusive(False)
         self.agAllPower.triggered.connect(self.toggle_power_all)
@@ -181,7 +182,7 @@ class DevicesListWidget(QWidget):
         for a in range(1, 33):
             px = make_relay_pixmap(a)
             act = QAction(QIcon(px), f'Relay {a} TOGGLE')
-            if a <= 12:
+            if a <= 8:
                 act.setShortcut(f"F{a}")
             self.agRelays.addAction(act)
 
