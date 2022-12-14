@@ -1,4 +1,3 @@
-from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import (
     QDialog,
     QHeaderView,
@@ -12,13 +11,13 @@ from GUI.widgets import HLayout, VLayout
 
 
 class PatternsDialog(QDialog):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, settings, *args, **kwargs):
         super(PatternsDialog, self).__init__(*args, **kwargs)
         self.setMinimumHeight(400)
         self.setMinimumWidth(400)
         self.setWindowTitle("Autodiscovery patterns")
 
-        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
+        self.settings = settings
         self.settings.beginGroup("Patterns")
 
         vl = VLayout()
