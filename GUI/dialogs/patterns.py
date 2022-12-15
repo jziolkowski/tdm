@@ -1,11 +1,4 @@
-from PyQt5.QtWidgets import (
-    QDialog,
-    QHeaderView,
-    QLabel,
-    QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
-)
+from PyQt5.QtWidgets import QDialog, QInputDialog, QLabel, QListWidget, QMessageBox, QPushButton
 
 from GUI.widgets import HLayout, VLayout
 
@@ -21,17 +14,13 @@ class PatternsDialog(QDialog):
         self.settings.beginGroup("Patterns")
 
         vl = VLayout()
-        cols = ["Pattern"]
-        self.tw = QTableWidget(0, 1)
-        self.tw.setHorizontalHeaderLabels(cols)
-        self.tw.verticalHeader().hide()
-
-        self.tw.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.lw = QListWidget()
+        self.lw.setAlternatingRowColors(True)
 
         for k in self.settings.childKeys():
-            row = self.tw.rowCount()
-            self.tw.insertRow(row)
-            self.tw.setItem(row, 0, QTableWidgetItem(self.settings.value(k)))
+            self.lw.addItem(self.settings.value(k))
+        self.lw.sortItems()
+        self.settings.endGroup()
 
         vl.addElements(
             QLabel(
@@ -40,7 +29,7 @@ class PatternsDialog(QDialog):
                 "Default Tasmota FullTopics are built-in\n\n"
                 "You have to reconnect to your Broker after topic changes."
             ),
-            self.tw,
+            self.lw,
         )
 
         hl_btns = HLayout([0, 3, 0, 3])
@@ -54,34 +43,57 @@ class PatternsDialog(QDialog):
 
         self.setLayout(vl)
 
-        self.idx = None
-        self.tw.clicked.connect(self.select)
+        self.row = None
+        self.lw.clicked.connect(self.select)
         btnAdd.clicked.connect(self.add)
         btnDel.clicked.connect(self.delete)
         btnSave.clicked.connect(self.accept)
         btnCancel.clicked.connect(self.reject)
 
+    @staticmethod
+    def validate_pattern(pattern):
+        errors = []
+
+        if not pattern.endswith("/"):
+            errors.append("Missing trailing slash")
+
+        for required_token in ["%prefix%", "%topic%"]:
+            if required_token not in pattern:
+                errors.append(f"{required_token} is required in the pattern.")
+
+        for wrong_token in ["#", "$"]:
+            if wrong_token in pattern:
+                errors.append(f"Wrong character in pattern: {wrong_token}.")
+
+        return errors
+
     def select(self, idx):
-        self.idx = idx
+        self.row = idx.row()
 
     def add(self):
-        row = self.tw.rowCount()
-        self.tw.insertRow(row)
-        self.tw.setItem(row, 0, QTableWidgetItem("%prefix%/%topic%/"))
+        pattern, ok = QInputDialog.getText(
+            self, "Add pattern", "Add new discovery pattern", text="%prefix%/%topic%/"
+        )
+        if ok:
+            if errors := self.validate_pattern(pattern):
+                errors_str = '\n'.join(errors)
+                QMessageBox.critical(
+                    self, "Error", f"Problem(s) with pattern {pattern}:\n{errors_str}"
+                )
+            else:
+                self.lw.addItem(pattern)
+                self.lw.sortItems()
 
     def delete(self):
-        if self.idx:
-            self.tw.removeRow(self.idx.row())
+        if self.row is not None:
+            self.lw.takeItem(self.row)
 
     def accept(self):
+        self.settings.beginGroup("Patterns")
         for k in self.settings.childKeys():
             self.settings.remove(k)
 
-        for r in range(self.tw.rowCount()):
-            val = self.tw.item(r, 0).text()
-            # check for trailing /
-            if not val.endswith("/"):
-                val += "/"
-            self.settings.setValue(str(r), val)
+        for row, pattern in enumerate([self.lw.item(x).text() for x in range(self.lw.count())]):
+            self.settings.setValue(str(row), pattern)
         self.settings.endGroup()
         self.done(QDialog.Accepted)
