@@ -370,8 +370,9 @@ class MainWindow(QMainWindow):
                     )
                     if match:
                         # assume that the matched topic is the one configured in device settings
-                        possible_topic = match.groupdict().get("topic")
-                        if possible_topic not in ("tele", "stat"):
+                        if (
+                            possible_topic := match.groupdict().get("topic")
+                        ) and possible_topic not in ("tele", "stat"):
                             # if the assumed topic is different from tele or stat, there is a chance
                             # that it's a valid topic. query the assumed device for its FullTopic.
                             # False positives won't reply.
