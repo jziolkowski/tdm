@@ -1,3 +1,6 @@
+import struct
+from socket import inet_aton
+
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt
 
 from models.common import DeviceRoles
@@ -175,10 +178,13 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 return Qt.AlignCenter
 
             if role == Qt.InitialSortOrderRole:
-                if val and col_name in ("Uptime", "Downtime"):
-                    days, hms = val.split("T")
-                    h, m, s = hms.split(":")
-                    return int(s) + int(m) * 60 + int(h) * 3600 + int(days) * 86400
+                if val:
+                    if col_name in ("Uptime", "Downtime"):
+                        days, hms = val.split("T")
+                        h, m, s = hms.split(":")
+                        return int(s) + int(m) * 60 + int(h) * 3600 + int(days) * 86400
+                    if col_name in ("IPAddress", "Gateway") or col_name.startswith("DNSServer"):
+                        return struct.unpack("!L", inet_aton(val))[0]
                 return idx.data()
 
             if role == Qt.ToolTipRole:
