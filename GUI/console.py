@@ -5,7 +5,6 @@ from PyQt5.QtCore import (
     QDir,
     QEvent,
     QRegExp,
-    QSettings,
     QSize,
     QStringListModel,
     Qt,
@@ -36,13 +35,13 @@ class ConsoleWidget(QDockWidget):
 
     sendCommand = pyqtSignal(str, str)
 
-    def __init__(self, device, *args, **kwargs):
+    def __init__(self, settings, device, *args, **kwargs):
         super().__init__()
         self.setAllowedAreas(Qt.BottomDockWidgetArea)
         self.setWindowTitle(f"Console [{device.name}]")
         self.device = device
 
-        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
+        self.settings = settings
 
         console_font_size = self.settings.value("console_font_size", 9, int)
         console_font.setPointSize(console_font_size)

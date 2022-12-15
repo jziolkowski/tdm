@@ -1,16 +1,16 @@
-from PyQt5.QtCore import QSettings, Qt
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QFormLayout, QGroupBox
 
 from GUI.widgets import SpinBox, VLayout
 
 
 class PrefsDialog(QDialog):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, settings, *args, **kwargs):
         super(PrefsDialog, self).__init__(*args, **kwargs)
         self.setWindowTitle("Preferences")
         # self.setMinimumSize(QSize(300, 200))
 
-        self.settings = QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
+        self.settings = settings
 
         self.devices_short_version = self.settings.value("devices_short_version", True, bool)
 
