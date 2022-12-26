@@ -7,8 +7,9 @@ import pathlib
 import re
 import sys
 from json import loads
+from logging.handlers import TimedRotatingFileHandler
 
-from PyQt5.QtCore import QDir, QSettings, QSize, Qt, QTimer, QUrl, pyqtSlot
+from PyQt5.QtCore import QDir, QFileInfo, QSettings, QSize, Qt, QTimer, QUrl, pyqtSlot
 from PyQt5.QtGui import QDesktopServices, QFont, QIcon
 from PyQt5.QtWidgets import (
     QAction,
@@ -73,12 +74,15 @@ class MainWindow(QMainWindow):
 
         # configure logging
         logging.basicConfig(
-            filename=log_path,
+            # filename=log_path,
             level="DEBUG" if debug else "INFO",
             datefmt="%Y-%m-%d %H:%M:%S",
             format="%(asctime)s [%(levelname)s] %(message)s",
         )
-        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+        # logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+        logging.getLogger().addHandler(
+            TimedRotatingFileHandler(filename=log_path, when="d", interval=1)
+        )
         logging.info("### TDM START ###")
 
         # load devices from the devices file, create TasmotaDevices and add the to the environment
@@ -185,6 +189,9 @@ class MainWindow(QMainWindow):
         mSettings.addAction(QIcon(), "BSSId aliases", self.bssid)
         mSettings.addSeparator()
         mSettings.addAction(QIcon(), "Preferences", self.prefs)
+        mSettings.addSeparator()
+        mSettings.addAction(QIcon(), "Open config file", self.open_config_file)
+        mSettings.addAction(QIcon(), "Open log file location", self.open_log_location)
 
         # mExport = self.menuBar().addMenu("Export")
         # mExport.addAction(QIcon(), "OpenHAB", self.openhab)
@@ -521,6 +528,14 @@ class MainWindow(QMainWindow):
                     c.console.setFont(new_font)
 
         self.settings.sync()
+
+    def open_config_file(self):
+        QDesktopServices.openUrl(QUrl.fromLocalFile(self.settings.fileName()))
+
+    @staticmethod
+    def open_log_location():
+        fi = QFileInfo(logging.getLogger().handlers[1].baseFilename)
+        QDesktopServices.openUrl(QUrl.fromLocalFile(fi.absolutePath()))
 
     def auto_telemetry_period(self):
         curr_val = self.settings.value("autotelemetry", 5000, int)
