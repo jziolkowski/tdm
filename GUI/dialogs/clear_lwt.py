@@ -4,10 +4,10 @@ from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidget, QListWidgetI
 from GUI.widgets import VLayout
 
 
-class ClearLWTDialog(QDialog):
+class ClearRetainedDialog(QDialog):
     def __init__(self, env, *args, **kwargs):
-        super(ClearLWTDialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle("Clear obsolete retained LWTs")
+        super(ClearRetainedDialog, self).__init__(*args, **kwargs)
+        self.setWindowTitle("Clear retained topics")
         self.setMinimumSize(QSize(320, 480))
 
         self.env = env
@@ -21,8 +21,8 @@ class ClearLWTDialog(QDialog):
 
         self.lw = QListWidget()
 
-        for lwt in self.env.lwts:
-            itm = QListWidgetItem(lwt)
+        for topic in self.env.retained:
+            itm = QListWidgetItem(topic)
             itm.setCheckState(Qt.Unchecked)
             self.lw.addItem(itm)
 
