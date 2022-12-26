@@ -96,12 +96,12 @@ class TasmotaEnvironment(object):
     def __init__(self):
         self.devices = []
         self.lwts = []
+        self.retained = set()
 
     def find_device(self, topic):
         for d in self.devices:
             if d.matches(topic):
                 return d
-        return None
 
 
 class TasmotaDevice(QObject):
@@ -147,7 +147,9 @@ class TasmotaDevice(QObject):
             return f"{self.build_topic('cmnd')}/{command}"
         return self.build_topic("cmnd")
 
-    def stat_topic(self):
+    def stat_topic(self, command=""):
+        if command:
+            return f"{self.build_topic('stat')}/{command}"
         return self.build_topic("stat")
 
     def tele_topic(self, endpoint=""):

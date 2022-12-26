@@ -26,7 +26,7 @@ from PyQt5.QtWidgets import (
 from GUI import icons  # noqa: F401
 from GUI.console import ConsoleWidget
 from GUI.devices import DevicesListWidget
-from GUI.dialogs import BrokerDialog, BSSIdDialog, ClearLWTDialog, PatternsDialog, PrefsDialog
+from GUI.dialogs import BrokerDialog, BSSIdDialog, ClearRetainedDialog, PatternsDialog, PrefsDialog
 from GUI.rules import RulesWidget
 from GUI.telemetry import TelemetryWidget
 from GUI.widgets import Toolbar
@@ -44,7 +44,7 @@ from Util.mqtt import MqttClient
 
 # TODO: rework device export
 
-__version__ = "0.2.13"
+__version__ = "0.3"
 __tasmota_minimum__ = "6.6.0.17"
 
 
@@ -171,7 +171,7 @@ class MainWindow(QMainWindow):
         mMQTT.addAction(QIcon(), "Autodiscovery patterns", self.patterns)
 
         mMQTT.addSeparator()
-        mMQTT.addAction(QIcon(), "Clear obsolete retained LWTs", self.clear_LWT)
+        mMQTT.addAction(QIcon(), "Clear retained topics", self.clear_retained_topics)
 
         mMQTT.addSeparator()
         mMQTT.addAction(QIcon(), "Auto telemetry period", self.auto_telemetry_period)
@@ -332,8 +332,10 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Connection error: {reason[rc]}")
         self.actToggleConnect.setChecked(False)
 
-    def mqtt_message(self, topic, msg):
+    def mqtt_message(self, topic, msg, retained):
         # try to find a device by matching known FullTopics against the MQTT topic of the message
+        if retained:
+            self.env.retained.add(topic)
         device = self.env.find_device(topic)
         if device:
             if topic.endswith("LWT"):
@@ -480,15 +482,15 @@ class MainWindow(QMainWindow):
     def showSubs(self):
         QMessageBox.information(self, "Subscriptions", "\n".join(sorted(self.topics)))
 
-    def clear_LWT(self):
-        dlg = ClearLWTDialog(self.env)
-        if dlg.exec_() == ClearLWTDialog.Accepted:
+    def clear_retained_topics(self):
+        dlg = ClearRetainedDialog(self.env)
+        if dlg.exec_() == ClearRetainedDialog.Accepted:
             for row in range(dlg.lw.count()):
                 itm = dlg.lw.item(row)
                 if itm.checkState() == Qt.Checked:
                     topic = itm.text()
                     self.mqtt.publish(topic, retain=True)
-                    self.env.lwts.remove(topic)
+                    self.env.retained.remove(topic)
                     logging.info("MQTT: Cleared %s", topic)
 
     def prefs(self):

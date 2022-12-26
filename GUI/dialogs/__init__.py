@@ -2,7 +2,7 @@ from GUI.console import ConsoleWidget
 from GUI.dialogs.broker import BrokerDialog
 from GUI.dialogs.bssid import BSSIdDialog
 from GUI.dialogs.buttons import ButtonsDialog
-from GUI.dialogs.clear_lwt import ClearLWTDialog
+from GUI.dialogs.clear_lwt import ClearRetainedDialog
 from GUI.dialogs.gpio import GPIODialog
 from GUI.dialogs.modules import ModulesDialog
 from GUI.dialogs.patterns import PatternsDialog
@@ -17,7 +17,7 @@ __all__ = [
     "BrokerDialog",
     "BSSIdDialog",
     "ButtonsDialog",
-    "ClearLWTDialog",
+    "ClearRetainedDialog",
     "ConsoleWidget",
     "GPIODialog",
     "ModulesDialog",

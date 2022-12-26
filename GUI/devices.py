@@ -152,9 +152,6 @@ class DevicesListWidget(QWidget):
         self.ctx_menu.addAction(QIcon(":/refresh.png"), "Refresh", self.ctx_menu_refresh)
 
         self.ctx_menu.addSeparator()
-        self.ctx_menu.addAction(
-            QIcon(":/clear.png"), "Clear retained", self.ctx_menu_clear_retained
-        )
         self.ctx_menu.addAction("Clear Backlog", self.ctx_menu_clear_backlog)
         self.ctx_menu.addSeparator()
         self.ctx_menu.addAction(QIcon(":/copy.png"), "Copy", self.ctx_menu_copy)
@@ -258,13 +255,6 @@ class DevicesListWidget(QWidget):
             if string.startswith('"') and string.endswith('"'):
                 string = string[1:-1]
             QApplication.clipboard().setText(string)
-
-    def ctx_menu_clear_retained(self):
-        if self.device:
-            if (relays := self.device.power()) and len(relays.keys()) > 0:
-                for r in relays.keys():
-                    self.mqtt.publish(self.device.cmnd_topic(r), retain=True)
-            QMessageBox.information(self, "Clear retained", "Cleared retained messages.")
 
     def ctx_menu_clear_backlog(self):
         if self.device:
