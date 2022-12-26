@@ -43,8 +43,6 @@ from Util import (
 )
 from Util.mqtt import MqttClient
 
-# TODO: rework device export
-
 __version__ = "0.3"
 __tasmota_minimum__ = "6.6.0.17"
 
@@ -74,12 +72,10 @@ class MainWindow(QMainWindow):
 
         # configure logging
         logging.basicConfig(
-            # filename=log_path,
             level="DEBUG" if debug else "INFO",
             datefmt="%Y-%m-%d %H:%M:%S",
             format="%(asctime)s [%(levelname)s] %(message)s",
         )
-        # logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
         logging.getLogger().addHandler(
             TimedRotatingFileHandler(filename=log_path, when="d", interval=1)
         )
@@ -192,9 +188,6 @@ class MainWindow(QMainWindow):
         mSettings.addSeparator()
         mSettings.addAction(QIcon(), "Open config file", self.open_config_file)
         mSettings.addAction(QIcon(), "Open log file location", self.open_log_location)
-
-        # mExport = self.menuBar().addMenu("Export")
-        # mExport.addAction(QIcon(), "OpenHAB", self.openhab)
 
     def build_toolbars(self):
         main_toolbar = Toolbar(
