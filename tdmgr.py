@@ -128,7 +128,7 @@ class MainWindow(QMainWindow):
         if self.settings.value("connect_on_startup", False, bool):
             self.actToggleConnect.trigger()
 
-        self.tele_docks = {}
+        self.tele_docks = []
         self.consoles = []
 
     def setup_main_layout(self):
@@ -552,7 +552,11 @@ class MainWindow(QMainWindow):
         if self.device:
             tele_widget = TelemetryWidget(self.device)
             self.addDockWidget(Qt.RightDockWidgetArea, tele_widget)
-            self.mqtt_publish(self.device.cmnd_topic("STATUS"), "8")
+            self.mqtt_publish(self.device.cmnd_topic("STATUS"), "10")
+            self.tele_docks.append(tele_widget)
+            self.resizeDocks(
+                self.tele_docks, [100 // len(self.tele_docks) for _ in self.tele_docks], Qt.Vertical
+            )
 
     @pyqtSlot()
     def openConsole(self):
@@ -563,6 +567,9 @@ class MainWindow(QMainWindow):
             self.addDockWidget(Qt.BottomDockWidgetArea, console_widget)
             console_widget.command.setFocus()
             self.consoles.append(console_widget)
+            self.resizeDocks(
+                self.consoles, [100 // len(self.consoles) for _ in self.consoles], Qt.Horizontal
+            )
 
     @pyqtSlot()
     def openRulesEditor(self):
