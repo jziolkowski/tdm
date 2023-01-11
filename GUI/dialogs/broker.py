@@ -2,15 +2,7 @@ import random
 import ssl
 import string
 
-from PyQt5.QtWidgets import (
-    QCheckBox,
-    QComboBox,
-    QDialog,
-    QFormLayout,
-    QGroupBox,
-    QLineEdit,
-    QPushButton,
-)
+from PyQt5.QtWidgets import QCheckBox, QComboBox, QDialog, QFormLayout, QGroupBox, QLineEdit, QPushButton
 
 from GUI.widgets import HLayout, SpinBox, VLayout
 
@@ -48,7 +40,7 @@ class BrokerDialog(QDialog):
         hfl = QFormLayout()
         self.hostname = QLineEdit()
         self.hostname.setText(self.settings.value("hostname", "localhost"))
-        self.port = SpinBox(maximum=65535)
+        self.port = SpinBox(minimum=0, maximum=65535)
         self.port.setValue(self.settings.value("port", 1883, int))
         hfl.addRow("Hostname", self.hostname)
         hfl.addRow("Port", self.port)

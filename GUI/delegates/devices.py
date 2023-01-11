@@ -5,16 +5,7 @@ from PyQt5.QtCore import QPoint, QRect, QSize, Qt
 from PyQt5.QtGui import QColor, QFont, QPainter, QPalette, QPen, QPixmap
 from PyQt5.QtWidgets import QStyle, QStyledItemDelegate
 
-from GUI.common import (
-    ARROW_DN,
-    ARROW_UP,
-    GREEN,
-    RECT_SIZE,
-    RSSI_FULL,
-    RSSI_GOOD,
-    RSSI_LOW,
-    RSSI_MEDIUM,
-)
+from GUI.common import ARROW_DN, ARROW_UP, GREEN, RECT_SIZE, RSSI_FULL, RSSI_GOOD, RSSI_LOW, RSSI_MEDIUM
 from models.common import DeviceRoles
 
 
@@ -25,9 +16,7 @@ class RectSpacing:
 
 
 RECT_ADJUSTMENT = (2, 2, -1, -1)
-SHUTTER_RECT_SIZE = QSize(
-    RECT_SIZE.width() * 3 + RectSpacing.h * 2, RECT_SIZE.height() * 2 + RectSpacing.v
-)
+SHUTTER_RECT_SIZE = QSize(RECT_SIZE.width() * 3 + RectSpacing.h * 2, RECT_SIZE.height() * 2 + RectSpacing.v)
 
 
 def get_pixmap_for_rssi(rssi: int) -> QPixmap:
@@ -166,9 +155,7 @@ class DeviceDelegate(QStyledItemDelegate):
                 p.save()
 
                 alerts_width = p.boundingRect(option.rect, Qt.AlignCenter, message).width() + 8
-                device_name_width = (
-                    40 + p.boundingRect(option.rect, Qt.AlignCenter, index.data()).width()
-                )
+                device_name_width = 40 + p.boundingRect(option.rect, Qt.AlignCenter, index.data()).width()
 
                 exc_rect = QRect(device_name_width, y, alerts_width, RECT_SIZE.height())
                 if selected:
@@ -253,9 +240,7 @@ class DeviceDelegate(QStyledItemDelegate):
         cols, _ = self.get_layout(shutter_pos_data)
         shutter_col = 0
         for shutter, shutter_state in shutter_pos_data.items():
-            rect = QRect(
-                self.get_point(target_rect, SHUTTER_RECT_SIZE, shutter_col), SHUTTER_RECT_SIZE
-            )
+            rect = QRect(self.get_point(target_rect, SHUTTER_RECT_SIZE, shutter_col), SHUTTER_RECT_SIZE)
             title_rect = QRect(rect)
             title_rect.setHeight(RECT_SIZE.height())
 

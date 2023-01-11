@@ -28,9 +28,7 @@ class SwitchesDialog(QDialog):
             cw = Command(cmd, commands[cmd], self.device.p.get(cmd))
             vl_cmd.addWidget(cw)
             self.command_widgets[cmd] = cw
-        self.sm = CommandMultiSelect(
-            "SwitchMode", commands["SwitchMode"], self.device.p.get("SwitchMode")
-        )
+        self.sm = CommandMultiSelect("SwitchMode", commands["SwitchMode"], self.device.p.get("SwitchMode"))
         vl_cmd.addWidget(self.sm)
         vl_cmd.addStretch(1)
 

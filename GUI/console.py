@@ -1,17 +1,7 @@
 import os
 from datetime import datetime
 
-from PyQt5.QtCore import (
-    QDir,
-    QEvent,
-    QRegExp,
-    QSize,
-    QStringListModel,
-    Qt,
-    QTime,
-    pyqtSignal,
-    pyqtSlot,
-)
+from PyQt5.QtCore import QDir, QEvent, QRegExp, QSize, QStringListModel, Qt, QTime, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QColor, QFont, QIcon, QSyntaxHighlighter, QTextCharFormat
 from PyQt5.QtWidgets import (
     QComboBox,
@@ -108,9 +98,7 @@ class ConsoleWidget(QDockWidget):
 
         self.cbMQTTLog.currentIndexChanged.connect(self.change_mqttlog)
 
-        hl_command_mqttlog.addElements(
-            self.command, pbSave, pbClear, QLabel("MQTT Log level"), self.cbMQTTLog
-        )
+        hl_command_mqttlog.addElements(self.command, pbSave, pbClear, QLabel("MQTT Log level"), self.cbMQTTLog)
 
         vl.addElements(self.console, hl_command_mqttlog)
 
@@ -257,9 +245,7 @@ class DeviceConsoleHistory(QDialog):
 
         self.lwCommands = QListWidget()
 
-        vl.addElements(
-            gbxDevice, self.lwCommands, QLabel("Double-click a command to use it, ESC to close.")
-        )
+        vl.addElements(gbxDevice, self.lwCommands, QLabel("Double-click a command to use it, ESC to close."))
         self.setLayout(vl)
 
         gbDevice.currentIndexChanged.connect(self.load_history)

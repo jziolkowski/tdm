@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import (
     QBoxLayout,
     QComboBox,
     QDoubleSpinBox,
+    QFormLayout,
     QFrame,
     QGroupBox,
     QHBoxLayout,
@@ -94,7 +95,7 @@ class LayoutMixin(QBoxLayout):
         for element in elements:
             if isinstance(element, QWidget):
                 self.layout().addWidget(element)
-            elif isinstance(element, QBoxLayout):
+            elif isinstance(element, (QBoxLayout, QFormLayout)):
                 self.layout().addLayout(element)
 
     def setStretches(self, *stretches: Tuple[int, int]):
@@ -142,9 +143,7 @@ class GroupBoxBase(QGroupBox):
 
 
 class GroupBoxV(GroupBoxBase):
-    def __init__(
-        self, title: str, margin: Union[int, List[int]] = 3, spacing: int = 3, *args, **kwargs
-    ):
+    def __init__(self, title: str, margin: Union[int, List[int]] = 3, spacing: int = 3, *args, **kwargs):
         super(GroupBoxV, self).__init__(title, *args, **kwargs)
 
         layout = VLayout(margin, spacing)
@@ -152,13 +151,24 @@ class GroupBoxV(GroupBoxBase):
 
 
 class GroupBoxH(GroupBoxBase):
-    def __init__(
-        self, title: str, margin: Union[int, List[int]] = 3, spacing: int = 3, *args, **kwargs
-    ):
+    def __init__(self, title: str, margin: Union[int, List[int]] = 3, spacing: int = 3, *args, **kwargs):
         super(GroupBoxH, self).__init__(title, *args, **kwargs)
 
         layout = HLayout(margin, spacing)
         self.setLayout(layout)
+
+
+class GroupBoxFL(QGroupBox):
+    def __init__(self, title: str, margin: Union[int, List[int]] = 3, spacing: int = 3, *args, **kwargs):
+        super(GroupBoxFL, self).__init__(title, *args, **kwargs)
+
+        layout = QFormLayout()
+        layout.setSpacing(spacing)
+
+        self.setLayout(layout)
+
+    def addRow(self, label: str, item):
+        self.layout().addRow(label, item)
 
 
 class TableView(QTableView):
@@ -214,10 +224,13 @@ class TableView(QTableView):
 
 class SpinBox(QSpinBox):
     def __init__(self, *args, **kwargs):
-        super(SpinBox, self).__init__(*args, **kwargs)
+        super(SpinBox, self).__init__(*args)
         self.setButtonSymbols(self.NoButtons)
-        self.setMinimum(kwargs.get("minimum", 1))
-        self.setMaximum(kwargs.get("maximum", 65535))
+        minimum = kwargs.get("minimum", 0)
+        self.setMinimum(minimum)
+        if maximum := kwargs.get("maximum", None):
+            self.setMaximum(maximum)
+        self.setValue(kwargs.get('default', minimum))
         self.setSingleStep(kwargs.get("singleStep", 1))
         self.setAlignment(Qt.AlignCenter)
 
@@ -338,9 +351,7 @@ class Command(QWidget):
         if meta["type"] == "select":
             self.input = QComboBox()
             for k, v in meta["parameters"].items():
-                self.input.addItem(
-                    f"{v['description']} {'(default)' if v.get('default') else ''}", k
-                )
+                self.input.addItem(f"{v['description']} {'(default)' if v.get('default') else ''}", k)
 
             if meta.get("editable"):
                 self.input.setEditable(True)
@@ -349,9 +360,7 @@ class Command(QWidget):
                 self.input.setCurrentIndex(value)
 
         elif meta["type"] == "value":
-            self.input = SpinBox(
-                minimum=int(meta["parameters"]["min"]), maximum=int(meta["parameters"]["max"])
-            )
+            self.input = SpinBox(minimum=int(meta["parameters"]["min"]), maximum=int(meta["parameters"]["max"]))
             self.input.setMinimumWidth(75)
             if value:
                 self.input.setValue(value)
@@ -494,9 +503,7 @@ class PulseTime(QWidget):
 
         vl_groups = VLayout(0)
         for k in sorted(list(value.keys())):
-            sb = SpinBox(
-                minimum=int(meta["parameters"]["min"]), maximum=int(meta["parameters"]["max"])
-            )
+            sb = SpinBox(minimum=int(meta["parameters"]["min"]), maximum=int(meta["parameters"]["max"]))
             sb.setValue(value[k])
             hl_group = HLayout(0)
             hl_group.addElements(QLabel(k), sb)

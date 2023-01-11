@@ -66,8 +66,7 @@ commands = {
         "parameters": {"min": "0", "max": "64900"},
     },
     "SwitchMode": {
-        "description": "Configure the behavior of a physical input peripheral configured as a "
-        "Switch<x>",
+        "description": "Configure the behavior of a physical input peripheral configured as a " "Switch<x>",
         "type": "select",
         "parameters": {
             "0": {"description": "Toggle", "default": "True"},

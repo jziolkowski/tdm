@@ -71,15 +71,11 @@ class PatternsDialog(QDialog):
         self.row = idx.row()
 
     def add(self):
-        pattern, ok = QInputDialog.getText(
-            self, "Add pattern", "Add new discovery pattern", text="%prefix%/%topic%/"
-        )
+        pattern, ok = QInputDialog.getText(self, "Add pattern", "Add new discovery pattern", text="%prefix%/%topic%/")
         if ok:
             if errors := self.validate_pattern(pattern):
                 errors_str = '\n'.join(errors)
-                QMessageBox.critical(
-                    self, "Error", f"Problem(s) with pattern {pattern}:\n{errors_str}"
-                )
+                QMessageBox.critical(self, "Error", f"Problem(s) with pattern {pattern}:\n{errors_str}")
             else:
                 self.lw.addItem(pattern)
                 self.lw.sortItems()

@@ -84,9 +84,7 @@ def parse_payload(payload):
 def expand_fulltopic(fulltopic):
     fulltopics = []
     for prefix in prefixes:
-        topic = (
-            fulltopic.replace("%prefix%", prefix).replace("%topic%", "+") + "#"
-        )  # expand prefix and topic
+        topic = fulltopic.replace("%prefix%", prefix).replace("%topic%", "+") + "#"  # expand prefix and topic
         topic = topic.replace("+/#", "#")  # simplify wildcards
         fulltopics.append(topic)
     return fulltopics
@@ -135,12 +133,7 @@ class TasmotaDevice(QObject):
         self.prefix = ""
 
     def build_topic(self, prefix):
-        return (
-            self.p["FullTopic"]
-            .replace("%prefix%", prefix)
-            .replace("%topic%", self.p["Topic"])
-            .rstrip("/")
-        )
+        return self.p["FullTopic"].replace("%prefix%", prefix).replace("%topic%", self.p["Topic"]).rstrip("/")
 
     def cmnd_topic(self, command=""):
         if command:
@@ -165,9 +158,7 @@ class TasmotaDevice(QObject):
         if self.property_changed and (
             not old or old != v
         ):  # If property_changed callback is set then check previous value presence and
-            self.property_changed(
-                self, k
-            )  # compare with new value. Trigger the callback if value has changed
+            self.property_changed(self, k)  # compare with new value. Trigger the callback if value has changed
         self.p[k] = v  # store the new value
 
     def module(self):
@@ -256,11 +247,7 @@ class TasmotaDevice(QObject):
                     keys = list(payload.keys())
                     fk = keys[0]
 
-                    if (
-                        self.reply == "RESULT"
-                        and fk.startswith("Modules")
-                        or self.reply == "MODULES"
-                    ):
+                    if self.reply == "RESULT" and fk.startswith("Modules") or self.reply == "MODULES":
                         for k, v in payload.items():
                             if isinstance(v, list):
                                 for mdl in v:
@@ -301,10 +288,9 @@ class TasmotaDevice(QObject):
         if relay_count == 1:
             return {1: power_dict.get('POWER1', power_dict.get('POWER', 'OFF'))}
         if relay_count > 1:
-            relays = dict(
-                sorted({int(k.replace('POWER', '')): v for k, v in power_dict.items()}.items())
-            )
+            relays = dict(sorted({int(k.replace('POWER', '')): v for k, v in power_dict.items()}.items()))
             for shutter, shutter_relay in self.shutters().items():
+                shutter_relay = int(shutter_relay)
                 if shutter_relay != 0:
                     for s in range(shutter_relay, shutter_relay + 2):
                         relays.pop(s, None)
@@ -339,11 +325,7 @@ class TasmotaDevice(QObject):
         return ptime
 
     def pwm(self):
-        return {
-            k: v
-            for k, v in self.p.items()
-            if k.startswith("PWM") or (k != "Channel" and k.startswith("Channel"))
-        }
+        return {k: v for k, v in self.p.items() if k.startswith("PWM") or (k != "Channel" and k.startswith("Channel"))}
 
     def color(self):
         color = {k: self.p[k] for k in ["Color", "Dimmer", "HSBColor"] if k in self.p.keys()}

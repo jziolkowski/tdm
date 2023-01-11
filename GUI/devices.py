@@ -35,6 +35,7 @@ from GUI.dialogs import (
     TimersDialog,
 )
 from GUI.widgets import SliderAction, SpinBox, TableView, Toolbar, VLayout, base_view, default_views
+from models.common import DeviceRoles
 from Util import TasmotaDevice, initial_commands, resets
 
 
@@ -92,6 +93,10 @@ class DevicesListWidget(QWidget):
         self.sorted_device_model.setSortRole(Qt.InitialSortOrderRole)
         self.sorted_device_model.setSortLocaleAware(True)
         self.sorted_device_model.setFilterKeyColumn(-1)
+        self.sorted_device_model.setFilterRole(DeviceRoles.LWTRole)
+
+        if self.settings.value("hide_offline_devices", False, bool):
+            self.sorted_device_model.setFilterFixedString("true")
 
         self.device_list.setModel(self.sorted_device_model)
         self.device_list.setupView(self.views["Home"])
@@ -130,9 +135,7 @@ class DevicesListWidget(QWidget):
 
         self.ctx_menu.addActions(
             [
-                self.tb.add_action(
-                    ":/telemetry.png", "Telemetry", self.openTelemetry.emit, "Ctrl+T"
-                ),
+                self.tb.add_action(":/telemetry.png", "Telemetry", self.openTelemetry.emit, "Ctrl+T"),
                 self.tb.add_action(":/web.png", "WebUI", self.openWebUI.emit, "Ctrl+U"),
             ]
         )
@@ -192,9 +195,7 @@ class DevicesListWidget(QWidget):
         for shutter_idx in range(1, 5):
             for idx, arrow in enumerate([ARROW_UP, ARROW_DN]):
                 px = make_relay_pixmap(arrow)
-                self.agShutters.addAction(
-                    QAction(QIcon(px), f"Shutter {shutter_idx} {'UP' if idx == 0 else 'DOWN'}")
-                )
+                self.agShutters.addAction(QAction(QIcon(px), f"Shutter {shutter_idx} {'UP' if idx == 0 else 'DOWN'}"))
         self.agShutters.triggered.connect(self.move_shutter)
         self.tb_relays.addActions(self.agShutters.actions())
 
@@ -588,9 +589,7 @@ class DevicesListWidget(QWidget):
                         backlog.append(f"SetOption{so} {new_value}")
 
                 new_interlock_value = power.ci.input.currentData()
-                new_interlock_grps = " ".join(
-                    [grp.text().replace(" ", "") for grp in power.ci.groups]
-                ).rstrip()
+                new_interlock_grps = " ".join([grp.text().replace(" ", "") for grp in power.ci.groups]).rstrip()
 
                 if new_interlock_value != self.device.p.get("Interlock", "OFF"):
                     backlog.append(f"interlock {new_interlock_value}")
@@ -620,9 +619,9 @@ class DevicesListWidget(QWidget):
         fname = self.dl.header(QNetworkRequest.ContentDispositionHeader)
         if fname:
             fname = fname.split("=")[1]
-            save_file = QFileDialog.getSaveFileName(
-                self, "Save config backup", os.path.join((QDir.homePath(), fname))
-            )[0]
+            save_file = QFileDialog.getSaveFileName(self, "Save config backup", os.path.join((QDir.homePath(), fname)))[
+                0
+            ]
             if save_file:
                 with open(save_file, "wb") as f:
                     f.write(self.backup)

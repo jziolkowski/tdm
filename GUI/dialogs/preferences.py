@@ -1,4 +1,4 @@
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QFormLayout, QGroupBox
 
 from GUI.widgets import SpinBox, VLayout
@@ -8,11 +8,12 @@ class PrefsDialog(QDialog):
     def __init__(self, settings, *args, **kwargs):
         super(PrefsDialog, self).__init__(*args, **kwargs)
         self.setWindowTitle("Preferences")
-        # self.setMinimumSize(QSize(300, 200))
+        self.setMinimumSize(QSize(300, 200))
 
         self.settings = settings
 
         self.devices_short_version = self.settings.value("devices_short_version", True, bool)
+        self.hide_offline_devices = self.settings.value("hide_offline_devices", False, bool)
 
         self.console_word_wrap = self.settings.value("console_word_wrap", True, bool)
         self.console_font_size = self.settings.value("console_font_size", 9, int)
@@ -25,7 +26,11 @@ class PrefsDialog(QDialog):
         self.cbDevShortVersion = QCheckBox()
         self.cbDevShortVersion.setChecked(self.devices_short_version)
 
+        self.cbHideOflnDevices = QCheckBox()
+        self.cbHideOflnDevices.setChecked(self.hide_offline_devices)
+
         fl_dev.addRow("Show short Tasmota version", self.cbDevShortVersion)
+        fl_dev.addRow("Hide offline devices", self.cbHideOflnDevices)
 
         fl_dev.setAlignment(self.cbDevShortVersion, Qt.AlignTop | Qt.AlignRight)
 

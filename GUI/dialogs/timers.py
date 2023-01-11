@@ -50,7 +50,7 @@ class TimersDialog(QDialog):
 
         hl_tmr_out_act = HLayout(0)
         self.cbxTimerOut = QComboBox()
-        self.cbxTimerOut.addItems(self.device.power().keys())
+        self.cbxTimerOut.addItems(map(str, self.device.power().keys()))
         self.cbxTimerOut.currentIndexChanged.connect(lambda x: self.describeTimer())
         self.cbxTimerAction = QComboBox()
         self.cbxTimerAction.addItems(["Off", "On", "Toggle", "Rule"])
@@ -103,9 +103,7 @@ class TimersDialog(QDialog):
 
         hl_tmr_time.addElements(self.cbxTimerPM, self.teTimerTime, lbWnd, self.cbxTimerWnd)
 
-        self.gbTimers.addElements(
-            self.cbTimer, hl_tmr_arm_rpt, hl_tmr_out_act, gbTimerMode, hl_tmr_time, hl_tmr_days
-        )
+        self.gbTimers.addElements(self.cbTimer, hl_tmr_arm_rpt, hl_tmr_out_act, gbTimerMode, hl_tmr_time, hl_tmr_days)
 
         btns = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Close)
         reload = btns.addButton("Reload", QDialogButtonBox.ResetRole)
@@ -199,10 +197,7 @@ class TimersDialog(QDialog):
 
             if act == "Rule":
                 desc["action"] = f"trigger clock#Timer={self.cbTimer.currentIndex() + 1}"
-                text = (
-                    f"{desc['timer']} will {desc['action']} {desc['time']} {desc['days']} "
-                    f"{desc['repeat']}"
-                )
+                text = f"{desc['timer']} will {desc['action']} {desc['time']} {desc['days']} " f"{desc['repeat']}"
 
             elif self.cbxTimerOut.count() > 0:
 
@@ -211,19 +206,14 @@ class TimersDialog(QDialog):
                 else:
                     desc["action"] = f"set {out.upper()} to {act.upper()}"
 
-                text = (
-                    f"{desc['timer']} will {desc['action']} {desc['time']} {desc['days']} "
-                    f"{desc['repeat']}"
-                )
+                text = f"{desc['timer']} will {desc['action']} {desc['time']} {desc['days']} " f"{desc['repeat']}"
             else:
                 text = f"{desc['timer']} will do nothing because there are no relays configured."
 
             self.lbTimerDesc.setText(text)
 
         else:
-            self.lbTimerDesc.setText(
-                f"{self.cbTimer.currentText().upper()} is not armed, it will do nothing."
-            )
+            self.lbTimerDesc.setText(f"{self.cbTimer.currentText().upper()} is not armed, it will do nothing.")
 
     def saveTimer(self):
         payload = {
@@ -237,9 +227,7 @@ class TimersDialog(QDialog):
             "Action": self.cbxTimerAction.currentIndex(),
         }
         self.sendCommand.emit(self.device.cmnd_topic(self.cbTimer.currentText()), dumps(payload))
-        QMessageBox.information(
-            self, "Timer saved", f"{self.cbTimer.currentText()} data sent to device."
-        )
+        QMessageBox.information(self, "Timer saved", f"{self.cbTimer.currentText()} data sent to device.")
 
     @pyqtSlot(str, str)
     def parseMessage(self, topic, msg):

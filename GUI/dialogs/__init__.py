@@ -7,7 +7,7 @@ from GUI.dialogs.gpio import GPIODialog
 from GUI.dialogs.modules import ModulesDialog
 from GUI.dialogs.patterns import PatternsDialog
 from GUI.dialogs.power import PowerDialog
-from GUI.dialogs.prefs import PrefsDialog
+from GUI.dialogs.preferences import PrefsDialog
 from GUI.dialogs.setoptions import SetOptionsDialog
 from GUI.dialogs.switches import SwitchesDialog
 from GUI.dialogs.templates import TemplateDialog

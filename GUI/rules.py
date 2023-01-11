@@ -172,14 +172,10 @@ class RulesWidget(QWidget):
         self.sendCommand.emit(self.device.cmnd_topic(self.cbRule.currentText()), str(int(state)))
 
     def toggle_once(self, state):
-        self.sendCommand.emit(
-            self.device.cmnd_topic(self.cbRule.currentText()), str(4 + int(state))
-        )
+        self.sendCommand.emit(self.device.cmnd_topic(self.cbRule.currentText()), str(4 + int(state)))
 
     def toggle_stop(self, state):
-        self.sendCommand.emit(
-            self.device.cmnd_topic(self.cbRule.currentText()), str(8 + int(state))
-        )
+        self.sendCommand.emit(self.device.cmnd_topic(self.cbRule.currentText()), str(8 + int(state)))
 
     def clean_rule(self):
         re_spaces = re.compile(r"\s{2,}")
@@ -214,9 +210,7 @@ class RulesWidget(QWidget):
 
     def set_var(self, idx):
         curr = self.vars[self.var]
-        new, ok = QInputDialog.getText(
-            self, "Set VAR", f"Set VAR{self.var + 1} value. Empty to clear.", text=curr
-        )
+        new, ok = QInputDialog.getText(self, "Set VAR", f"Set VAR{self.var + 1} value. Empty to clear.", text=curr)
         if ok:
             if new == "":
                 new = '"'
@@ -227,9 +221,7 @@ class RulesWidget(QWidget):
 
     def set_mem(self, idx):
         curr = self.mems[self.mem]
-        new, ok = QInputDialog.getText(
-            self, "Set mem", f"Set mem{self.mem + 1} value. Empty to clear.", text=curr
-        )
+        new, ok = QInputDialog.getText(self, "Set mem", f"Set mem{self.mem + 1} value. Empty to clear.", text=curr)
         if ok:
             if new == "":
                 new = '"'
@@ -240,9 +232,7 @@ class RulesWidget(QWidget):
 
     def set_rt(self, idx):
         curr = self.rts[self.rt]
-        new, ok = QInputDialog.getInt(
-            self, "Set ruletimer", f"Set ruletimer{self.rt + 1} value.", value=curr
-        )
+        new, ok = QInputDialog.getInt(self, "Set ruletimer", f"Set ruletimer{self.rt + 1} value.", value=curr)
         if ok:
             self.sendCommand.emit(self.device.cmnd_topic(f"ruletimer{self.rt + 1}"), str(new))
 
@@ -261,12 +251,7 @@ class RulesWidget(QWidget):
         self.actStopOnError.setChecked(payload["StopOnError"] == "ON")
 
     def unfold_rule(self, rules: str):
-        return (
-            rules.replace(" on ", "\non ")
-            .replace(" do ", " do\n\t")
-            .replace(" endon", "\nendon ")
-            .rstrip(" ")
-        )
+        return rules.replace(" on ", "\non ").replace(" do ", " do\n\t").replace(" endon", "\nendon ").rstrip(" ")
 
     @pyqtSlot(str, str)
     def parseMessage(self, topic, msg):
@@ -297,11 +282,7 @@ class RulesWidget(QWidget):
                         keys = list(payload.keys())
                         fk = keys[0]
 
-                        if (
-                            self.device.reply == "RESULT"
-                            and fk == "T1"
-                            or self.device.reply == "RULETIMER"
-                        ):
+                        if self.device.reply == "RESULT" and fk == "T1" or self.device.reply == "RULETIMER":
                             for i, rt in enumerate(payload.keys()):
                                 self.lwRTs.item(i).setText(f"RuleTimer{i + 1}: {payload[rt]}")
                                 self.rts[i] = payload[rt]

@@ -28,6 +28,7 @@ from GUI import icons  # noqa: F401
 from GUI.console import ConsoleWidget
 from GUI.devices import DevicesListWidget
 from GUI.dialogs import BrokerDialog, BSSIdDialog, ClearRetainedDialog, PatternsDialog, PrefsDialog
+from GUI.dialogs.modbus.energy import ModbusEnergyEditorDialog
 from GUI.rules import RulesWidget
 from GUI.telemetry import TelemetryWidget
 from GUI.widgets import Toolbar
@@ -48,9 +49,7 @@ __tasmota_minimum__ = "6.6.0.17"
 
 
 class MainWindow(QMainWindow):
-    def __init__(
-        self, settings: QSettings, devices: QSettings, log_path: str, debug: bool, *args, **kwargs
-    ):
+    def __init__(self, settings: QSettings, devices: QSettings, log_path: str, debug: bool, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self._version = __version__
         self.setWindowIcon(QIcon(":/logo.png"))
@@ -76,9 +75,7 @@ class MainWindow(QMainWindow):
             datefmt="%Y-%m-%d %H:%M:%S",
             format="%(asctime)s [%(levelname)s] %(message)s",
         )
-        logging.getLogger().addHandler(
-            TimedRotatingFileHandler(filename=log_path, when="d", interval=1)
-        )
+        logging.getLogger().addHandler(TimedRotatingFileHandler(filename=log_path, when="d", interval=1))
         logging.info("### TDM START ###")
 
         # load devices from the devices file, create TasmotaDevices and add the to the environment
@@ -181,6 +178,9 @@ class MainWindow(QMainWindow):
         self.actToggleAutoUpdate.toggled.connect(self.toggle_autoupdate)
         mMQTT.addAction(self.actToggleAutoUpdate)
 
+        mTools = self.menuBar().addMenu("Tools")
+        mTools.addAction(QIcon(), "ModbusEnergy rule editor", self.open_modbus_energy_editor)
+
         mSettings = self.menuBar().addMenu("Settings")
         mSettings.addAction(QIcon(), "BSSId aliases", self.bssid)
         mSettings.addSeparator()
@@ -190,9 +190,7 @@ class MainWindow(QMainWindow):
         mSettings.addAction(QIcon(), "Open log file location", self.open_log_location)
 
     def build_toolbars(self):
-        main_toolbar = Toolbar(
-            orientation=Qt.Horizontal, iconsize=24, label_position=Qt.ToolButtonTextBesideIcon
-        )
+        main_toolbar = Toolbar(orientation=Qt.Horizontal, iconsize=24, label_position=Qt.ToolButtonTextBesideIcon)
         main_toolbar.setObjectName("main_toolbar")
 
     def initial_query(self, device, queued=False):
@@ -209,6 +207,13 @@ class MainWindow(QMainWindow):
         brokers_dlg = BrokerDialog(self.settings)
         if brokers_dlg.exec_() == QDialog.Accepted and self.mqtt.state == self.mqtt.Connected:
             self.mqtt.disconnect()
+
+    def open_modbus_energy_editor(self):
+        editor = ModbusEnergyEditorDialog()
+        self.mdi.setViewMode(QMdiArea.TabbedView)
+        self.mdi.addSubWindow(editor)
+        editor.setWindowState(Qt.WindowMaximized)
+        editor.destroyed.connect(self.updateMDI)
 
     def toggle_autoupdate(self, state):
         if state:
@@ -242,9 +247,7 @@ class MainWindow(QMainWindow):
         self.broker_password = self.settings.value("password")
 
         if self.broker_tls:
-            self.mqtt.setSSL(
-                self.broker_tls_file, self.broker_tls_insecure, self.broker_tls_version
-            )
+            self.mqtt.setSSL(self.broker_tls_file, self.broker_tls_insecure, self.broker_tls_version)
         else:
             self.mqtt.unsetSSL()
 
@@ -364,23 +367,20 @@ class MainWindow(QMainWindow):
 
                 for p in default_patterns + custom_patterns:
                     match = re.fullmatch(
-                        p.replace("%topic%", "(?P<topic>.*?)").replace(
-                            "%prefix%", "(?P<prefix>.*?)"
-                        )
-                        + ".*$",
+                        p.replace("%topic%", "(?P<topic>.*?)").replace("%prefix%", "(?P<prefix>.*?)") + ".*$",
                         topic,
                     )
                     if match:
                         # assume that the matched topic is the one configured in device settings
-                        if (
-                            possible_topic := match.groupdict().get("topic")
-                        ) and possible_topic not in ("tele", "stat"):
+                        if (possible_topic := match.groupdict().get("topic")) and possible_topic not in (
+                            "tele",
+                            "stat",
+                        ):
                             # if the assumed topic is different from tele or stat, there is a chance
                             # that it's a valid topic. query the assumed device for its FullTopic.
                             # False positives won't reply.
                             possible_topic_cmnd = (
-                                p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic)
-                                + "FullTopic"
+                                p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic) + "FullTopic"
                             )
 
                             logging.debug(
@@ -389,9 +389,7 @@ class MainWindow(QMainWindow):
                             )
                             self.mqtt_queue.append([possible_topic_cmnd, ""])
 
-            elif topic.endswith("RESULT") or topic.endswith(
-                "FULLTOPIC"
-            ):  # reply from an unknown device
+            elif topic.endswith("RESULT") or topic.endswith("FULLTOPIC"):  # reply from an unknown device
                 # STAGE 2
                 full_topic = loads(msg).get("FullTopic")
                 if full_topic:
@@ -402,9 +400,7 @@ class MainWindow(QMainWindow):
                     if parsed:
                         # got a match, we query the device's MAC address in case it's a known device
                         # that had its topic changed
-                        logging.debug(
-                            "DISCOVERY: topic %s is matched by fulltopic %s", topic, full_topic
-                        )
+                        logging.debug("DISCOVERY: topic %s is matched by fulltopic %s", topic, full_topic)
 
                         d = self.env.find_device(topic=parsed["topic"])
                         if d:
@@ -418,9 +414,7 @@ class MainWindow(QMainWindow):
                             d = TasmotaDevice(parsed["topic"], full_topic)
                             self.env.devices.append(d)
                             self.device_model.addDevice(d)
-                            logging.debug(
-                                "DISCOVERY: Sending initial query to topic %s", parsed["topic"]
-                            )
+                            logging.debug("DISCOVERY: Sending initial query to topic %s", parsed["topic"])
                             self.initial_query(d, True)
                             tele_topic = d.tele_topic("LWT")
                             if tele_topic in self.env.lwts:
@@ -501,6 +495,10 @@ class MainWindow(QMainWindow):
             if devices_short_version != dlg.cbDevShortVersion.isChecked():
                 self.settings.setValue("devices_short_version", dlg.cbDevShortVersion.isChecked())
 
+            hide_ofln_devices = self.settings.value("hide_offline_devices", False, bool)
+            if hide_ofln_devices != dlg.cbHideOflnDevices.isChecked():
+                self.settings.setValue("hide_offline_devices", dlg.cbHideOflnDevices.isChecked())
+
             update_consoles = False
 
             console_font_size = self.settings.value("console_font_size", 9)
@@ -554,9 +552,7 @@ class MainWindow(QMainWindow):
             self.addDockWidget(Qt.RightDockWidgetArea, tele_widget)
             self.mqtt_publish(self.device.cmnd_topic("STATUS"), "10")
             self.tele_docks.append(tele_widget)
-            self.resizeDocks(
-                self.tele_docks, [100 // len(self.tele_docks) for _ in self.tele_docks], Qt.Vertical
-            )
+            self.resizeDocks(self.tele_docks, [100 // len(self.tele_docks) for _ in self.tele_docks], Qt.Vertical)
 
     @pyqtSlot()
     def openConsole(self):
@@ -567,9 +563,7 @@ class MainWindow(QMainWindow):
             self.addDockWidget(Qt.BottomDockWidgetArea, console_widget)
             console_widget.command.setFocus()
             self.consoles.append(console_widget)
-            self.resizeDocks(
-                self.consoles, [100 // len(self.consoles) for _ in self.consoles], Qt.Horizontal
-            )
+            self.resizeDocks(self.consoles, [100 // len(self.consoles) for _ in self.consoles], Qt.Horizontal)
 
     @pyqtSlot()
     def openRulesEditor(self):
