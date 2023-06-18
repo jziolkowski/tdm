@@ -16,10 +16,6 @@ from PyQt5.QtWidgets import (
 
 from GUI.widgets import GroupBoxH, GroupBoxV, HLayout, VLayout
 
-# TODO: make time +/- default disabled
-# TODO: check disabling AM/PM suffix in time before/after
-# TODO: reset time above/after when switching away from 'Time'
-
 
 class TimersDialog(QDialog):
     sendCommand = pyqtSignal(str, str)
@@ -61,7 +57,7 @@ class TimersDialog(QDialog):
         rbtns = [
             QRadioButton("Time"),
             QRadioButton(f"Sunrise ({self.device.p['Sunrise']})"),
-            QRadioButton(f"Sunset ({self.device.p['Sunset']})")
+            QRadioButton(f"Sunset ({self.device.p['Sunset']})"),
         ]
         for id, btn in enumerate(rbtns):
             self.TimerMode.addButton(btn, id)
@@ -73,6 +69,7 @@ class TimersDialog(QDialog):
         self.cbxTimerPM = QComboBox()
         self.cbxTimerPM.addItems(["+", "-"])
         self.cbxTimerPM.currentIndexChanged.connect(lambda x: self.describeTimer())
+        self.cbxTimerPM.setEnabled(False)
 
         self.TimerMode.buttonClicked[int].connect(lambda x: self.cbxTimerPM.setEnabled(x != 0))
         self.teTimerTime = QTimeEdit()
@@ -175,8 +172,8 @@ class TimersDialog(QDialog):
                     desc["time"] = f"at {time.toString('hh:mm')}"
                 else:
                     desc["time"] = (
-                        "somewhere between {time.addSecs(wnd * -1).toString('hh:mm')} "
-                        "and {time.addSecs(wnd).toString('hh:mm')}"
+                        f"somewhere between {time.addSecs(wnd * -1).toString('hh:mm')} "
+                        f"and {time.addSecs(wnd).toString('hh:mm')}"
                     )
             else:
                 prefix = "before" if pm == "-" else "after"
