@@ -50,7 +50,7 @@ class TimersDialog(QDialog):
 
         hl_tmr_out_act = HLayout(0)
         self.cbxTimerOut = QComboBox()
-        self.cbxTimerOut.addItems(self.device.power().keys())
+        self.cbxTimerOut.addItems(map(str, self.device.power().keys()))
         self.cbxTimerOut.currentIndexChanged.connect(lambda x: self.describeTimer())
         self.cbxTimerAction = QComboBox()
         self.cbxTimerAction.addItems(["Off", "On", "Toggle", "Rule"])
@@ -58,15 +58,16 @@ class TimersDialog(QDialog):
         hl_tmr_out_act.addElements(self.cbxTimerOut, self.cbxTimerAction)
 
         self.TimerMode = QButtonGroup()
-        rbTime = QRadioButton("Time")
-        rbSunrise = QRadioButton(f"Sunrise ({self.device.p['Sunrise']})")
-        rbSunset = QRadioButton(f"Sunset ({self.device.p['Sunset']})")
-        self.TimerMode.addButton(rbTime, 0)
-        self.TimerMode.addButton(rbSunrise, 1)
-        self.TimerMode.addButton(rbSunset, 2)
+        rbtns = [
+            QRadioButton("Time"),
+            QRadioButton(f"Sunrise ({self.device.p['Sunrise']})"),
+            QRadioButton(f"Sunset ({self.device.p['Sunset']})")
+        ]
+        for id, btn in enumerate(rbtns):
+            self.TimerMode.addButton(btn, id)
         self.TimerMode.buttonClicked.connect(lambda x: self.describeTimer())
         gbTimerMode = GroupBoxH("Mode")
-        gbTimerMode.addElements(self.TimerMode.buttons())
+        gbTimerMode.addElements(*self.TimerMode.buttons())
 
         hl_tmr_time = HLayout(0)
         self.cbxTimerPM = QComboBox()
