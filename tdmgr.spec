@@ -1,7 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-block_cipher = None
+from deploy import get_filename
+print(get_filename())
 
+block_cipher = None
 
 a = Analysis(['tdmgr.py'],
              binaries=[],
