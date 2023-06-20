@@ -20,7 +20,7 @@ jobs:
           architecture: 'x64'
       - name: Check vars
         run: |
-            python3 -c "import setup; print(setup.get_version())"
+            python3 -c "import deploy; print(deploy.get_filename())"
 #      - name: Install requirements
 #        run: |
 #          pip install -r requirements_build.txt
