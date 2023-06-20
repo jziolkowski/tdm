@@ -18,15 +18,15 @@ jobs:
         with:
           python-version: '3.8'
           architecture: 'x64'
-      - name: Check vars
+#      - name: Check vars
+#        run: |
+#            python3 -c "import .deploy.get_filename; print(get_filename())"
+      - name: Install requirements
         run: |
-            python3 -c "import .deploy.get_filename; print(get_filename())"
-#      - name: Install requirements
-#        run: |
-#          pip install -r requirements_build.txt
-#      - name: Run PyInstaller
-#        run: |
-#          python -m PyInstaller tdmgr.spec
+          pip install -r requirements_build.txt
+      - name: Run PyInstaller
+        run: |
+          python -m PyInstaller tdmgr.spec
 #      - uses: actions/upload-artifact@v3
 #        with:
 #          name: app
