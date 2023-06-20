@@ -11,72 +11,75 @@ jobs:
     runs-on: windows-2019
     continue-on-error: true
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+#      - name: Checkout
+#        uses: actions/checkout@v3
       - name: Install Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
           architecture: 'x64'
-      - name: Install requirements
+      - name: Check vars
         run: |
-          pip install -r requirements.txt -r requirements_build.txt
-      - name: Run PyInstaller
-        run: |
-          python -m PyInstaller tdmgr.spec
-      - uses: actions/upload-artifact@v3
-        with:
-          name: app
-          path: dist/tdmgr_*.exe
+            python3 -c "import os; print(os.environ)"
+#      - name: Install requirements
+#        run: |
+#          pip install -r requirements_build.txt
+#      - name: Run PyInstaller
+#        run: |
+#          python -m PyInstaller tdmgr.spec
+#      - uses: actions/upload-artifact@v3
+#        with:
+#          name: app
+#          path: dist/tdmgr_*.exe
 
-  build-windows-x86:
-    runs-on: windows-2019
-    continue-on-error: true
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.8'
-          architecture: 'x86'
-      - name: Install requirements
-        run: |
-          pip install -r requirements.txt -r requirements_build.txt
-      - name: Run PyInstaller
-        run: |
-          python -m PyInstaller tdmgr32.spec
-      - uses: actions/upload-artifact@v3
-        with:
-          name: app
-          path: dist/tdmgr_*.exe
-
-  build-ubuntu:
-    runs-on: ubuntu-20.04
-    continue-on-error: true
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-      - name: Install requirements
-        run: |
-          pip install -r requirements.txt -r requirements_build.txt
-      - name: Run PyInstaller
-        run: |
-          python -m PyInstaller tdmgr.spec
-      - name: See dist directory
-        run: ls dist
-      - name: 'gzip file'
-        run: gzip dist/tdmgr_*
-      - name: 'show gzip'
-        run: ls dist
-      - uses: actions/upload-artifact@v3
-        with:
-          name: app
-          path: dist/tdmgr_*.gz
+#  build-windows-x86:
+#    runs-on: windows-2019
+#    continue-on-error: true
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v3
+#      - name: Install Python
+#        uses: actions/setup-python@v4
+#        with:
+#          python-version: '3.8'
+#          architecture: 'x86'
+#      - name: Install requirements
+#        run: |
+#          pip install -r requirements_build.txt
+#      - name: Run PyInstaller
+#        run: |
+#          python -m PyInstaller tdmgr32.spec
+#      - uses: actions/upload-artifact@v3
+#        with:
+#          name: app
+#          path: dist/tdmgr_*.exe
+#
+#  build-ubuntu:
+#    runs-on: ubuntu-20.04
+#    continue-on-error: true
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v3
+#      - name: Install Python
+#        uses: actions/setup-python@v4
+#        with:
+#          python-version: '3.9'
+#      - name: Install requirements
+#        run: |
+#          pip install -r requirements_build.txt
+#      - name: Run PyInstaller
+#        run: |
+#          python -m PyInstaller tdmgr.spec
+#      - name: See dist directory
+#        run: ls dist
+#      - name: 'gzip file'
+#        run: gzip dist/tdmgr_*
+#      - name: 'show gzip'
+#        run: ls dist
+#      - uses: actions/upload-artifact@v3
+#        with:
+#          name: app
+#          path: dist/tdmgr_*.gz
 
 
   build-macos:
@@ -91,7 +94,7 @@ jobs:
           python-version: '3.9'
       - name: Install requirements
         run: |
-          pip install -r requirements.txt -r requirements_build.txt
+          pip install -r requirements_build.txt
           npm install --global create-dmg
       - name: Run PyInstaller
         run: |
