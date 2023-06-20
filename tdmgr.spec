@@ -1,7 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from deploy import get_filename
-print(get_filename())
+import setup
 
 block_cipher = None
 
@@ -24,7 +23,7 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,
           [],
-          name='tdmgr_0.2.13',
+          name=f'tdmgr_{get_version()}',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
