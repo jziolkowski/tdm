@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-import setup
+from build_filename import get_version
 
 block_cipher = None
 
