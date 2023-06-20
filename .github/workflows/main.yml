@@ -82,35 +82,35 @@ jobs:
 #          path: dist/tdmgr_*.gz
 
 
-  build-macos:
-    runs-on: macOS-12
-    continue-on-error: true
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Install Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-      - name: Install requirements
-        run: |
-          pip install -r requirements_build.txt
-          npm install --global create-dmg
-      - name: Run PyInstaller
-        run: |
-          python -m PyInstaller tdmgr_mac.spec
-      - name: See dist directory
-        run: ls dist
-      - name: Rename app
-        run: |
-          mv dist/tdmgr*.app dist/tdmgr-macOS.app
-      - name: 'Tar files'
-        run: tar -cvf dist/MacOS.tar dist/*
-      - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v3
-        with:
-          name: app
-          path: dist/*.tar
+#  build-macos:
+#    runs-on: macOS-12
+#    continue-on-error: true
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v3
+#      - name: Install Python
+#        uses: actions/setup-python@v4
+#        with:
+#          python-version: '3.9'
+#      - name: Install requirements
+#        run: |
+#          pip install -r requirements_build.txt
+#          npm install --global create-dmg
+#      - name: Run PyInstaller
+#        run: |
+#          python -m PyInstaller tdmgr_mac.spec
+#      - name: See dist directory
+#        run: ls dist
+#      - name: Rename app
+#        run: |
+#          mv dist/tdmgr*.app dist/tdmgr-macOS.app
+#      - name: 'Tar files'
+#        run: tar -cvf dist/MacOS.tar dist/*
+#      - name: 'Upload Artifact'
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: app
+#          path: dist/*.tar
 
 #   release:
 #     needs: [build-windows, build-windows-x86, build-ubuntu, build-macos]
