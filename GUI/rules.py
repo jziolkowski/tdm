@@ -259,14 +259,12 @@ class RulesWidget(QWidget):
 
         self.actOnce.setChecked(payload["Once"] == "ON")
         self.actStopOnError.setChecked(payload["StopOnError"] == "ON")
-
+  
     def unfold_rule(self, rules: str):
-        return (
-            rules.replace(" on ", "\non ")
-            .replace(" do ", " do\n\t")
-            .replace(" endon", "\nendon ")
-            .rstrip(" ")
-        )
+        rules = re.sub(r' on ', '\non ', rules, flags=re.IGNORECASE)
+        rules = re.sub(r' do ', ' do\n\t', rules, flags=re.IGNORECASE)
+        rules = re.sub(r' endon', '\nendon ', rules, flags=re.IGNORECASE)        
+        return rules.rstrip(' ')
 
     @pyqtSlot(str, str)
     def parseMessage(self, topic, msg):
