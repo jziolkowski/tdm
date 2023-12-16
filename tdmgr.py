@@ -6,7 +6,6 @@ import os
 import pathlib
 import re
 import sys
-from json import loads
 from logging.handlers import TimedRotatingFileHandler
 
 from PyQt5.QtCore import QDir, QFileInfo, QSettings, QSize, Qt, QTimer, QUrl, pyqtSlot
@@ -32,19 +31,14 @@ from GUI.rules import RulesWidget
 from GUI.telemetry import TelemetryWidget
 from GUI.widgets import Toolbar
 from models.devices import TasmotaDevicesModel
-from Util import (
-    TasmotaDevice,
-    TasmotaEnvironment,
-    custom_patterns,
-    default_patterns,
-    expand_fulltopic,
-    initial_commands,
-    parse_topic,
-)
-from Util.mqtt import MqttClient
+from util import DiscoveryMode, TasmotaDevice, TasmotaEnvironment, initial_commands
+from util.discovery import lwt_discovery_stage2
+from util.mqtt import DEFAULT_PATTERNS, Message, MqttClient, expand_fulltopic
 
 __version__ = "0.3"
 __tasmota_minimum__ = "6.6.0.17"
+
+from schemas.discovery import DiscoverySchema
 
 
 class MainWindow(QMainWindow):
@@ -53,18 +47,22 @@ class MainWindow(QMainWindow):
     ):
         super(MainWindow, self).__init__(*args, **kwargs)
         self._version = __version__
+        self.debug = debug
         self.setWindowIcon(QIcon(":/logo.png"))
         self.setWindowTitle(f"Tasmota Device Manager {self._version}")
 
         self.menuBar().setNativeMenuBar(False)
 
         self.unknown = []
+        self.custom_patterns = []
         self.env = TasmotaEnvironment()
         self.device = None
 
         self.topics = []
         self.mqtt_queue = []
         self.fulltopic_queue = []
+
+        self.lwt = dict()
 
         self.settings = settings
         self.devices = devices
@@ -196,14 +194,14 @@ class MainWindow(QMainWindow):
         main_toolbar.setObjectName("main_toolbar")
 
     def initial_query(self, device, queued=False):
-        for c in initial_commands():
-            cmd, payload = c
-            cmd = device.cmnd_topic(cmd)
+        cmds = [" ".join(c) for c in initial_commands()]
+        backlog = device.cmnd_topic("backlog")
+        backlog_payload = ";".join(cmds)
 
-            if queued:
-                self.mqtt_queue.append([cmd, payload])
-            else:
-                self.mqtt.publish(cmd, payload, 1)
+        if queued:
+            self.mqtt_queue.append([backlog, backlog_payload])
+        else:
+            self.mqtt.publish(backlog, backlog_payload, 1)
 
     def setup_broker(self):
         brokers_dlg = BrokerDialog(self.settings)
@@ -276,20 +274,20 @@ class MainWindow(QMainWindow):
     def mqtt_subscribe(self):
         # clear old topics
         self.topics.clear()
-        custom_patterns.clear()
+        self.custom_patterns.clear()
 
         # load custom autodiscovery patterns
         self.settings.beginGroup("Patterns")
         for k in self.settings.childKeys():
-            custom_patterns.append(self.settings.value(k))
+            self.custom_patterns.append(self.settings.value(k))
         self.settings.endGroup()
 
         # expand fulltopic patterns to subscribable topics
-        for pat in default_patterns:  # tasmota default and SO19
+        for pat in DEFAULT_PATTERNS:  # tasmota default and SO19
             self.topics += expand_fulltopic(pat)
 
         # check if custom patterns can be matched by default patterns
-        for pat in custom_patterns:
+        for pat in self.custom_patterns:
             if pat.startswith("%prefix%") or pat.split("/")[1] == "%prefix%":
                 continue  # do nothing, default subcriptions will match this topic
             else:
@@ -298,13 +296,14 @@ class MainWindow(QMainWindow):
         for d in self.env.devices:
             # if device has a non-standard pattern, check if the pattern is found in
             # the custom patterns
-            if not d.is_default() and d.p["FullTopic"] not in custom_patterns:
+            if not d.is_default() and d.p["FullTopic"] not in self.custom_patterns:
                 # if pattern is not found then add the device topics to subscription list.
                 # if the pattern is found, it will be matched without implicit subscription
                 self.topics += expand_fulltopic(d.p["FullTopic"])
 
         # passing a list of tuples as recommended by paho
-        self.mqtt.subscribe([(topic, 0) for topic in self.topics])
+        _topics = [("tasmota/discovery/+/config", 0)] + [(topic, 0) for topic in self.topics]
+        self.mqtt.subscribe(_topics)
 
     @pyqtSlot(str, str)
     def mqtt_publish(self, t, p):
@@ -332,100 +331,100 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Connection error: {reason[rc]}")
         self.actToggleConnect.setChecked(False)
 
-    def mqtt_message(self, topic, msg, retained):
-        # try to find a device by matching known FullTopics against the MQTT topic of the message
-        if retained:
-            self.env.retained.add(topic)
-        device = self.env.find_device(topic)
-        if device:
-            if topic.endswith("LWT"):
-                if not msg:
-                    msg = "Offline"
-                device.update_property("LWT", msg)
+    def mqtt_message(self, msg: Message):
+        if msg.retained:
+            self.env.retained.add(msg.topic)
 
-                if msg == "Online":
+        if msg.is_lwt:
+            self.env.lwts[msg.topic] = msg.payload
+
+        discovery_mode = self.settings.value("discovery_mode", 0, int)
+        if msg.topic.startswith("tasmota/discovery") and discovery_mode != DiscoveryMode.LEGACY:
+            # Add device using native Tasmota discovery message
+            if msg.endpoint == "config":
+                obj = None
+                try:
+                    obj = DiscoverySchema.model_validate_json(msg.payload)
+                except ValueError:
+                    logging.error("Unable to parse Tasmota discovery message: %s", msg.payload)
+
+                if obj and not self.env.find_device(obj.t):
+                    device = TasmotaDevice.from_discovery(obj)
+                    for sub_topic in device.subscribable_topics:
+                        if sub_topic not in self.topics:
+                            self.topics.append(sub_topic)
+                            self.mqtt.subscribe([(sub_topic, 0)])
+
+                    self.env.devices.append(device)
+                    self.device_model.addDevice(device)
+                    logging.info(
+                        "DISCOVERY(NATIVE): Discovered topic=%s with fulltopic=%s",
+                        obj.t,
+                        device.p["FullTopic"],
+                    )
+                    self.initial_query(device, True)
+
+                    lwt = self.env.lwts.pop(f"{obj.ft}/LWT", obj.ofln)
+                    device.update_property("LWT", lwt)
+
+        elif device := self.env.find_device(msg.topic):
+            if msg.is_lwt:
+                logging.debug("MQTT: LWT message for %s: %s", device.p["Topic"], msg.payload)
+                device.update_property("LWT", msg.payload)
+
+                if msg.payload == device.p["Online"]:
                     # known device came online, query initial state
                     self.initial_query(device, True)
 
             else:
+                _prefix = re.match(device.fulltopic_regex, msg.topic)
+                if _prefix:
+                    msg.prefix = _prefix.groupdict()["prefix"]
                 # forward the message for processing
-                device.parse_message(topic, msg)
-                if device.debug:
-                    logging.debug("MQTT: %s %s", topic, msg)
+                device.process_message(msg)
 
-        else:  # unknown device, start autodiscovery process
-            if topic.endswith("LWT"):
-                self.env.lwts.append(topic)
-                logging.info("DISCOVERY: LWT from an unknown device %s", topic)
+        elif discovery_mode != DiscoveryMode.NATIVE:
+            # unknown device, start autodiscovery process
+            if msg.is_lwt:
+                self.env.lwts[msg.topic] = msg.payload
+                logging.info("DISCOVERY(LEGACY): LWT from an unknown device %s", msg.topic)
 
                 # STAGE 1
                 # load default and user-provided FullTopic patterns and for all the patterns,
                 # try matching the LWT topic (it follows the device's FullTopic syntax
 
-                for p in default_patterns + custom_patterns:
-                    match = re.fullmatch(
-                        p.replace("%topic%", "(?P<topic>.*?)").replace(
-                            "%prefix%", "(?P<prefix>.*?)"
-                        )
-                        + ".*$",
-                        topic,
-                    )
+                for p in DEFAULT_PATTERNS + self.custom_patterns:
+                    match = msg.match_fulltopic(p)
                     if match:
                         # assume that the matched topic is the one configured in device settings
                         if (
                             possible_topic := match.groupdict().get("topic")
-                        ) and possible_topic not in ("tele", "stat"):
+                        ) and possible_topic not in ("tele", "stat", "cmnd"):
                             # if the assumed topic is different from tele or stat, there is a chance
                             # that it's a valid topic. query the assumed device for its FullTopic.
                             # False positives won't reply.
+                            prf_start, prf_end = match.regs[match.re.groupindex['prefix']]
                             possible_topic_cmnd = (
-                                p.replace("%prefix%", "cmnd").replace("%topic%", possible_topic)
-                                + "FullTopic"
+                                f"{msg.topic[:prf_start]}cmnd{msg.topic[prf_end:]}".replace(
+                                    "/LWT", "/FullTopic"
+                                )
                             )
-
                             logging.debug(
-                                "DISCOVERY: Asking an unknown device for FullTopic at %s",
+                                "DISCOVERY(LEGACY): Asking an unknown device for FullTopic at %s",
                                 possible_topic_cmnd,
                             )
                             self.mqtt_queue.append([possible_topic_cmnd, ""])
 
-            elif topic.endswith("RESULT") or topic.endswith(
-                "FULLTOPIC"
-            ):  # reply from an unknown device
-                # STAGE 2
-                full_topic = loads(msg).get("FullTopic")
-                if full_topic:
-                    # the device replies with its FullTopic
-                    # here the Topic is extracted using the returned FullTopic, identifying the
-                    # device
-                    parsed = parse_topic(full_topic, topic)
-                    if parsed:
-                        # got a match, we query the device's MAC address in case it's a known device
-                        # that had its topic changed
-                        logging.debug(
-                            "DISCOVERY: topic %s is matched by fulltopic %s", topic, full_topic
-                        )
-
-                        d = self.env.find_device(topic=parsed["topic"])
-                        if d:
-                            d.update_property("FullTopic", full_topic)
-                        else:
-                            logging.info(
-                                "DISCOVERY: Discovered topic=%s with fulltopic=%s",
-                                parsed["topic"],
-                                full_topic,
-                            )
-                            d = TasmotaDevice(parsed["topic"], full_topic)
-                            self.env.devices.append(d)
-                            self.device_model.addDevice(d)
-                            logging.debug(
-                                "DISCOVERY: Sending initial query to topic %s", parsed["topic"]
-                            )
-                            self.initial_query(d, True)
-                            tele_topic = d.tele_topic("LWT")
-                            if tele_topic in self.env.lwts:
-                                self.env.lwts.remove(tele_topic)
-                        d.update_property("LWT", "Online")
+            elif msg.endpoint == "RESULT" or msg.endpoint == "FULLTOPIC":
+                # reply from an unknown device
+                if d := lwt_discovery_stage2(self.env, msg):
+                    self.env.devices.append(d)
+                    self.device_model.addDevice(d)
+                    logging.debug("DISCOVERY: Sending initial query to topic %s", d.p["Topic"])
+                    self.initial_query(d, True)
+                    tele_topic = d.tele_topic("LWT")
+                    self.env.lwts.pop(tele_topic, None)
+                    d.update_property("LWT", "Online")
 
     def export(self):
         fname, _ = QFileDialog.getSaveFileName(
@@ -476,9 +475,6 @@ class MainWindow(QMainWindow):
     def patterns(self):
         PatternsDialog(self.settings).exec_()
 
-    # def openhab(self):
-    #     OpenHABDialog(self.env).exec_()
-
     def showSubs(self):
         QMessageBox.information(self, "Subscriptions", "\n".join(sorted(self.topics)))
 
@@ -519,6 +515,9 @@ class MainWindow(QMainWindow):
                     new_font = QFont(c.console.font())
                     new_font.setPointSize(dlg.sbConsFontSize.value())
                     c.console.setFont(new_font)
+
+            if dlg.bgDiscovery.checkedId() != self.settings.value("discovery_mode", 0, int):
+                self.settings.setValue("discovery_mode", dlg.bgDiscovery.checkedId())
 
         self.settings.sync()
 
@@ -608,22 +607,23 @@ class MainWindow(QMainWindow):
 
         self.settings.sync()
 
-        for d in self.env.devices:
-            mac = d.p.get("Mac")
-            topic = d.p["Topic"]
-            full_topic = d.p["FullTopic"]
-            device_name = d.name
+        if not self.debug:
+            for d in self.env.devices:
+                mac = d.p.get("Mac")
+                topic = d.p["Topic"]
+                full_topic = d.p["FullTopic"]
+                device_name = d.name
 
-            if mac:
-                self.devices.beginGroup(mac.replace(":", "-"))
-                self.devices.setValue("topic", topic)
-                self.devices.setValue("full_topic", full_topic)
-                self.devices.setValue("device_name", device_name)
+                if mac:
+                    self.devices.beginGroup(mac.replace(":", "-"))
+                    self.devices.setValue("topic", topic)
+                    self.devices.setValue("full_topic", full_topic)
+                    self.devices.setValue("device_name", device_name)
 
-                for i, h in enumerate(d.history):
-                    self.devices.setValue(f"history/{i}", h)
-                self.devices.endGroup()
-        self.devices.sync()
+                    for i, h in enumerate(d.history):
+                        self.devices.setValue(f"history/{i}", h)
+                    self.devices.endGroup()
+            self.devices.sync()
 
         e.accept()
 

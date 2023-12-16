@@ -1,7 +1,15 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QFormLayout, QGroupBox
+from PyQt5.QtWidgets import (
+    QButtonGroup,
+    QCheckBox,
+    QDialog,
+    QDialogButtonBox,
+    QFormLayout,
+    QGroupBox,
+    QRadioButton,
+)
 
-from GUI.widgets import SpinBox, VLayout
+from GUI.widgets import GroupBoxV, SpinBox, VLayout
 
 
 class PrefsDialog(QDialog):
@@ -31,6 +39,21 @@ class PrefsDialog(QDialog):
 
         gbDevices.setLayout(fl_dev)
 
+        gbDiscovery = GroupBoxV("Discovery")
+
+        discovery_mode = self.settings.value("discovery_mode", 0, int)
+        self.bgDiscovery = QButtonGroup()
+        btns = [
+            QRadioButton("Both"),
+            QRadioButton("Native Tasmota discovery"),
+            QRadioButton("Legacy (LWT-based) discovery"),
+        ]
+        for id, btn in enumerate(btns):
+            self.bgDiscovery.addButton(btn, id)
+            btn.setChecked(id == discovery_mode)
+
+        gbDiscovery.addElements(*self.bgDiscovery.buttons())
+
         gbConsole = QGroupBox("Console")
         fl_cons = QFormLayout()
 
@@ -52,6 +75,6 @@ class PrefsDialog(QDialog):
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
 
-        vl.addElements(gbDevices, gbConsole, btns)
+        vl.addElements(gbDevices, gbDiscovery, gbConsole, btns)
 
         self.setLayout(vl)

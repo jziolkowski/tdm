@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (
 )
 
 from GUI.widgets import DictComboBox, VLayout
-from Util import template_adc
+from util import template_adc
 
 
 class TemplateDialog(QDialog):

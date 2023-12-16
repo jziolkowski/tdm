@@ -26,6 +26,7 @@ class PatternsDialog(QDialog):
             QLabel(
                 "Add your modified FullTopic patterns to enable auto-discovery of such devices"
                 "\nPatterns MUST include %prefix%, %topic% and trailing /\n"
+                "+ wildcard is allowed in the topic\n"
                 "Default Tasmota FullTopics are built-in\n\n"
                 "You have to reconnect to your Broker after topic changes."
             ),
