@@ -32,7 +32,7 @@ from GUI.rules import RulesWidget
 from GUI.telemetry import TelemetryWidget
 from GUI.widgets import Toolbar
 from models.devices import TasmotaDevicesModel
-from Util import (
+from util import (
     TasmotaDevice,
     TasmotaEnvironment,
     custom_patterns,
@@ -41,13 +41,12 @@ from Util import (
     initial_commands,
     parse_topic,
 )
-from Util.mqtt import MqttClient
+from util.mqtt import MqttClient
 
 try:
-    import _version
-    __version__ = _version.__version__
+    from __version__ import version
 except ImportError:
-    __version__ = ""
+    version = ""
 
 __tasmota_minimum__ = "6.6.0.17"
 
@@ -57,7 +56,7 @@ class MainWindow(QMainWindow):
         self, settings: QSettings, devices: QSettings, log_path: str, debug: bool, *args, **kwargs
     ):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = __version__
+        self._version = version
         self.setWindowIcon(QIcon(":/logo.png"))
         self.setWindowTitle(f"Tasmota Device Manager {self._version}")
 

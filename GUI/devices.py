@@ -35,7 +35,7 @@ from GUI.dialogs import (
     TimersDialog,
 )
 from GUI.widgets import SliderAction, SpinBox, TableView, Toolbar, VLayout, base_view, default_views
-from Util import TasmotaDevice, initial_commands, resets
+from util import TasmotaDevice, initial_commands, resets
 
 
 class DevicesListWidget(QWidget):
