@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=42", "wheel", "setuptools_scm>=6.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tdmgr"
+description = "Tasmota Device Manager is able to find, monitor and do magic things. Like a Superhero."
+authors = [
+    { name = "jziolkowski", email = "jacek@ziolkowscy.com" }
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+keywords = ["Tasmota", "Device Manager", "Home Automation"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Topic :: Home Automation",
+    "Development Status :: 4 - Beta",
+]
+dependencies = [
+    "paho_mqtt>=1.4",
+    "PyQt5>=5.14.2,<6"
+]
+python_requires = ">=3.8"
+
+[project.urls]
+homepage = "https://github.com/jziolkowski/tdm"
+issue-tracker = "https://github.com/jziolkowski/tdm/issues"
+documentation = "https://github.com/jziolkowski/tdm/wiki"
+
+[tool.setuptools_scm]
+write_to = "__version__.py"

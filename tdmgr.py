@@ -43,7 +43,12 @@ from Util import (
 )
 from Util.mqtt import MqttClient
 
-__version__ = "0.3"
+try:
+    import _version
+    __version__ = _version.__version__
+except ImportError:
+    __version__ = ""
+
 __tasmota_minimum__ = "6.6.0.17"
 
 
