@@ -1,8 +1,20 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from build_filename import get_version
+from __version__ import __version__
+
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--arch")
+parser.add_argument("--os", default="windows")
+options = parser.parse_args()
 
 block_cipher = None
+
+_suffix = f"_{options.arch}" if options.arch else ""
+_extension = ".exe" if options.os == "windows"
+filename = f"tdmgr_{__version__}{_suffix}{_extension}"
+
 
 a = Analysis(['tdmgr.py'],
              binaries=[],
@@ -15,19 +27,20 @@ a = Analysis(['tdmgr.py'],
              win_private_assemblies=False,
              cipher=block_cipher,
              noarchive=False)
-pyz = PYZ(a.pure, a.zipped_data,
-             cipher=block_cipher)
+
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
 exe = EXE(pyz,
           a.scripts,
           a.binaries,
           a.zipfiles,
           a.datas,
           [],
-          name=f'tdmgr_{get_version()}',
+          name=filename,
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
           upx_exclude=[],
           runtime_tmpdir=None,
-          console=False , icon='tdmgr.ico')
+          console=False, icon='tdmgr.ico')
