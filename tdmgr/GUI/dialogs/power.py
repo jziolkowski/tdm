@@ -1,9 +1,9 @@
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTabWidget, QWidget
 
-from .GUI.widgets import Command, HTMLLabel, Interlock, PulseTime, VLayout, docs_url
-from .util.commands import commands
-from .util.setoptions import setoptions
+from tdmgr.GUI.widgets import Command, HTMLLabel, Interlock, PulseTime, VLayout, docs_url
+from tdmgr.util.commands import commands
+from tdmgr.util.setoptions import setoptions
 
 
 class PowerDialog(QDialog):

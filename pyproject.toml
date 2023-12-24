@@ -34,4 +34,4 @@ write_to = "tdmgr/__version__.py"
 local_scheme = "no-local-version"
 
 [project.scripts]
-tdmgr = "tdmgr.tdmgr:main"
+tdmgr = "tdmgr.run:start"

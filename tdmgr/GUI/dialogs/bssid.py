@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QDialog, QHeaderView, QPushButton, QTableWidget, QTableWidgetItem
 
-from .GUI.widgets import HLayout, VLayout
+from tdmgr.GUI.widgets import HLayout, VLayout
 
 
 class BSSIdDialog(QDialog):

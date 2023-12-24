@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidget, QListWidgetItem
 
-from .GUI.widgets import VLayout
+from tdmgr.GUI.widgets import VLayout
 
 
 class ClearRetainedDialog(QDialog):
