@@ -16,8 +16,8 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from GUI.widgets import CheckableAction, GroupBoxH, GroupBoxV, HLayout, Toolbar, VLayout
-from util import TasmotaDevice
+from .GUI.widgets import CheckableAction, GroupBoxH, GroupBoxV, HLayout, Toolbar, VLayout
+from .util import TasmotaDevice
 
 # TODO: triggers list
 

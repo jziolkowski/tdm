@@ -1,8 +1,8 @@
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QLabel
 
-from GUI.widgets import DictComboBox, GroupBoxV, VLayout
-from util.setoptions import setoptions
+from .GUI.widgets import DictComboBox, GroupBoxV, VLayout
+from .util.setoptions import setoptions
 
 
 class SetOptionsDialog(QDialog):

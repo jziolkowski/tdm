@@ -11,8 +11,8 @@ from PyQt5.QtWidgets import (
     QMessageBox,
 )
 
-from GUI.widgets import DictComboBox, VLayout
-from util import template_adc
+from .GUI.widgets import DictComboBox, VLayout
+from .util import template_adc
 
 
 class TemplateDialog(QDialog):

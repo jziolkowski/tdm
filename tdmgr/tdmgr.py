@@ -24,15 +24,15 @@ from PyQt5.QtWidgets import (
     QStatusBar,
 )
 
-from GUI import icons  # noqa: F401
-from GUI.console import ConsoleWidget
-from GUI.devices import DevicesListWidget
-from GUI.dialogs import BrokerDialog, BSSIdDialog, ClearRetainedDialog, PatternsDialog, PrefsDialog
-from GUI.rules import RulesWidget
-from GUI.telemetry import TelemetryWidget
-from GUI.widgets import Toolbar
-from models.devices import TasmotaDevicesModel
-from util import (
+from .GUI import icons  # noqa: F401
+from .GUI.console import ConsoleWidget
+from .GUI.devices import DevicesListWidget
+from .GUI.dialogs import BrokerDialog, BSSIdDialog, ClearRetainedDialog, PatternsDialog, PrefsDialog
+from .GUI.rules import RulesWidget
+from .GUI.telemetry import TelemetryWidget
+from .GUI.widgets import Toolbar
+from .models.devices import TasmotaDevicesModel
+from .util import (
     TasmotaDevice,
     TasmotaEnvironment,
     custom_patterns,
@@ -41,7 +41,7 @@ from util import (
     initial_commands,
     parse_topic,
 )
-from util.mqtt import MqttClient
+from .util.mqtt import MqttClient
 
 try:
     from __version__ import version

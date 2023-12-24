@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
     QTimeEdit,
 )
 
-from GUI.widgets import GroupBoxH, GroupBoxV, HLayout, VLayout
+from .GUI.widgets import GroupBoxH, GroupBoxV, HLayout, VLayout
 
 
 class TimersDialog(QDialog):

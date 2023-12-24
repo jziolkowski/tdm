@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (
     QPushButton,
 )
 
-from GUI.widgets import HLayout, SpinBox, VLayout
+from .GUI.widgets import HLayout, SpinBox, VLayout
 
 
 class BrokerDialog(QDialog):

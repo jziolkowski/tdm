@@ -1,7 +1,7 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QFormLayout, QGroupBox
 
-from GUI.widgets import SpinBox, VLayout
+from .GUI.widgets import SpinBox, VLayout
 
 
 class PrefsDialog(QDialog):

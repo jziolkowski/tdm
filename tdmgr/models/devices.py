@@ -3,8 +3,8 @@ from socket import inet_aton
 
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt
 
-from models.common import DeviceRoles
-from util import TasmotaDevice
+from .models.common import DeviceRoles
+from .util import TasmotaDevice
 
 
 class TasmotaDevicesModel(QAbstractTableModel):
