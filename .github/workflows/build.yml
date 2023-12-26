@@ -52,7 +52,7 @@ jobs:
                     python-version: '3.8'
                     architecture: ${{ matrix.arch }}
             -   name: Install PyInstaller
-                run: pip install pyinstaller setuptools_scm
+                run: pip install -r requirements_build.txt
 
             -   name: Build with PyInstaller
                 run: pyinstaller --noconfirm --clean tdmgr.spec
