@@ -17,9 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install SSH key
+        env:
+          KEY: ${{ secrets.ASSETS_PRIVATE_KEY }}
         uses: webfactory/ssh-agent@v0.5.3
         with:
-          ssh-private-key: ${{ secrets.ASSETS_PRIVATE_KEY }}
+          ssh-private-key: $KEY
 
       - name: Download artifacts from build
         uses: actions/download-artifact@v2
@@ -27,6 +29,10 @@ jobs:
           path: dist
 
       - name: Upload assets via SCP
+        env:
+            HOST: ${{ secrets.ASSETS_HOST }}
+            PORT: ${{ secrets.ASSETS_PORT }}
+            USER: ${{ secrets.ASSETS_USER }}
         run: |
-          scp -P ${{ secrets.ASSETS_PORT }} -o StrictHostKeyChecking=no -r dist/* ${{ secrets.ASSETS_USER }}@${{ secrets.ASSETS_HOST }}:/tdmgr/
+          scp -P $PORT -o StrictHostKeyChecking=no -r dist/* $USER@$HOST:/tdmgr/
         shell: bash
