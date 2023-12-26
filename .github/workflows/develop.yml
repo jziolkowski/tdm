@@ -31,5 +31,5 @@ jobs:
                     PORT: ${{ secrets.ASSETS_PORT }}
                     USER: ${{ secrets.ASSETS_USER }}
                 run: |
-                    scp -P $PORT -o StrictHostKeyChecking=no -r dist/* $USER@$HOST:/tdmgr/
+                    scp -P $PORT -o StrictHostKeyChecking=no -r dist/* $USER@$HOST:/files/tdmgr/
                 shell: bash
