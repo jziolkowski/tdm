@@ -1,38 +1,35 @@
 name: Develop Branch Workflow
 
 on:
-  push:
-    branches:
-      - cicd_update
-  workflow_dispatch:
+    push:
+        branches:
+            - cicd_update
+    workflow_dispatch:
 
 jobs:
-  build-assets:
-    uses: ./.github/workflows/build.yml
-    with:
-      pypi_token: ${{ secrets.TEST_PYPI_API_TOKEN }}
+    build-assets:
+        uses: .github/workflows/build.yml
+        secrets: inherit
 
-  upload-assets:
-    needs: build-assets
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install SSH key
-        env:
-          KEY: ${{ secrets.ASSETS_PRIVATE_KEY }}
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: $KEY
+    upload-assets:
+        needs: build-assets
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Install SSH key
+                uses: webfactory/ssh-agent@v0.5.3
+                with:
+                    ssh-private-key: ${{ secrets.ASSETS_PRIVATE_KEY }}
 
-      - name: Download artifacts from build
-        uses: actions/download-artifact@v2
-        with:
-          path: dist
+            -   name: Download artifacts from build
+                uses: actions/download-artifact@v2
+                with:
+                    path: dist
 
-      - name: Upload assets via SCP
-        env:
-            HOST: ${{ secrets.ASSETS_HOST }}
-            PORT: ${{ secrets.ASSETS_PORT }}
-            USER: ${{ secrets.ASSETS_USER }}
-        run: |
-          scp -P $PORT -o StrictHostKeyChecking=no -r dist/* $USER@$HOST:/tdmgr/
-        shell: bash
+            -   name: Upload assets via SCP
+                env:
+                    HOST: ${{ secrets.ASSETS_HOST }}
+                    PORT: ${{ secrets.ASSETS_PORT }}
+                    USER: ${{ secrets.ASSETS_USER }}
+                run: |
+                    scp -P $PORT -o StrictHostKeyChecking=no -r dist/* $USER@$HOST:/tdmgr/
+                shell: bash
