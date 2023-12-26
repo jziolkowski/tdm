@@ -1,24 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from __version__ import __version__
+from tdmgr.__version__ import __version__
 
-import argparse
+import sys
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--arch")
-parser.add_argument("--os", default="windows")
-options = parser.parse_args()
+_suffix = f"_x64" if sys.maxsize > 2**32 else ""
+filename = f"tdmgr_{__version__}{_suffix}"
 
 block_cipher = None
 
-_suffix = f"_{options.arch}" if options.arch else ""
-_extension = ".exe" if options.os == "windows"
-filename = f"tdmgr_{__version__}{_suffix}{_extension}"
-
-
-a = Analysis(['tdmgr.py'],
+a = Analysis(['tdmgr/run.py'],
              binaries=[],
-             datas=[('GUI', 'GUI'), ('Util', 'Util')],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],

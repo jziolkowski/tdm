@@ -2,10 +2,9 @@ name: Shared Build Workflow
 
 on:
   workflow_call:
-    inputs:
+    secrets:
       pypi_token:
         required: true
-        type: secret
 
 jobs:
   build-wheel:
@@ -27,7 +26,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@master
         with:
           user: __token__
-          password: ${{ inputs.pypi_token }}
+          password: ${{ secrets.pypi_token }}
           repository_url: https://test.pypi.org/legacy/
 
   build-binaries:
