@@ -1,0 +1,36 @@
+name: Develop Branch Workflow
+
+on:
+  push:
+    branches:
+      - cicd_update
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  secrets: read
+
+jobs:
+  call-shared-workflow:
+    uses: ./.github/workflows/build.yml
+    with:
+      pypi_token: ${{ secrets.TEST_PYPI_API_TOKEN }}
+
+  upload-assets:
+    needs: call-shared-workflow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install SSH key
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.ASSETS_PRIVATE_KEY }}
+
+      - name: Download artifacts from build
+        uses: actions/download-artifact@v2
+        with:
+          path: dist
+
+      - name: Upload assets via SCP
+        run: |
+          scp -P ${{ secrets.ASSETS_PORT }} -o StrictHostKeyChecking=no -r dist/* ${{ secrets.ASSETS_USER }}@${{ secrets.ASSETS_HOST }}:/tdmgr/
+        shell: bash
