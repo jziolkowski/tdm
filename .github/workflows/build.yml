@@ -2,9 +2,6 @@ name: Shared Build Workflow
 
 on:
     workflow_call:
-        secrets:
-            pypi_token:
-                required: true
 
 jobs:
     build-wheel:
