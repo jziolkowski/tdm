@@ -1,11 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from tdmgr.__version__ import __version__
-
+import setuptools_scm
 import sys
 
+_version = setuptools_scm.get_version(local_scheme='no-local-version')
 _suffix = f"_x64" if sys.maxsize > 2**32 else ""
-filename = f"tdmgr_{__version__}{_suffix}"
+filename = f"tdmgr_{_version}{_suffix}"
 
 block_cipher = None
 

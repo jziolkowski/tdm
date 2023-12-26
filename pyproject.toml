@@ -30,7 +30,7 @@ issue-tracker = "https://github.com/jziolkowski/tdm/issues"
 documentation = "https://github.com/jziolkowski/tdm/wiki"
 
 [tool.setuptools_scm]
-write_to = "tdmgr/__version__.py"
+write_to = "tdmgr/_version.py"
 local_scheme = "no-local-version"
 
 [project.scripts]
