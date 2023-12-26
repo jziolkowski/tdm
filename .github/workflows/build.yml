@@ -24,7 +24,7 @@ jobs:
                 run: python -m build --wheel --outdir dist/
 
             -   name: Publish package to PyPI
-                uses: pypa/gh-action-pypi-publish@v1.4.2
+                uses: pypa/gh-action-pypi-publish@master
                 with:
                     repository_url: https://test.pypi.org/legacy/
                     user: __token__
@@ -52,7 +52,7 @@ jobs:
                     python-version: '3.8'
                     architecture: ${{ matrix.arch }}
             -   name: Install PyInstaller
-                run: pip install pyinstaller
+                run: pip install pyinstaller setuptools_scm
 
             -   name: Build with PyInstaller
                 run: pyinstaller --noconfirm --clean tdmgr.spec
