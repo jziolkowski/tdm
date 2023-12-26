@@ -6,10 +6,6 @@ on:
       - cicd_update
   workflow_dispatch:
 
-permissions:
-  contents: read
-  secrets: read
-
 jobs:
   call-shared-workflow:
     uses: ./.github/workflows/build.yml
