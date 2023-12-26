@@ -24,12 +24,10 @@ jobs:
                 run: python -m build --wheel --outdir dist/
 
             -   name: Publish package to PyPI
-                uses: pypa/gh-action-pypi-publish@master
+                uses: pypa/gh-action-pypi-publish@release/v1
                 with:
                     repository_url: https://test.pypi.org/legacy/
-                    user: __token__
                     password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-                    packages_dir: dist
 
     build-binaries:
         needs: build-wheel
@@ -45,9 +43,11 @@ jobs:
                     -   os: macos-latest
                         arch: x64
         steps:
-            -   uses: actions/checkout@v2
+            -   uses: actions/checkout@@v3
+                with:
+                    fetch-depth: 0
             -   name: Set up Python 3.8
-                uses: actions/setup-python@v2
+                uses: actions/setup-python@v4
                 with:
                     python-version: '3.8'
                     architecture: ${{ matrix.arch }}
@@ -60,4 +60,5 @@ jobs:
             -   name: Upload binaries artifact to workflow
                 uses: actions/upload-artifact@v2
                 with:
+                    name: tdmgr
                     path: dist/*
