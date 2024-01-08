@@ -30,7 +30,7 @@ jobs:
                     password: ${{ secrets.TEST_PYPI_API_TOKEN }}
 
     Binaries:
-        needs: build-wheel
+        needs: Wheel
         runs-on: ${{ matrix.os }}
         strategy:
             fail-fast: false
