@@ -3,7 +3,7 @@ name: Develop Branch Workflow
 on:
     push:
         branches:
-            - cicd_update
+            - develop
         paths-ignore:
             - '.github/workflows/**'
     workflow_dispatch:
