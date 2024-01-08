@@ -194,7 +194,7 @@ class TableView(QTableView):
             if not hidden:
                 self.setColumnHidden(col, opts[1])
 
-            if type(opts[2]) == int:
+            if isinstance(opts[2], int):
                 self.setColumnWidth(col, opts[2])
 
             else:
