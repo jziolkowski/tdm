@@ -6,11 +6,11 @@ on:
             - 'v*'
 
 jobs:
-    build-assets:
+    Build:
         uses: ./.github/workflows/build.yml
         secrets: inherit
 
-    draft-release:
+    Draft-Release:
         needs: build-assets
         runs-on: ubuntu-latest
         steps:
@@ -35,9 +35,7 @@ jobs:
             # Upload release assets: each file in `dist/` to the GitHub Release
             -   name: Upload Release Assets
                 run: |
-                    ls -la dist
-                    ls -la dist/tdmgr
-                    for asset in dist/*; do
+                    for asset in dist/tdmgr/*; do
                       echo "Uploading asset: $asset"
                       gh release upload "${{ github.ref_name }}" "$asset" --clobber
                     done

@@ -5,15 +5,15 @@ on:
         branches:
             - cicd_update
         paths-ignore:
-            - '.github/wokrflows/**'
+            - '.github/workflows/**'
     workflow_dispatch:
 
 jobs:
-    build-assets:
+    Build:
         uses: ./.github/workflows/build.yml
         secrets: inherit
 
-    upload-assets:
+    Upload:
         needs: build-assets
         runs-on: ubuntu-latest
         steps:

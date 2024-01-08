@@ -4,7 +4,7 @@ on:
     workflow_call:
 
 jobs:
-    build-wheel:
+    Wheel:
         runs-on: ubuntu-latest
         steps:
             -   uses: actions/checkout@v3
@@ -29,7 +29,7 @@ jobs:
                     repository_url: https://test.pypi.org/legacy/
                     password: ${{ secrets.TEST_PYPI_API_TOKEN }}
 
-    build-binaries:
+    Binaries:
         needs: build-wheel
         runs-on: ${{ matrix.os }}
         strategy:
