@@ -1,0 +1,64 @@
+name: Shared Build Workflow
+
+on:
+    workflow_call:
+
+jobs:
+    Wheel:
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v3
+                with:
+                    fetch-depth: 0
+
+            -   uses: actions/setup-python@v4
+                with:
+                    python-version: '3.8'
+
+            -   name: Install dependencies
+                run: |
+                    python -m pip install --upgrade pip
+                    pip install setuptools wheel setuptools_scm[toml] build
+
+            -   name: Build package
+                run: python -m build --wheel --outdir dist/
+
+            -   name: Publish package to PyPI
+                uses: pypa/gh-action-pypi-publish@release/v1
+                with:
+                    repository_url: https://test.pypi.org/legacy/
+                    password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+
+    Binaries:
+        needs: Wheel
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    -   os: windows-2019
+                        arch: x86
+                    -   os: windows-2019
+                        arch: x64
+                    -   os: macos-latest
+                        arch: x64
+        steps:
+            -   uses: actions/checkout@v3
+                with:
+                    fetch-depth: 0
+            -   name: Set up Python 3.8
+                uses: actions/setup-python@v4
+                with:
+                    python-version: '3.8'
+                    architecture: ${{ matrix.arch }}
+            -   name: Install PyInstaller
+                run: pip install -r requirements_build.txt
+
+            -   name: Build with PyInstaller
+                run: pyinstaller --noconfirm --clean tdmgr.spec
+
+            -   name: Upload binaries artifact to workflow
+                uses: actions/upload-artifact@v2
+                with:
+                    name: tdmgr
+                    path: dist/*

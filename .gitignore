@@ -82,13 +82,7 @@ celerybeat-schedule
 *.sage.py
 
 # Environments
-.env
 .venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
 
 # Spyder project settings
 .spyderproject
@@ -108,3 +102,4 @@ venv.bak/
 tdm.cfg
 devices.cfg
 tdm*.log
+__version__.py

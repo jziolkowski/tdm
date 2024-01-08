@@ -1,11 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import setuptools_scm
+import sys
+
+_version = setuptools_scm.get_version(local_scheme='no-local-version')
+_suffix = f"_x64" if sys.maxsize > 2**32 else ""
+filename = f"tdmgr_{_version}{_suffix}"
+
 block_cipher = None
 
-
-a = Analysis(['tdmgr.py'],
+a = Analysis(['tdmgr/run.py'],
              binaries=[],
-             datas=[('GUI', 'GUI'), ('Util', 'Util')],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
@@ -14,19 +19,20 @@ a = Analysis(['tdmgr.py'],
              win_private_assemblies=False,
              cipher=block_cipher,
              noarchive=False)
-pyz = PYZ(a.pure, a.zipped_data,
-             cipher=block_cipher)
+
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
 exe = EXE(pyz,
           a.scripts,
           a.binaries,
           a.zipfiles,
           a.datas,
           [],
-          name='tdmgr_0.2.13',
+          name=filename,
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
           upx_exclude=[],
           runtime_tmpdir=None,
-          console=False , icon='tdmgr.ico')
+          console=False, icon='tdmgr.ico')

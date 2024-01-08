@@ -5,7 +5,7 @@ from PyQt5.QtCore import QPoint, QRect, QSize, Qt
 from PyQt5.QtGui import QColor, QFont, QPainter, QPalette, QPen, QPixmap
 from PyQt5.QtWidgets import QStyle, QStyledItemDelegate
 
-from GUI.common import (
+from tdmgr.GUI.common import (
     ARROW_DN,
     ARROW_UP,
     GREEN,
@@ -15,7 +15,7 @@ from GUI.common import (
     RSSI_LOW,
     RSSI_MEDIUM,
 )
-from models.common import DeviceRoles
+from tdmgr.models.common import DeviceRoles
 
 
 @dataclass

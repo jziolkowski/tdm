@@ -1,11 +1,6 @@
-#!/usr/bin/env python
-import argparse
 import csv
 import logging
-import os
-import pathlib
 import re
-import sys
 from json import loads
 from logging.handlers import TimedRotatingFileHandler
 
@@ -13,7 +8,6 @@ from PyQt5.QtCore import QDir, QFileInfo, QSettings, QSize, Qt, QTimer, QUrl, py
 from PyQt5.QtGui import QDesktopServices, QFont, QIcon
 from PyQt5.QtWidgets import (
     QAction,
-    QApplication,
     QDialog,
     QFileDialog,
     QInputDialog,
@@ -24,15 +18,20 @@ from PyQt5.QtWidgets import (
     QStatusBar,
 )
 
-from GUI import icons  # noqa: F401
-from GUI.console import ConsoleWidget
-from GUI.devices import DevicesListWidget
-from GUI.dialogs import BrokerDialog, BSSIdDialog, ClearRetainedDialog, PatternsDialog, PrefsDialog
-from GUI.rules import RulesWidget
-from GUI.telemetry import TelemetryWidget
-from GUI.widgets import Toolbar
-from models.devices import TasmotaDevicesModel
-from Util import (
+from tdmgr.GUI.console import ConsoleWidget
+from tdmgr.GUI.devices import DevicesListWidget
+from tdmgr.GUI.dialogs import (
+    BrokerDialog,
+    BSSIdDialog,
+    ClearRetainedDialog,
+    PatternsDialog,
+    PrefsDialog,
+)
+from tdmgr.GUI.rules import RulesWidget
+from tdmgr.GUI.telemetry import TelemetryWidget
+from tdmgr.GUI.widgets import Toolbar
+from tdmgr.models.devices import TasmotaDevicesModel
+from tdmgr.util import (
     TasmotaDevice,
     TasmotaEnvironment,
     custom_patterns,
@@ -41,18 +40,22 @@ from Util import (
     initial_commands,
     parse_topic,
 )
-from Util.mqtt import MqttClient
-
-__version__ = "0.3"
-__tasmota_minimum__ = "6.6.0.17"
+from tdmgr.util.mqtt import MqttClient
 
 
 class MainWindow(QMainWindow):
     def __init__(
-        self, settings: QSettings, devices: QSettings, log_path: str, debug: bool, *args, **kwargs
+        self,
+        version: str,
+        settings: QSettings,
+        devices: QSettings,
+        log_path: str,
+        debug: bool,
+        *args,
+        **kwargs,
     ):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self._version = __version__
+        self._version = version
         self.setWindowIcon(QIcon(":/logo.png"))
         self.setWindowTitle(f"Tasmota Device Manager {self._version}")
 
@@ -496,7 +499,6 @@ class MainWindow(QMainWindow):
     def prefs(self):
         dlg = PrefsDialog(self.settings)
         if dlg.exec_() == QDialog.Accepted:
-
             devices_short_version = self.settings.value("devices_short_version", True, bool)
             if devices_short_version != dlg.cbDevShortVersion.isChecked():
                 self.settings.setValue("devices_short_version", dlg.cbDevShortVersion.isChecked())
@@ -626,65 +628,3 @@ class MainWindow(QMainWindow):
         self.devices.sync()
 
         e.accept()
-
-
-def get_settings(args):
-    if args.local:
-        return QSettings("tdm.cfg", QSettings.IniFormat)
-    if args.config_location:
-        return QSettings(os.path.join(args.config_location, "tdm.cfg"), QSettings.IniFormat)
-    return QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
-
-
-def get_devices(args):
-    if args.local:
-        return QSettings("devices.cfg", QSettings.IniFormat)
-    if args.config_location:
-        return QSettings(os.path.join(args.config_location, "devices.cfg"), QSettings.IniFormat)
-    return QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "devices")
-
-
-def get_log_path(args):
-    if args.local:
-        return "tdm.log"
-    if args.log_location:
-        return os.path.join(args.log_location, "tdm.log")
-    return os.path.join(QDir.tempPath(), "tdm.log")
-
-
-def start(args):
-    app = QApplication(sys.argv)
-    app.lastWindowClosed.connect(app.quit)
-    app.setStyle("Fusion")
-
-    settings, devices, log_path = get_settings(args), get_devices(args), get_log_path(args)
-    MW = MainWindow(settings, devices, log_path, args.debug)
-    MW.show()
-    sys.exit(app.exec_())
-
-
-def setup_parser():
-    parser = argparse.ArgumentParser(prog='Tasmota Device Manager')
-    parser.add_argument('--debug', action='store_true', help='Enable debugging')
-    parser.add_argument(
-        '--local',
-        action='store_true',
-        help='Store configuration and logs in the directory where TDM was started',
-    )
-    parser.add_argument('--config-location', type=pathlib.Path)
-    parser.add_argument('--log-location', type=pathlib.Path)
-    return parser
-
-
-if __name__ == "__main__":
-    parser = setup_parser()
-    args = parser.parse_args()
-    # start()
-    try:
-        start(args)
-    except Exception as e:  # noqa: 722
-        logging.exception("EXCEPTION: %s", e)
-        print(
-            f"TDM has crashed. Sorry for that. Check {os.path.join(QDir.tempPath(), 'tdm.log')} "
-            f"for more information."
-        )

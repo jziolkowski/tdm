@@ -1,37 +1,46 @@
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTabWidget, QWidget
 
-from GUI.widgets import Command, CommandMultiSelect, HTMLLabel, VLayout, docs_url
-from Util.commands import commands
-from Util.setoptions import setoptions
+from tdmgr.GUI.widgets import Command, HTMLLabel, Interlock, PulseTime, VLayout, docs_url
+from tdmgr.util.commands import commands
+from tdmgr.util.setoptions import setoptions
 
 
-class SwitchesDialog(QDialog):
+class PowerDialog(QDialog):
     sendCommand = pyqtSignal(str, str)
 
     def __init__(self, device, *args, **kwargs):
-        super(SwitchesDialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle(f"Switches settings [{device.name}]")
+        super(PowerDialog, self).__init__(*args, **kwargs)
+        self.setWindowTitle(f"Power settings [{device.name}]")
         self.setMinimumWidth(300)
         self.device = device
 
-        self.commands_list = ["SwitchDebounce", "SwitchRetain"]
+        self.commands_list = ["BlinkCount", "BlinkTime", "PowerOnState", "PowerRetain"]
         self.command_widgets = {}
 
-        self.setoption_list = [32]
+        self.setoption_list = [0, 26, 63]
         self.setoption_widgets = {}
 
         vl = VLayout()
-
         vl_cmd = VLayout(0, 0)
         for cmd in self.commands_list:
             cw = Command(cmd, commands[cmd], self.device.p.get(cmd))
             vl_cmd.addWidget(cw)
             self.command_widgets[cmd] = cw
-        self.sm = CommandMultiSelect(
-            "SwitchMode", commands["SwitchMode"], self.device.p.get("SwitchMode")
+
+        self.ci = Interlock(
+            "Interlock",
+            commands["Interlock"],
+            {
+                "Interlock": self.device.p.get("Interlock", "OFF"),
+                "Groups": self.device.p.get("Groups", ""),
+            },
         )
-        vl_cmd.addWidget(self.sm)
+        vl_cmd.addWidget(self.ci)
+
+        self.cpt = PulseTime("PulseTime", commands["PulseTime"], self.device.pulsetime())
+        vl_cmd.addWidget(self.cpt)
+
         vl_cmd.addStretch(1)
 
         vl_so = VLayout(0, 0)

@@ -1,32 +1,37 @@
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTabWidget, QWidget
 
-from GUI.widgets import Command, HTMLLabel, VLayout, docs_url
-from Util.commands import commands
-from Util.setoptions import setoptions
+from tdmgr.GUI.widgets import Command, CommandMultiSelect, HTMLLabel, VLayout, docs_url
+from tdmgr.util.commands import commands
+from tdmgr.util.setoptions import setoptions
 
 
-class ButtonsDialog(QDialog):
+class SwitchesDialog(QDialog):
     sendCommand = pyqtSignal(str, str)
 
     def __init__(self, device, *args, **kwargs):
-        super(ButtonsDialog, self).__init__(*args, **kwargs)
-        self.setWindowTitle(f"Buttons settings [{device.name}]")
+        super(SwitchesDialog, self).__init__(*args, **kwargs)
+        self.setWindowTitle(f"Switches settings [{device.name}]")
         self.setMinimumWidth(300)
         self.device = device
 
-        self.commands_list = ["ButtonDebounce", "ButtonRetain"]
+        self.commands_list = ["SwitchDebounce", "SwitchRetain"]
         self.command_widgets = {}
 
-        self.setoption_list = [11, 13, 32, 40, 61]
+        self.setoption_list = [32]
         self.setoption_widgets = {}
 
         vl = VLayout()
+
         vl_cmd = VLayout(0, 0)
         for cmd in self.commands_list:
             cw = Command(cmd, commands[cmd], self.device.p.get(cmd))
             vl_cmd.addWidget(cw)
             self.command_widgets[cmd] = cw
+        self.sm = CommandMultiSelect(
+            "SwitchMode", commands["SwitchMode"], self.device.p.get("SwitchMode")
+        )
+        vl_cmd.addWidget(self.sm)
         vl_cmd.addStretch(1)
 
         vl_so = VLayout(0, 0)
@@ -34,6 +39,7 @@ class ButtonsDialog(QDialog):
             cw = Command(f"SetOption{so}", setoptions[str(so)], self.device.setoption(so))
             vl_so.addWidget(cw)
             self.setoption_widgets[so] = cw
+        vl_so.addStretch(1)
 
         tabs = QTabWidget()
         tab_cm = QWidget()

@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
     QTimeEdit,
 )
 
-from GUI.widgets import GroupBoxH, GroupBoxV, HLayout, VLayout
+from tdmgr.GUI.widgets import GroupBoxH, GroupBoxV, HLayout, VLayout
 
 
 class TimersDialog(QDialog):
@@ -203,7 +203,6 @@ class TimersDialog(QDialog):
                 )
 
             elif self.cbxTimerOut.count() > 0:
-
                 if act == "Toggle":
                     desc["action"] = f"TOGGLE {out.upper()}"
                 else:

@@ -16,8 +16,8 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from GUI.widgets import CheckableAction, GroupBoxH, GroupBoxV, HLayout, Toolbar, VLayout
-from Util import TasmotaDevice
+from tdmgr.GUI.widgets import CheckableAction, GroupBoxH, GroupBoxV, HLayout, Toolbar, VLayout
+from tdmgr.util import TasmotaDevice
 
 # TODO: triggers list
 
@@ -292,7 +292,6 @@ class RulesWidget(QWidget):
                     payload[rule] = payload.pop("enabled")
                     self.display_rule(payload, rule)
                 else:
-
                     if payload:
                         keys = list(payload.keys())
                         fk = keys[0]

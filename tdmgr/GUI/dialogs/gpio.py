@@ -1,7 +1,7 @@
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QFormLayout, QGroupBox, QLabel, QMessageBox
 
-from GUI.widgets import DictComboBox, VLayout
+from tdmgr.GUI.widgets import DictComboBox, VLayout
 
 
 class GPIODialog(QDialog):

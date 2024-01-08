@@ -27,12 +27,11 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from GUI.widgets import GroupBoxV, HLayout, VLayout, console_font
-from Util.commands import commands
+from tdmgr.GUI.widgets import GroupBoxV, HLayout, VLayout, console_font
+from tdmgr.util.commands import commands
 
 
 class ConsoleWidget(QDockWidget):
-
     sendCommand = pyqtSignal(str, str)
 
     def __init__(self, settings, device, *args, **kwargs):

@@ -22,9 +22,9 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from GUI.common import ARROW_DN, ARROW_UP, make_relay_pixmap
-from GUI.delegates.devices import DeviceDelegate
-from GUI.dialogs import (
+from tdmgr.GUI.common import ARROW_DN, ARROW_UP, make_relay_pixmap
+from tdmgr.GUI.delegates.devices import DeviceDelegate
+from tdmgr.GUI.dialogs import (
     ButtonsDialog,
     GPIODialog,
     ModulesDialog,
@@ -34,8 +34,16 @@ from GUI.dialogs import (
     TemplateDialog,
     TimersDialog,
 )
-from GUI.widgets import SliderAction, SpinBox, TableView, Toolbar, VLayout, base_view, default_views
-from Util import TasmotaDevice, initial_commands, resets
+from tdmgr.GUI.widgets import (
+    SliderAction,
+    SpinBox,
+    TableView,
+    Toolbar,
+    VLayout,
+    base_view,
+    default_views,
+)
+from tdmgr.util import TasmotaDevice, initial_commands, resets
 
 
 class DevicesListWidget(QWidget):
