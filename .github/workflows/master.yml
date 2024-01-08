@@ -31,7 +31,7 @@ jobs:
       - name: Upload Release Assets
         run: |
           for asset in dist/*; do
-            echo "Uploading asset $asset"
+            echo "Uploading asset: $asset"
             gh release upload "${{ github.ref_name }}" "$asset" --clobber
           done
         env:
