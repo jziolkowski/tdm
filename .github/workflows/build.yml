@@ -26,8 +26,7 @@ jobs:
             -   name: Publish package to PyPI
                 uses: pypa/gh-action-pypi-publish@release/v1
                 with:
-                    repository_url: https://test.pypi.org/legacy/
-                    password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+                    repository-url: https://test.pypi.org/legacy/
 
     Binaries:
         needs: Wheel
