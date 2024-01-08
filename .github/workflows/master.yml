@@ -1,0 +1,38 @@
+name: Master Branch Release Workflow
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      # Call the shared workflow to build the wheel and binaries
+      - name: Build Wheel and Binaries
+        uses: ./.github/workflows/build.yml
+        secrets: inherit
+
+      # Create a draft release
+      - name: Create Draft Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          draft: true
+
+      # Upload release assets: each file in `dist/` to the GitHub Release
+      - name: Upload Release Assets
+        run: |
+          for asset in dist/*; do
+            echo "Uploading asset: $asset"
+            gh release upload "${{ github.ref_name }}" "$asset" --clobber
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
