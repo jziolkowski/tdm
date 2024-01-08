@@ -4,6 +4,8 @@ on:
     push:
         branches:
             - cicd_update
+        paths-ignore:
+            - '.github/wokrflows/*'
     workflow_dispatch:
 
 jobs:
