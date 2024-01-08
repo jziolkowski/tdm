@@ -33,7 +33,9 @@ jobs:
             # Upload release assets: each file in `dist/` to the GitHub Release
             -   name: Upload Release Assets
                 run: |
+                    ls -la
                     cd ${{github.workspace}}
+                    ls -la
                     for asset in dist/*; do
                       echo "Uploading asset: $asset"
                       gh release upload "${{ github.ref_name }}" "$asset" --clobber
