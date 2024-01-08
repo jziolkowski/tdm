@@ -5,7 +5,7 @@ on:
         branches:
             - cicd_update
         paths-ignore:
-            - '.github/wokrflows/*'
+            - '.github/wokrflows/**'
     workflow_dispatch:
 
 jobs:
