@@ -1,0 +1,26 @@
+name: Code formatting
+
+on:
+    workflow_dispatch:
+    pull_request:
+
+jobs:
+    CICD:
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v3
+
+            -   uses: actions/setup-python@v4
+                with:
+                    python-version: '3.8'
+
+            -   uses: isort/isort-action@master
+                with:
+                    requirementsFiles: "requirements_dev.txt"
+                    configuration: "--check-only --up -l 100 "
+
+            -   uses: psf/black@stable
+                with:
+                    options: "--check --verbose -S -l 100"
+
+            -   uses: py-actions/flake8@v2
