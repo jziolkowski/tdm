@@ -1,7 +1,6 @@
 import csv
 import logging
 import re
-import sys
 from logging.handlers import TimedRotatingFileHandler
 
 from PyQt5.QtCore import QDir, QFileInfo, QSettings, QSize, Qt, QTimer, QUrl, pyqtSlot
@@ -31,23 +30,10 @@ from tdmgr.GUI.rules import RulesWidget
 from tdmgr.GUI.telemetry import TelemetryWidget
 from tdmgr.GUI.widgets import Toolbar
 from tdmgr.models.devices import TasmotaDevicesModel
-from tdmgr.util import (
-    TasmotaDevice,
-    TasmotaEnvironment,
-    custom_patterns,
-    default_patterns,
-    expand_fulltopic,
-    initial_commands,
-    parse_topic,
-)
-from tdmgr.util.mqtt import MqttClient
-
-from schemas.discovery import DiscoverySchema
-
-
-from util import DiscoveryMode, TasmotaDevice, TasmotaEnvironment, initial_commands
-from util.discovery import lwt_discovery_stage2
-from util.mqtt import DEFAULT_PATTERNS, Message, MqttClient, expand_fulltopic
+from tdmgr.schemas.discovery import DiscoverySchema
+from tdmgr.util import DiscoveryMode, TasmotaDevice, TasmotaEnvironment, initial_commands
+from tdmgr.util.discovery import lwt_discovery_stage2
+from tdmgr.util.mqtt import DEFAULT_PATTERNS, Message, MqttClient, expand_fulltopic
 
 
 class MainWindow(QMainWindow):

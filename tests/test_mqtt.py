@@ -1,5 +1,5 @@
 import pytest
-from util.mqtt import expand_fulltopic
+from tdmgr.util.mqtt import expand_fulltopic
 
 
 @pytest.mark.parametrize(
@@ -9,7 +9,7 @@ from util.mqtt import expand_fulltopic
         ("%prefix%/%topic%", ['tele/#', 'stat/#']),
         ("+/%prefix%/%topic%/", ['+/tele/#', '+/stat/#']),
         ("+/%prefix%/%topic%", ['+/tele/#', '+/stat/#']),
-    ]
+    ],
 )
 def test_expand_fulltopic(fulltopic, expected):
     result = expand_fulltopic(fulltopic)

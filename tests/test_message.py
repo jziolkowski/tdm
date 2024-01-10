@@ -1,6 +1,5 @@
 import pytest
-
-from util import Message
+from tdmgr.util import Message
 
 
 def test_message():

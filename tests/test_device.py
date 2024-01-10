@@ -1,6 +1,5 @@
 import pytest
-
-from util import TasmotaDevice
+from tdmgr.util import TasmotaDevice
 
 
 @pytest.mark.parametrize(

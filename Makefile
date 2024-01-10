@@ -17,6 +17,6 @@ check-and-fix: isort black flake8
 dev-setup:
 	python3 -m venv $(VENV_DIR)
 	$(VENV_DIR)/bin/pip install --upgrade pip wheel setuptools
-	$(VENV_DIR)/bin/pip install -r requirements_dev.txt -r requirements.txt
+	$(VENV_DIR)/bin/pip install -r requirements_dev.txt
 
 
