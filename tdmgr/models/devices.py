@@ -3,7 +3,7 @@ from socket import inet_aton
 
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt
 
-from tdmgr.models.common import DeviceRoles
+from tdmgr.models.roles import DeviceRoles
 from tdmgr.util import TasmotaDevice
 
 
@@ -84,7 +84,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
                 if col_name == "Module":
                     if val == 0:
-                        return d.p["Template"].get("NAME", "Fetching template name...")
+                        return d.p["Template"]
                     else:
                         return d.module()
 

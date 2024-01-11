@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import (
 
 base_view = ["Device"]
 default_views = {
-    "Home": base_view + ["Module", "Power", "Color", "LoadAvg", "LinkCount", "Uptime"],
+    "Home": base_view + ["Module", "LoadAvg", "LinkCount", "Uptime"],
     "Health": base_view
     + [
         "Uptime",

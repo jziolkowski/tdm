@@ -1,4 +1,5 @@
 import pytest
+
 from tdmgr.util.mqtt import expand_fulltopic
 
 

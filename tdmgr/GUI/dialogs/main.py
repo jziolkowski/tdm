@@ -30,8 +30,7 @@ from tdmgr.GUI.rules import RulesWidget
 from tdmgr.GUI.telemetry import TelemetryWidget
 from tdmgr.GUI.widgets import Toolbar
 from tdmgr.models.devices import TasmotaDevicesModel
-from tdmgr.schemas.discovery import DiscoverySchema
-from tdmgr.util import DiscoveryMode, TasmotaDevice, TasmotaEnvironment, initial_commands
+from tdmgr.util import TasmotaDevice, TasmotaEnvironment, initial_commands
 from tdmgr.util.discovery import lwt_discovery_stage2
 from tdmgr.util.mqtt import DEFAULT_PATTERNS, Message, MqttClient, expand_fulltopic
 
@@ -337,39 +336,39 @@ class MainWindow(QMainWindow):
         if msg.retained:
             self.env.retained.add(msg.topic)
 
-        if msg.is_lwt:
-            self.env.lwts[msg.topic] = msg.payload
+        # if msg.is_lwt:
+        #     self.env.lwts[msg.topic] = msg.payload
+        # TODO: make native discovery work
+        # discovery_mode = self.settings.value("discovery_mode", 0, int)
+        # if msg.topic.startswith("tasmota/discovery") and discovery_mode != DiscoveryMode.LEGACY:
+        #     # Add device using native Tasmota discovery message
+        #     if msg.endpoint == "config":
+        #         obj = None
+        #         try:
+        #             obj = DiscoverySchema.model_validate_json(msg.payload)
+        #         except ValueError:
+        #             logging.error("Unable to parse Tasmota discovery message: %s", msg.payload)
+        #
+        #         if obj and not self.env.find_device(obj.t):
+        #             device = TasmotaDevice.from_discovery(obj)
+        #             for sub_topic in device.subscribable_topics:
+        #                 if sub_topic not in self.topics:
+        #                     self.topics.append(sub_topic)
+        #                     self.mqtt.subscribe([(sub_topic, 0)])
+        #
+        #             self.env.devices.append(device)
+        #             self.device_model.addDevice(device)
+        #             logging.info(
+        #                 "DISCOVERY(NATIVE): Discovered topic=%s with fulltopic=%s",
+        #                 obj.t,
+        #                 device.p["FullTopic"],
+        #             )
+        #             self.initial_query(device, True)
+        #
+        #             lwt = self.env.lwts.pop(f"{obj.ft}/LWT", obj.ofln)
+        #             device.update_property("LWT", lwt)
 
-        discovery_mode = self.settings.value("discovery_mode", 0, int)
-        if msg.topic.startswith("tasmota/discovery") and discovery_mode != DiscoveryMode.LEGACY:
-            # Add device using native Tasmota discovery message
-            if msg.endpoint == "config":
-                obj = None
-                try:
-                    obj = DiscoverySchema.model_validate_json(msg.payload)
-                except ValueError:
-                    logging.error("Unable to parse Tasmota discovery message: %s", msg.payload)
-
-                if obj and not self.env.find_device(obj.t):
-                    device = TasmotaDevice.from_discovery(obj)
-                    for sub_topic in device.subscribable_topics:
-                        if sub_topic not in self.topics:
-                            self.topics.append(sub_topic)
-                            self.mqtt.subscribe([(sub_topic, 0)])
-
-                    self.env.devices.append(device)
-                    self.device_model.addDevice(device)
-                    logging.info(
-                        "DISCOVERY(NATIVE): Discovered topic=%s with fulltopic=%s",
-                        obj.t,
-                        device.p["FullTopic"],
-                    )
-                    self.initial_query(device, True)
-
-                    lwt = self.env.lwts.pop(f"{obj.ft}/LWT", obj.ofln)
-                    device.update_property("LWT", lwt)
-
-        elif device := self.env.find_device(msg.topic):
+        if device := self.env.find_device(msg.topic):
             if msg.is_lwt:
                 logging.debug("MQTT: LWT message for %s: %s", device.p["Topic"], msg.payload)
                 device.update_property("LWT", msg.payload)
@@ -383,9 +382,12 @@ class MainWindow(QMainWindow):
                 if _prefix:
                     msg.prefix = _prefix.groupdict()["prefix"]
                 # forward the message for processing
+                device.update_property("LWT", device.p["Online"])
                 device.process_message(msg)
 
-        elif discovery_mode != DiscoveryMode.NATIVE:
+        # TODO: ditto
+        # elif discovery_mode != DiscoveryMode.NATIVE:
+        else:
             # unknown device, start autodiscovery process
             if msg.is_lwt:
                 self.env.lwts[msg.topic] = msg.payload

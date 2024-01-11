@@ -39,17 +39,20 @@ template_adc = {
 }
 
 
+COMMAND_UNKNOWN = {"Command": "Unknown"}
+
+
 def initial_commands():
     commands = [
         "template",
         "modules",
         "gpio",
-        # "buttondebounce",
-        # "switchdebounce",
-        # "interlock",
-        # "blinktime",
-        # "blinkcount",
-        # "pulsetime"
+        "buttondebounce",
+        "switchdebounce",
+        "interlock",
+        "blinktime",
+        "blinkcount",
+        "pulsetime",
     ]
 
     commands = [(command, "") for command in commands]
@@ -75,7 +78,7 @@ class DiscoveryMode(int, Enum):
     LEGACY = 2
 
 
-class TasmotaEnvironment(object):
+class TasmotaEnvironment:
     def __init__(self):
         self.devices = []
         self.lwts = dict()
@@ -188,21 +191,18 @@ class TasmotaDevice(QObject):
         return topics
 
     def update_property(self, k, v):
-        old = self.p.get(k)  # safely get the old value
-        if self.property_changed and (
-            not old or old != v
-        ):  # If property_changed callback is set then check previous value presence and
-            self.property_changed(
-                self, k
-            )  # compare with new value. Trigger the callback if value has changed
-        self.p[k] = v  # store the new value
+        old = self.p.get(k)
+        if not old or old != v:
+            self.p[k] = v
+            if self.property_changed:
+                self.property_changed(self, k)
 
     def module(self):
         if mdl := self.p.get("Module"):
             return self.modules.get(str(mdl), mdl)
 
         if self.p["LWT"] == self.p["Online"]:
-            return "Fetching module name..."
+            return "(unknown)"
 
     @property
     def fulltopic_regex(self) -> str:
@@ -235,9 +235,11 @@ class TasmotaDevice(QObject):
         else:
             schema = PulseTimeResultSchema
         _ = schema.model_validate(msg.dict())
+        print(_)
 
     def _process_template(self, msg: Message):
-        _ = TemplateResultSchema.model_validate(msg.dict())
+        _template = TemplateResultSchema.model_validate(msg.dict())
+        self.update_property("Template", _template.NAME)
 
     def _process_logging(self, msg: Message):
         pass
@@ -247,13 +249,15 @@ class TasmotaDevice(QObject):
         for pattern, func in self.processor_map.items():
             if re.match(pattern, key):
                 return func
-        else:
-            logging.error("PROCESSING: No processor for result %s", key)
 
     def _process_result(self, msg: Message):
-        if msg.dict() != {"Command": "Unknown"}:
+        # TODO: move this check as a Message property
+        if msg.dict() != COMMAND_UNKNOWN:
             if func := self.get_result_processor(msg.first_key):
                 func(msg)
+            else:
+                for k, v in msg.dict().items():
+                    self.update_property(k, v)
 
     def process_status(self, schema: BaseModel, payload: dict):
         try:
@@ -282,12 +286,8 @@ class TasmotaDevice(QObject):
             logging.debug("MQTT: %s %s", msg.topic, msg.payload)
 
         if msg.prefix in (self.topic_prefixes.stat, self.topic_prefixes.tele):
-            # /RESULT
-            if msg.endpoint == "RESULT":
-                self._process_result(msg)
-
             # /STATE or /STATUS<x> response
-            elif status_parse_schema := STATUS_SCHEMA_MAP.get(msg.endpoint):
+            if status_parse_schema := STATUS_SCHEMA_MAP.get(msg.endpoint):
                 self.process_status(status_parse_schema, msg.dict())
 
             # /STATUS8, /STATUS10, /SENSOR are fully dynamic and parsed as-is
@@ -298,9 +298,14 @@ class TasmotaDevice(QObject):
             elif msg.endpoint == "LOGGING":
                 self._process_logging(msg)
 
+            # /RESULT or SetOption4
             else:
-                logging.error("PROCESSING: No processor for endpoint %s", msg.endpoint)
-                print(msg.payload)
+                self._process_result(msg)
+
+            #
+            # else:
+            #     for k, v in msg.dict().items():
+            #         self.update_property(k, v)
 
     def power(self):
         power_dict = {k: v for k, v in self.p.items() if k.startswith("POWER")}
@@ -391,4 +396,4 @@ class TasmotaDevice(QObject):
         return (version := self.version()) and version >= parse_version(target_version) or False
 
     def __repr__(self):
-        return f"<TasmotaDevice {self.name}: {self.p['Topic']}>"
+        return f"<TasmotaDevice {self.name}: {self.p['FullTopic']}>"

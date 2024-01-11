@@ -3,6 +3,7 @@ import logging
 import re
 import socket
 import ssl
+from datetime import datetime
 from functools import lru_cache
 from json import JSONDecodeError
 from typing import Match, Union
@@ -41,6 +42,7 @@ class Message:
         self.payload: str = payload.decode('utf-8')
         self.retained: bool = retained
         self.payload: Union[dict, str]
+        self.timestamp: datetime = datetime.now()
 
     @property
     def endpoint(self):
@@ -56,10 +58,12 @@ class Message:
 
     @lru_cache
     def dict(self) -> dict:
-        try:
-            return json.loads(self.payload)
-        except JSONDecodeError as e:
-            logging.critical("MQTT: Cannot parse %s: %s (%s)", self.endpoint, self.payload, e)
+        if self.payload.startswith("{"):
+            try:
+                return json.loads(self.payload)
+            except JSONDecodeError as e:
+                logging.critical("MQTT: Cannot parse %s: %s (%s)", self.endpoint, self.payload, e)
+        return {}
 
     def match_fulltopic(self, pattern: str) -> Union[Match, None]:
         _replaced_pattern = (

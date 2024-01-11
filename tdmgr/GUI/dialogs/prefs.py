@@ -75,6 +75,6 @@ class PrefsDialog(QDialog):
         btns.accepted.connect(self.accept)
         btns.rejected.connect(self.reject)
 
-        vl.addElements(gbDevices, gbDiscovery, gbConsole, btns)
+        vl.addElements(gbDevices, gbConsole, btns)
 
         self.setLayout(vl)

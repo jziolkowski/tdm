@@ -15,15 +15,12 @@ def lwt_discovery_stage2(env: TasmotaEnvironment, message: Message):
     if full_topic := message.dict().get("FullTopic"):
         # the device replies with its FullTopic
         # here the Topic is extracted using the returned FullTopic, identifying the device
-        match = message.match_fulltopic(full_topic)
-        if match:
+        if match := message.match_fulltopic(full_topic):
             _match_topic = match.groupdict()["topic"]
-            # got a match, we query the device's MAC address in case it's a known device
-            # that had its topic changed
 
-            d = env.find_device(topic=_match_topic)
-            if d:
+            if d := env.find_device(topic=_match_topic):
                 d.update_property("FullTopic", full_topic)
+
             else:
                 logging.info(
                     "DISCOVERY(LEGACY): Discovered topic=%s with fulltopic=%s",

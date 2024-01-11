@@ -15,7 +15,7 @@ from tdmgr.GUI.common import (
     RSSI_LOW,
     RSSI_MEDIUM,
 )
-from tdmgr.models.common import DeviceRoles
+from tdmgr.models.roles import DeviceRoles
 
 
 @dataclass

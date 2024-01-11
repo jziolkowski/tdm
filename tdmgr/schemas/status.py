@@ -164,7 +164,6 @@ class StateBaseSchema(StateSTSBaseSchema):
 
 StateSchema = create_model(
     'StateSchema',
-    __name__='StateSchema',
     __base__=StateBaseSchema,
     **{f"POWER{idx}": (Optional[str], None) for idx in list(map(str, range(1, 33))) + [""]},
 )
