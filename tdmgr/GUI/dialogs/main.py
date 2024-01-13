@@ -30,7 +30,7 @@ from tdmgr.GUI.rules import RulesWidget
 from tdmgr.GUI.telemetry import TelemetryWidget
 from tdmgr.GUI.widgets import Toolbar
 from tdmgr.models.devices import TasmotaDevicesModel
-from tdmgr.util import TasmotaDevice, TasmotaEnvironment, initial_commands
+from tdmgr.util import MQTT_PATH_REGEX, TasmotaDevice, TasmotaEnvironment, initial_commands
 from tdmgr.util.discovery import lwt_discovery_stage2
 from tdmgr.util.mqtt import DEFAULT_PATTERNS, Message, MqttClient, expand_fulltopic
 
@@ -283,6 +283,7 @@ class MainWindow(QMainWindow):
             self.custom_patterns.append(self.settings.value(k))
         self.settings.endGroup()
 
+        # TODO: move to TasmotaEnvironment, add unit tests
         # expand fulltopic patterns to subscribable topics
         for pat in DEFAULT_PATTERNS:  # tasmota default and SO19
             self.topics += expand_fulltopic(pat)
@@ -297,10 +298,17 @@ class MainWindow(QMainWindow):
         for d in self.env.devices:
             # if device has a non-standard pattern, check if the pattern is found in
             # the custom patterns
-            if not d.is_default() and d.p["FullTopic"] not in self.custom_patterns:
-                # if pattern is not found then add the device topics to subscription list.
-                # if the pattern is found, it will be matched without implicit subscription
-                self.topics += expand_fulltopic(d.p["FullTopic"])
+            for custom_pattern in self.custom_patterns:
+                custom_pattern_match = re.match(
+                    custom_pattern.replace("+", f"({MQTT_PATH_REGEX})"), d.p["FullTopic"]
+                )
+                if not d.is_default() and not custom_pattern_match:
+                    print(d.p["FullTopic"], 'is not matched by', custom_pattern)
+                    # if pattern is not found then add the device topics to subscription list.
+                    # if the pattern is found, it will be matched without implicit subscription
+                    self.topics += expand_fulltopic(d.p["FullTopic"])
+                else:
+                    print(d.p["FullTopic"], 'is matched by', custom_pattern)
 
         # passing a list of tuples as recommended by paho
         _topics = [("tasmota/discovery/+/config", 0)] + [(topic, 0) for topic in self.topics]
@@ -338,7 +346,7 @@ class MainWindow(QMainWindow):
 
         # if msg.is_lwt:
         #     self.env.lwts[msg.topic] = msg.payload
-        # TODO: make native discovery work
+        # TODO: make native discovery work (#255)
         # discovery_mode = self.settings.value("discovery_mode", 0, int)
         # if msg.topic.startswith("tasmota/discovery") and discovery_mode != DiscoveryMode.LEGACY:
         #     # Add device using native Tasmota discovery message
@@ -419,7 +427,7 @@ class MainWindow(QMainWindow):
                             )
                             self.mqtt_queue.append([possible_topic_cmnd, ""])
 
-            elif msg.endpoint == "RESULT" or msg.endpoint == "FULLTOPIC":
+            elif msg.endpoint in ("RESULT", "FULLTOPIC"):
                 # reply from an unknown device
                 if d := lwt_discovery_stage2(self.env, msg):
                     self.env.devices.append(d)
@@ -430,6 +438,7 @@ class MainWindow(QMainWindow):
                     self.env.lwts.pop(tele_topic, None)
                     d.update_property("LWT", "Online")
 
+    # TODO: use csvwriter like a normal human being
     def export(self):
         fname, _ = QFileDialog.getSaveFileName(
             self, "Export device list as...", directory=QDir.homePath(), filter="CSV files (*.csv)"

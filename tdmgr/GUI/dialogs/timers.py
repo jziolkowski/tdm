@@ -1,5 +1,4 @@
-import logging
-from json import JSONDecodeError, dumps, loads
+from json import dumps
 
 from PyQt5.QtCore import Qt, QTime, pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import (
@@ -15,6 +14,7 @@ from PyQt5.QtWidgets import (
 )
 
 from tdmgr.GUI.widgets import GroupBoxH, GroupBoxV, HLayout, VLayout
+from tdmgr.util import Message
 
 
 class TimersDialog(QDialog):
@@ -238,8 +238,9 @@ class TimersDialog(QDialog):
             self, "Timer saved", f"{self.cbTimer.currentText()} data sent to device."
         )
 
-    @pyqtSlot(str, str)
-    def parseMessage(self, topic, msg):
+    # TODO: use schema
+    @pyqtSlot(Message)
+    def parseMessage(self, msg: Message):
         """
         Tasmota < 9.4.0.5 : There are a total of 4 messages in reply to `Timers` command:
             {"Timers": "ON" }
@@ -256,28 +257,19 @@ class TimersDialog(QDialog):
             "Days":"0000000","Repeat":0,
             "Action":0}, ....
         """
-        if self.device.matches(topic):
-            if self.device.reply == "RESULT" or self.device.reply == "TIMERS":
-                try:
-                    payload = loads(msg)
-                    all = list(payload)
-                    first = all[0]
+        if self.device.matches(msg.topic):
+            if msg.is_result or msg.endpoint == "TIMERS":
+                payload = msg.dict()
+                all = list(payload)
+                if msg.first_key == "Timers":
+                    self.gbTimers.setChecked(payload[msg.first_key] == "ON")
 
-                except JSONDecodeError as e:
-                    error = "Timer loading error", f"Can't load the timer from device.\n{e}"
-                    logging.critical(error)
-                    QMessageBox.critical(self, error)
+                    if len(all) > 1:
+                        payload.pop("Timers")
+                        self.timers.update(payload)
+                        self.loadTimer(self.cbTimer.currentText())
 
-                else:
-                    if first == "Timers":
-                        self.gbTimers.setChecked(payload[first] == "ON")
-
-                        if len(all) > 1:
-                            payload.pop("Timers")
-                            self.timers.update(payload)
-                            self.loadTimer(self.cbTimer.currentText())
-
-                    elif first.startswith("Timers"):
-                        self.timers.update(payload[first])
-                        if first == "Timers4":
-                            self.loadTimer(self.cbTimer.currentText())
+                elif msg.first_key.startswith("Timers"):
+                    self.timers.update(payload[msg.first_key])
+                    if msg.first_key == "Timers4":
+                        self.loadTimer(self.cbTimer.currentText())

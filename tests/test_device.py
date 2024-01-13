@@ -19,7 +19,7 @@ def test_matches(fulltopic, topic, expected):
 
 @pytest.mark.parametrize("topic", ["stat/device/RESULT", "stat/device/TEMPLATE"])
 def test_process_template(topic):
-    device = TasmotaDevice("device", "%prefix%/%topic%/")
+    device = TasmotaDevice("device")
     message = Message(topic, b'{"NAME":"NodeMCU","GPIO":[1],"FLAG":0,"BASE":18}')
     message.prefix = "stat"
 

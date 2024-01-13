@@ -62,9 +62,5 @@ def test_message_dict():
 
 
 def test_message_dict_failed(caplog):
-    Message("topic/RESULT", b"not json").dict()
-    assert len(caplog.records) == 1
-    assert (
-        caplog.records[0].message
-        == "MQTT: Cannot parse RESULT: not json (Expecting value: line 1 column 1 (char 0))"
-    )
+    message = Message("topic/RESULT", b"not json")
+    assert message.dict() == {}

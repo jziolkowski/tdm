@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QDialog, QInputDialog, QLabel, QListWidget, QMessageBox, QPushButton
 
 from tdmgr.GUI.widgets import HLayout, VLayout
+from tdmgr.util import DEFAULT_PATTERNS
 
 
 class PatternsDialog(QDialog):
@@ -65,6 +66,9 @@ class PatternsDialog(QDialog):
         for wrong_token in ["#", "$"]:
             if wrong_token in pattern:
                 errors.append(f"Wrong character in pattern: {wrong_token}.")
+
+        if pattern in DEFAULT_PATTERNS:
+            errors.append(f"Pattern {pattern} already included in default topics.")
 
         return errors
 

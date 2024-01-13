@@ -5,13 +5,14 @@ from pydantic import BaseModel, create_model
 
 class StatusSchema(BaseModel):
     Module: int
+    DeviceName: Optional[str] = None
     FriendlyName: List[str]
     Topic: str
     ButtonTopic: str
     Power: int
     PowerOnState: int
     LedState: int
-    LedMask: str
+    LedMask: Optional[str] = None
     SaveData: int
     SaveState: int
     SwitchTopic: str
@@ -30,7 +31,7 @@ class StatusPRMSchema(BaseModel):
     Uptime: str
     StartupUTC: str
     Sleep: int
-    CfgHolder: int
+    CfgHolder: Optional[int] = None
     BootCount: int
     SaveCount: int
     SaveAddress: Optional[str] = None

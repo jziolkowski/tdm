@@ -23,6 +23,9 @@ from PyQt5.QtWidgets import (
     QWidgetAction,
 )
 
+from tdmgr.schemas.result import PulseTimeLegacyResultSchema
+from tdmgr.util import TasmotaDevice
+
 base_view = ["Device"]
 default_views = {
     "Home": base_view + ["Module", "LoadAvg", "LinkCount", "Uptime"],
@@ -403,7 +406,7 @@ class CommandMultiSelect(QWidget):
                 )
             cb.setCurrentIndex(val)
             hl_input = HLayout(0)
-            hl_input.addElements(QLabel("{}: ".format(i + 1)), cb)
+            hl_input.addElements(QLabel(f"{i + 1}:"), cb)
 
             self.inputs.append(cb)
             vl.addLayout(hl_input)
@@ -474,8 +477,8 @@ class Interlock(QWidget):
 
 
 class PulseTime(QWidget):
-    def __init__(self, command, meta, value=None, *args, **kwargs):
-        super(PulseTime, self).__init__(*args, **kwargs)
+    def __init__(self, command: str, meta: dict, device: TasmotaDevice):
+        super(PulseTime, self).__init__()
         self.setMinimumWidth(250)
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum))
         self.inputs = []
@@ -493,13 +496,19 @@ class PulseTime(QWidget):
         vl.addWidget(desc)
 
         vl_groups = VLayout(0)
-        for k in sorted(list(value.keys())):
+
+        if isinstance(device._pulsetime, PulseTimeLegacyResultSchema):
+            values = [pt[1].Set for pt in device._pulsetime]
+        else:
+            values = device._pulsetime.PulseTime.Set
+
+        for idx, value in enumerate(values, start=1):
             sb = SpinBox(
                 minimum=int(meta["parameters"]["min"]), maximum=int(meta["parameters"]["max"])
             )
-            sb.setValue(value[k])
+            sb.setValue(value)
             hl_group = HLayout(0)
-            hl_group.addElements(QLabel(k), sb)
+            hl_group.addElements(QLabel(f"Pulsetime{idx}"), sb)
             vl_groups.addLayout(hl_group)
             self.inputs.append(sb)
         vl.addLayout(vl_groups)

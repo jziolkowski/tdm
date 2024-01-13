@@ -36,21 +36,25 @@ def expand_fulltopic(fulltopic):
 
 
 class Message:
-    def __init__(self, topic: str, payload: bytes = b"", retained: bool = False):
+    def __init__(self, topic: str, payload: bytes = b"", retained: bool = False, **kwargs):
         self.topic: str = topic
-        self.prefix: str = ""
+        self.prefix: str = kwargs.get("prefix", "")
         self.payload: str = payload.decode('utf-8')
         self.retained: bool = retained
         self.payload: Union[dict, str]
         self.timestamp: datetime = datetime.now()
 
     @property
-    def endpoint(self):
+    def endpoint(self) -> str:
         return self.topic.split('/')[-1]
 
     @property
-    def is_lwt(self):
+    def is_lwt(self) -> bool:
         return self.endpoint == "LWT"
+
+    @property
+    def is_result(self) -> bool:
+        return self.endpoint == "RESULT"
 
     @property
     def first_key(self) -> str:

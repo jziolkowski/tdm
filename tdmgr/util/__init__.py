@@ -3,7 +3,7 @@ import logging
 import re
 from enum import Enum
 from functools import lru_cache
-from typing import Callable
+from typing import Callable, Optional, Union
 
 from pkg_resources import parse_version
 from pydantic import BaseModel, ValidationError
@@ -18,6 +18,9 @@ from tdmgr.schemas.result import (
 from tdmgr.schemas.status import STATUS_SCHEMA_MAP
 from tdmgr.util.mqtt import DEFAULT_PATTERNS, MQTT_PATH_REGEX, Message
 
+# TODO: extract from __init__
+
+# TODO: extract to common
 resets = [
     "1: reset device settings to firmware defaults",
     "2: erase flash, reset device settings to firmware defaults",
@@ -42,6 +45,7 @@ template_adc = {
 COMMAND_UNKNOWN = {"Command": "Unknown"}
 
 
+# TODO: extract to mqtt
 def initial_commands():
     commands = [
         "template",
@@ -93,7 +97,7 @@ class TasmotaEnvironment:
 class TasmotaDevice(QObject):
     update_telemetry = pyqtSignal()
 
-    def __init__(self, topic: str, fulltopic: str, devicename: str = ""):
+    def __init__(self, topic: str, fulltopic: str = "%prefix%/%topic%/", devicename: str = ""):
         super(TasmotaDevice, self).__init__()
         self.p = {
             "LWT": "undefined",
@@ -125,6 +129,8 @@ class TasmotaDevice(QObject):
 
         # self._status_processors = self._get_status_processors()
         self._result_processors = self._get_result_processors()
+
+        self._pulsetime: Optional[Union[PulseTimeLegacyResultSchema, PulseTimeResultSchema]] = None
 
         self.processor_map = {
             r"PulseTime\d?": self._process_pulsetime,
@@ -230,12 +236,11 @@ class TasmotaDevice(QObject):
 
     def _process_pulsetime(self, msg: Message):
         # PulseTime returns all timers since 6.6.0.15
-        if "PulseTime1" in msg.dict():
+        if msg.first_key == "PulseTime1":
             schema = PulseTimeLegacyResultSchema
         else:
             schema = PulseTimeResultSchema
-        _ = schema.model_validate(msg.dict())
-        print(_)
+        self._pulsetime = schema.model_validate(msg.dict())
 
     def _process_template(self, msg: Message):
         _template = TemplateResultSchema.model_validate(msg.dict())
@@ -268,18 +273,24 @@ class TasmotaDevice(QObject):
                 if schema.__name__ != 'StateSchema'
                 else processed.items()
             )
+
+            # TODO: needs to be reworked
             for k, v in items:
-                self.update_property(k, v)
+                if k == "Wifi":
+                    for wk, wv in v.items():
+                        self.update_property(wk, wv)
+                else:
+                    self.update_property(k, v)
 
         except ValidationError as e:
-            print(e)
-            print(payload)
+            logging.critical("MQTT: Cannot parse %s", e)
 
     def process_sensor(self, payload: str):
         sensor_data = json.loads(payload)
         if "StatusSNS" in sensor_data:
             sensor_data = sensor_data["StatusSNS"]
-        # print(sensor_data)
+        self.t = sensor_data
+        self.update_telemetry.emit()
 
     def process_message(self, msg: Message):
         if self.debug:
@@ -301,11 +312,6 @@ class TasmotaDevice(QObject):
             # /RESULT or SetOption4
             else:
                 self._process_result(msg)
-
-            #
-            # else:
-            #     for k, v in msg.dict().items():
-            #         self.update_property(k, v)
 
     def power(self):
         power_dict = {k: v for k, v in self.p.items() if k.startswith("POWER")}
@@ -375,11 +381,17 @@ class TasmotaDevice(QObject):
 
     @property
     def name(self):
-        return self.p.get("DeviceName") or self.p.get("FriendlyName1", self.p["Topic"])
+        if name := self.p.get("DeviceName"):
+            return name
+        if fnl := self.p.get("FriendlyName"):
+            return fnl[0]
+        if fn1 := self.p.get("FriendlyName1"):
+            return fn1
+        return self.p["Topic"]
 
     @property
     def is_online(self):
-        return self.p.get("LWT", "Offline") == 'Online'
+        return self.p.get("LWT", self.p["Offline"]) == self.p["Online"]
 
     @property
     def url(self):
