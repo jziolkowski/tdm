@@ -117,7 +117,7 @@ class StatusTIMSchema(BaseModel):
     Local: str
     StartDST: str
     EndDST: str
-    Timezone: str
+    Timezone: Union[str, int]
     Sunrise: Optional[str] = None
     Sunset: Optional[str] = None
 
