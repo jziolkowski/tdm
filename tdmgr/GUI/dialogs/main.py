@@ -303,12 +303,9 @@ class MainWindow(QMainWindow):
                     custom_pattern.replace("+", f"({MQTT_PATH_REGEX})"), d.p["FullTopic"]
                 )
                 if not d.is_default() and not custom_pattern_match:
-                    print(d.p["FullTopic"], 'is not matched by', custom_pattern)
                     # if pattern is not found then add the device topics to subscription list.
                     # if the pattern is found, it will be matched without implicit subscription
                     self.topics += expand_fulltopic(d.p["FullTopic"])
-                else:
-                    print(d.p["FullTopic"], 'is matched by', custom_pattern)
 
         # passing a list of tuples as recommended by paho
         _topics = [("tasmota/discovery/+/config", 0)] + [(topic, 0) for topic in self.topics]
