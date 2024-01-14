@@ -95,12 +95,12 @@ class StatusMQTSchema(BaseModel):
 
 
 class StatusPTHSchema(BaseModel):
-    PowerDelta: float
-    PowerLow: float
-    PowerHigh: float
-    VoltageLow: float
-    CurrentLow: float
-    CurrentHigh: float
+    PowerDelta: Union[int, List[int]]
+    PowerLow: Union[int, List[int]]
+    PowerHigh: Union[int, List[int]]
+    VoltageLow: Union[int, List[int]]
+    CurrentLow: Union[int, List[int]]
+    CurrentHigh: Union[int, List[int]]
 
 
 class StatusSTKSchema(BaseModel):
@@ -135,7 +135,7 @@ class WifiSchema(BaseModel):
 
 class BerrySchema(BaseModel):
     HeapUsed: int
-    Object: int
+    Objects: int
 
 
 class StateSTSBaseSchema(BaseModel):
