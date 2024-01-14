@@ -270,9 +270,7 @@ class DeviceDelegate(QStyledItemDelegate):
             position = (
                 'CLOSED'
                 if shutter_state['Position'] == 0
-                else 'OPEN'
-                if shutter_state['Position'] == 100
-                else shutter_state['Position']
+                else 'OPEN' if shutter_state['Position'] == 100 else shutter_state['Position']
             )
 
             arrow_direction = {-1: ARROW_DN, 1: ARROW_UP}

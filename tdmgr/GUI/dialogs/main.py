@@ -435,7 +435,6 @@ class MainWindow(QMainWindow):
                     self.env.lwts.pop(tele_topic, None)
                     d.update_property("LWT", "Online")
 
-    # TODO: use csvwriter like a normal human being
     def export(self):
         fname, _ = QFileDialog.getSaveFileName(
             self, "Export device list as...", directory=QDir.homePath(), filter="CSV files (*.csv)"
@@ -502,6 +501,7 @@ class MainWindow(QMainWindow):
     def prefs(self):
         dlg = PrefsDialog(self.settings)
         if dlg.exec_() == QDialog.Accepted:
+            # TODO: move saving to dialog accept() event
             devices_short_version = self.settings.value("devices_short_version", True, bool)
             if devices_short_version != dlg.cbDevShortVersion.isChecked():
                 self.settings.setValue("devices_short_version", dlg.cbDevShortVersion.isChecked())
