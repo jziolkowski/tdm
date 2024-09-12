@@ -1,0 +1,28 @@
+{
+  "StatusNET": {
+    "Hostname": "xxxxxxxx",
+    "IPAddress": "192.168.0.1",
+    "Gateway": "192.168.0.99",
+    "Subnetmask": "255.255.254.0",
+    "DNSServer1": "192.168.0.99",
+    "DNSServer2": "0.0.0.0",
+    "Mac": "xx:xx:xx:xx:xx:xx",
+    "IP6Global": "xxxx:::::::xxxx",
+    "IP6Local": "fe80::xxxx:xxxx:xxxx:xxxx%st3",
+    "Ethernet": {
+      "Hostname": "xxxxxxxx-eth",
+      "IPAddress": "192.168.0.2",
+      "Gateway": "192.168.0.99",
+      "Subnetmask": "255.255.254.0",
+      "DNSServer1": "192.168.0.99",
+      "DNSServer2": "0.0.0.0",
+      "Mac": "xx:xx:xx:xx:xx:xx",
+      "IP6Global": "xxxx:::::::xxxx",
+      "IP6Local": "fe80::xxxx:xxxx:xxxx:xxxx%en1"
+    },
+    "Webserver": 2,
+    "HTTP_API": 1,
+    "WifiConfig": 4,
+    "WifiPower": 0.0
+  }
+}

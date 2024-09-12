@@ -1,166 +1,206 @@
 from typing import List, Optional, Union
 
-from pydantic import BaseModel, create_model
+from pydantic import create_model
+
+from tdmgr.schemas.common import TDMBaseModel
 
 
-class StatusSchema(BaseModel):
-    Module: int
+class StatusSchema(TDMBaseModel):
+    ButtonRetain: int
+    ButtonTopic: str
     DeviceName: Optional[str] = None
     FriendlyName: List[str]
-    Topic: str
-    ButtonTopic: str
-    Power: int
-    PowerOnState: int
-    LedState: int
+    InfoRetain: Optional[int] = None
     LedMask: Optional[str] = None
+    LedState: int
+    Module: int
+    Power: int
+    PowerLock: Optional[str] = None
+    PowerOnState: int
+    PowerRetain: int
     SaveData: int
     SaveState: int
-    SwitchTopic: str
-    SwitchMode: List[int]
-    ButtonRetain: int
-    SwitchRetain: int
     SensorRetain: int
-    PowerRetain: int
+    StateRetain: Optional[int] = None
+    StatusRetain: Optional[int] = None
+    SwitchMode: List[int]
+    SwitchRetain: int
+    SwitchTopic: str
+    Topic: str
 
 
-class StatusPRMSchema(BaseModel):
+class StatusPRMSchema(TDMBaseModel):
+    BCResetTime: Optional[str] = None
     Baudrate: int
+    BootCount: int
+    CfgHolder: Optional[int] = None
     GroupTopic: str
     OtaUrl: str
     RestartReason: str
-    Uptime: str
-    StartupUTC: str
-    Sleep: int
-    CfgHolder: Optional[int] = None
-    BootCount: int
-    SaveCount: int
     SaveAddress: Optional[str] = None
+    SaveCount: int
+    SerialConfig: Optional[str] = None
+    Sleep: int
+    StartupUTC: str
+    Uptime: str
 
 
-class StatusFWRSchema(BaseModel):
-    Version: str
-    BuildDateTime: str
+class StatusFWRSchema(TDMBaseModel):
     Boot: Optional[int] = None
+    BuildDateTime: str
+    CR: Optional[str] = None
     Core: Optional[str] = None
-    SDK: str
+    CpuFrequency: Optional[int] = None
     Hardware: Optional[str] = None
+    SDK: str
+    Version: str
 
 
-class StatusLOGSchema(BaseModel):
-    SerialLog: int
-    WebLog: int
-    MqttLog: int
-    SysLog: int
+class StatusLOGSchema(TDMBaseModel):
     LogHost: str
     LogPort: int
+    MqttLog: Optional[int] = None
+    Resolution: Optional[str] = None
     SSId: List[str]
-    TelePeriod: int
-    Resolution: str
+    SerialLog: int
     SetOption: List[str]
+    SysLog: int
+    TelePeriod: int
+    WebLog: int
 
 
-class StatusMEMSchema(BaseModel):
-    ProgramSize: int
+class StatusMEMSchema(TDMBaseModel):
+    Drivers: Optional[str] = None
+    Features: List[str]
+    FlashChipId: str
+    FlashFrequency: Optional[int] = None
+    FlashMode: Optional[Union[int, str]] = None
+    FlashSize: int
     Free: int
     Heap: int
+    I2CDriver: Optional[str] = None
     ProgramFlashSize: int
-    FlashSize: int
-    FlashChipId: str
-    FlashMode: Optional[Union[int, str]] = None
-    Features: List[str]
-    Drivers: str
-    Sensors: str
+    ProgramSize: int
+    PsrFree: Optional[int] = None
+    PsrMax: Optional[int] = None
+    Sensors: Optional[str] = None
+    StackLowMark: Optional[int] = None
 
 
-class StatusNETSchema(BaseModel):
-    Hostname: str
-    IPAddress: str
-    Gateway: str
-    Subnetmask: str
+class BaseNETSchema(TDMBaseModel):
+    DNSServer1: Optional[str] = None
+    DNSServer2: Optional[str] = None
     DNSServer: Optional[str] = None
+    Gateway: str
+    HTTP_API: Optional[int] = None
+    Hostname: str
+    IP6Global: Optional[str] = None
+    IP6Local: Optional[str] = None
+    IPAddress: str
     Mac: str
+    Subnetmask: str
+
+
+class StatusNETSchema(BaseNETSchema):
+    Ethernet: Optional[BaseNETSchema] = None
     Webserver: int
     WifiConfig: int
+    WifiPower: Optional[int] = None
 
 
-class StatusMQTSchema(BaseModel):
+class StatusMQTSchema(TDMBaseModel):
+    KEEPALIVE: int
+    MAX_PACKET_SIZE: int
+    MqttClient: str
+    MqttClientMask: str
+    MqttCount: Optional[int] = None
     MqttHost: str
     MqttPort: int
-    MqttClientMask: str
-    MqttClient: str
+    MqttType: Optional[int] = None
     MqttUser: str
-    MqttCount: int
-    MAX_PACKET_SIZE: int
-    KEEPALIVE: int
+    SOCKET_TIMEOUT: Optional[int] = None
 
 
-class StatusPTHSchema(BaseModel):
-    PowerDelta: Union[int, List[int]]
-    PowerLow: Union[int, List[int]]
-    PowerHigh: Union[int, List[int]]
-    VoltageLow: Union[int, List[int]]
-    CurrentLow: Union[int, List[int]]
+class StatusPTHSchema(TDMBaseModel):
     CurrentHigh: Union[int, List[int]]
+    CurrentLow: Union[int, List[int]]
+    MaxEnergy: Optional[int] = None
+    MaxEnergyStart: Optional[int] = None
+    MaxPower: Optional[int] = None
+    MaxPowerHold: Optional[int] = None
+    MaxPowerWindow: Optional[int] = None
+    PowerDelta: Union[int, List[int]]
+    PowerHigh: Union[int, List[int]]
+    PowerLow: Union[int, List[int]]
+    VoltageHigh: Optional[int] = None
+    VoltageLow: Union[int, List[int]]
 
 
-class StatusSTKSchema(BaseModel):
-    Exception: int
-    Reason: str
+class StatusSTKSchema(TDMBaseModel):
+    CallChain: List[str]
+    DEPC: str
     EPC: List[str]
     EXCVADDR: str
-    DEPC: str
-    CallChain: List[str]
+    Exception: int
+    Reason: str
 
 
-class StatusTIMSchema(BaseModel):
-    UTC: str
+class StatusSNSSchema(TDMBaseModel):
+    TempUnit: Optional[str] = None
+    Time: str
+
+
+class StatusTIMSchema(TDMBaseModel):
+    EndDST: str
     Local: str
     StartDST: str
-    EndDST: str
-    Timezone: Union[str, int]
     Sunrise: Optional[str] = None
     Sunset: Optional[str] = None
+    Timezone: Union[str, int]
+    UTC: str
 
 
-class WifiSchema(BaseModel):
+class WifiSchema(TDMBaseModel):
     AP: int
-    SSId: str
     BSSId: str
     Channel: Union[int, List[int]]
+    Downtime: Optional[str] = None
+    LinkCount: Optional[int] = None
+    Mode: Optional[str] = None
     RSSI: int
+    SSId: str
     Signal: Optional[int] = None
-    LinkCount: int
-    Downtime: str
 
 
-class BerrySchema(BaseModel):
+class BerrySchema(TDMBaseModel):
     HeapUsed: int
     Objects: int
 
 
-class StateSTSBaseSchema(BaseModel):
+class StateSTSBaseSchema(TDMBaseModel):
+    Berry: Optional[BerrySchema] = None
+    Channel: Optional[List[int]] = None
+    Color: Optional[str] = None
+    Fade: Optional[str] = None
+    HSBColor: Optional[str] = None
+    Heap: Optional[int] = None
+    LedTable: Optional[str] = None
+    LoadAvg: Optional[int] = None
+    MqttCount: Optional[int] = None
+    Scheme: Optional[int] = None
+    Sleep: Optional[int] = None
+    SleepMode: Optional[str] = None
+    Speed: Optional[int] = None
     Time: str
     Uptime: str
-    UptimeSec: int
-    Heap: int
-    SleepMode: str
-    Sleep: int
-    LoadAvg: int
-    MqttCount: int
+    UptimeSec: Optional[int] = None
+    Vcc: Optional[float] = None
+    White: Optional[int] = None
     Wifi: WifiSchema
 
 
 class StateBaseSchema(StateSTSBaseSchema):
-    Vcc: Optional[float] = None
     Dimmer: Optional[int] = None
-    Color: Optional[str] = None
-    HSBColor: Optional[str] = None
-    Channel: Optional[Union[int, List[int]]] = None
-    Scheme: Optional[int] = None
-    Fade: Optional[str] = None
-    Speed: Optional[int] = None
-    LedTable: Optional[str] = None
-    Berry: Optional[BerrySchema] = None
 
 
 StateSchema = create_model(
@@ -169,69 +209,80 @@ StateSchema = create_model(
     **{f"POWER{idx}": (Optional[str], None) for idx in list(map(str, range(1, 33))) + [""]},
 )
 
+_power_dict = {f"POWER{idx}": (Optional[str], None) for idx in list(map(str, range(1, 33))) + [""]}
+_dimmer_dict = {f"Dimmer{idx}": (Optional[int], None) for idx in list(map(str, range(1, 6))) + [""]}
+_channel_dict = {f"Channel{idx}": (Optional[int], None) for idx in list(map(str, range(1, 6)))}
+
 StatusSTSSchema = create_model(
     'StatusSTSSchema',
     __base__=StateSTSBaseSchema,
-    **{f"POWER{idx}": (Optional[str], None) for idx in list(map(str, range(1, 33))) + [""]},
+    **{
+        **_power_dict,
+        **_dimmer_dict,
+        **_channel_dict
+    },
 )
 
 
-class StatusResponseSchema(BaseModel):
+class StatusResponseSchema(TDMBaseModel):
     Status: StatusSchema
 
 
-class Status1ResponseSchema(BaseModel):
+class Status1ResponseSchema(TDMBaseModel):
     StatusPRM: StatusPRMSchema
 
 
-class Status2ResponseSchema(BaseModel):
+class Status2ResponseSchema(TDMBaseModel):
     StatusFWR: StatusFWRSchema
 
 
-class Status3ResponseSchema(BaseModel):
+class Status3ResponseSchema(TDMBaseModel):
     StatusLOG: StatusLOGSchema
 
 
-class Status4ResponseSchema(BaseModel):
+class Status4ResponseSchema(TDMBaseModel):
     StatusMEM: StatusMEMSchema
 
 
-class Status5ResponseSchema(BaseModel):
+class Status5ResponseSchema(TDMBaseModel):
     StatusNET: StatusNETSchema
 
 
-class Status6ResponseSchema(BaseModel):
+class Status6ResponseSchema(TDMBaseModel):
     StatusMQT: StatusMQTSchema
 
 
-class Status7ResponseSchema(BaseModel):
+class Status7ResponseSchema(TDMBaseModel):
     StatusTIM: StatusTIMSchema
 
 
-class Status9ResponseSchema(BaseModel):
+class Status9ResponseSchema(TDMBaseModel):
     StatusPTH: StatusPTHSchema
 
+class Status10ResponseSchema(TDMBaseModel):
+    StatusSNS: StatusSNSSchema
 
-class Status11ResponseSchema(BaseModel):
+
+class Status11ResponseSchema(TDMBaseModel):
     StatusSTS: StatusSTSSchema
 
 
-class Status12ResponseSchema(BaseModel):
+class Status12ResponseSchema(TDMBaseModel):
     StatusSTK: StatusSTKSchema
 
 
 class Status0ResponseSchema(StatusResponseSchema):
-    StatusPRM: StatusPRMSchema
+    # StatusSTS: Optional[Json]
     StatusFWR: StatusFWRSchema
     StatusLOG: StatusLOGSchema
     StatusMEM: StatusMEMSchema
-    StatusNET: StatusNETSchema
     StatusMQT: Optional[StatusMQTSchema]
-    # StatusSNS: Optional[Status10ResponseSchema]
-    # StatusSTS: Optional[Json]
+    StatusNET: StatusNETSchema
+    StatusPRM: StatusPRMSchema
+    StatusSNS: Optional[Status10ResponseSchema]
 
 
-STATUS_SCHEMA_MAP: [str, BaseModel] = {
+STATUS_SCHEMA_MAP: [str, TDMBaseModel] = {
     'STATE': StateSchema,
     'STATUS': StatusResponseSchema,
     'STATUS0': Status0ResponseSchema,
@@ -243,6 +294,7 @@ STATUS_SCHEMA_MAP: [str, BaseModel] = {
     'STATUS6': Status6ResponseSchema,
     'STATUS7': Status7ResponseSchema,
     'STATUS9': Status9ResponseSchema,
+    'STATUS10': Status10ResponseSchema,
     'STATUS11': Status11ResponseSchema,
     'STATUS12': Status12ResponseSchema,
 }

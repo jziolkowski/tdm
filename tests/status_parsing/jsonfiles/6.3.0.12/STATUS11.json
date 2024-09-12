@@ -1,1 +1,15 @@
-{"StatusSTS":{"Time":"2024-01-11T20:39:58","Uptime":"1T19:36:45","Vcc":3.231,"POWER1":"ON","Wifi":{"AP":1,"SSId":"xxx","BSSId":"F0:9F:C2:03:CD:73","Channel":6,"RSSI":100}}}
+{
+  "StatusSTS": {
+    "Time": "2024-01-11T20:39:58",
+    "Uptime": "1T19:36:45",
+    "Vcc": 3.231,
+    "POWER1": "ON",
+    "Wifi": {
+      "AP": 1,
+      "SSId": "xxx",
+      "BSSId": "F0:9F:C2:03:CD:73",
+      "Channel": 6,
+      "RSSI": 100
+    }
+  }
+}
