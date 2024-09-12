@@ -9,7 +9,6 @@ jobs:
             id-token: write
 
         runs-on: ubuntu-latest
-        continue-on-error: true
         steps:
             -   uses: actions/checkout@v3
                 with:
@@ -31,7 +30,8 @@ jobs:
                 uses: pypa/gh-action-pypi-publish@release/v1
                 continue-on-error: true
 
-    Binaries:        
+    Binaries:
+        needs: Wheel
         runs-on: ${{ matrix.os }}
         strategy:
             fail-fast: false
