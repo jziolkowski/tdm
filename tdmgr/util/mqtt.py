@@ -1,13 +1,90 @@
+import json
 import logging
+import re
 import socket
 import ssl
+from datetime import datetime
+from functools import lru_cache
+from json import JSONDecodeError
+from typing import Match, Union
 
 import paho.mqtt.client as mqtt
-from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot
+
+MQTT_PATH_REGEX = "[^+#*>$/]+"  # all symbols accepted except forbidden by MQTT topic spec
+
+DEFAULT_PREFIXES = ["tele", "stat"]
+
+DEFAULT_PATTERNS = [
+    "%prefix%/%topic%/",  # = %prefix%/%topic% (Tasmota default)
+    "%topic%/%prefix%/",  # = %topic%/%prefix% (Tasmota with SetOption19 enabled for
+    # HomeAssistant AutoDiscovery)
+]
 
 
-class MqttClient(QtCore.QObject):
+def expand_fulltopic(fulltopic):
+    if fulltopic[-1] != '/':
+        fulltopic = f"{fulltopic}/"
+    fulltopics = []
+    for prefix in DEFAULT_PREFIXES:
+        topic = (
+            fulltopic.replace("%prefix%", prefix).replace("%topic%", "+") + "#"
+        )  # expand prefix and topic
+        topic = topic.replace("+/#", "#")  # simplify wildcards
+        fulltopics.append(topic)
+    return fulltopics
+
+
+class Message:
+    def __init__(self, topic: str, payload: bytes = b"", retained: bool = False, **kwargs):
+        self.topic: str = topic
+        self.prefix: str = kwargs.get("prefix", "")
+        self.payload: str = payload.decode('utf-8')
+        self.retained: bool = retained
+        self.payload: Union[dict, str]
+        self.timestamp: datetime = datetime.now()
+
+    @property
+    def endpoint(self) -> str:
+        return self.topic.split('/')[-1]
+
+    @property
+    def is_lwt(self) -> bool:
+        return self.endpoint == "LWT"
+
+    @property
+    def is_result(self) -> bool:
+        return self.endpoint == "RESULT"
+
+    @property
+    def first_key(self) -> str:
+        return next(iter(self.dict().keys())) if self.dict() else ""
+
+    @lru_cache
+    def dict(self) -> dict:
+        if self.payload.startswith("{"):
+            try:
+                return json.loads(self.payload)
+            except JSONDecodeError as e:
+                logging.critical("MQTT: Cannot parse %s: %s (%s)", self.endpoint, self.payload, e)
+        return {}
+
+    def match_fulltopic(self, pattern: str) -> Union[Match, None]:
+        _replaced_pattern = (
+            pattern.replace("+", f"({MQTT_PATH_REGEX})")
+            .replace("%topic%", f"(?P<topic>{MQTT_PATH_REGEX})")
+            .replace("%prefix%", f"(?P<prefix>{MQTT_PATH_REGEX})")
+        )
+        _match = re.fullmatch(
+            f"^{_replaced_pattern}{MQTT_PATH_REGEX}$",
+            self.topic,
+        )
+        if _match:
+            self.prefix = _match.groupdict()["prefix"]
+        return _match
+
+
+class MqttClient(QObject):
     Disconnected = 0
     Connecting = 1
     Connected = 2
@@ -15,19 +92,19 @@ class MqttClient(QtCore.QObject):
     MQTT_3_1 = mqtt.MQTTv31
     MQTT_3_1_1 = mqtt.MQTTv311
 
-    connected = QtCore.pyqtSignal()
-    connecting = QtCore.pyqtSignal()
-    connectError = QtCore.pyqtSignal(int)
-    disconnected = QtCore.pyqtSignal()
+    connected = pyqtSignal()
+    connecting = pyqtSignal()
+    connectError = pyqtSignal(int)
+    disconnected = pyqtSignal()
 
-    stateChanged = QtCore.pyqtSignal(int)
-    hostnameChanged = QtCore.pyqtSignal(str)
-    portChanged = QtCore.pyqtSignal(int)
-    keepAliveChanged = QtCore.pyqtSignal(int)
-    cleanSessionChanged = QtCore.pyqtSignal(bool)
-    protocolVersionChanged = QtCore.pyqtSignal(int)
+    stateChanged = pyqtSignal(int)
+    hostnameChanged = pyqtSignal(str)
+    portChanged = pyqtSignal(int)
+    keepAliveChanged = pyqtSignal(int)
+    cleanSessionChanged = pyqtSignal(bool)
+    protocolVersionChanged = pyqtSignal(int)
 
-    messageSignal = QtCore.pyqtSignal(str, str, bool)
+    messageSignal = pyqtSignal(Message)
 
     def __init__(self, parent=None):
         super(MqttClient, self).__init__(parent)
@@ -53,7 +130,7 @@ class MqttClient(QtCore.QObject):
         self.m_client.on_message = self.on_message
         self.m_client.on_disconnect = self.on_disconnect
 
-    @QtCore.pyqtProperty(int, notify=stateChanged)
+    @pyqtProperty(int, notify=stateChanged)
     def state(self):
         return self.m_state
 
@@ -64,7 +141,7 @@ class MqttClient(QtCore.QObject):
         self.m_state = state
         self.stateChanged.emit(state)
 
-    @QtCore.pyqtProperty(str, notify=hostnameChanged)
+    @pyqtProperty(str, notify=hostnameChanged)
     def hostname(self):
         return self.m_hostname
 
@@ -75,7 +152,7 @@ class MqttClient(QtCore.QObject):
         self.m_hostname = hostname
         self.hostnameChanged.emit(hostname)
 
-    @QtCore.pyqtProperty(int, notify=portChanged)
+    @pyqtProperty(int, notify=portChanged)
     def port(self):
         return self.m_port
 
@@ -89,7 +166,7 @@ class MqttClient(QtCore.QObject):
     def setAuth(self, username, password):
         self.m_client.username_pw_set(username, password)
 
-    @QtCore.pyqtProperty(int, notify=keepAliveChanged)
+    @pyqtProperty(int, notify=keepAliveChanged)
     def keepAlive(self):
         return self.m_keepAlive
 
@@ -100,7 +177,7 @@ class MqttClient(QtCore.QObject):
         self.m_keepAlive = keepAlive
         self.keepAliveChanged.emit(keepAlive)
 
-    @QtCore.pyqtProperty(bool, notify=cleanSessionChanged)
+    @pyqtProperty(bool, notify=cleanSessionChanged)
     def cleanSession(self):
         return self.m_cleanSession
 
@@ -111,7 +188,7 @@ class MqttClient(QtCore.QObject):
         self.m_cleanSession = cleanSession
         self.cleanSessionChanged.emit(cleanSession)
 
-    @QtCore.pyqtProperty(int, notify=protocolVersionChanged)
+    @pyqtProperty(int, notify=protocolVersionChanged)
     def protocolVersion(self):
         return self.m_protocolVersion
 
@@ -124,7 +201,7 @@ class MqttClient(QtCore.QObject):
             self.protocolVersionChanged.emit(protocolVersion)
 
     #################################################################
-    @QtCore.pyqtSlot()
+    @pyqtSlot()
     def connectToHost(self):
         if self.m_hostname:
             self.connecting.emit()
@@ -146,18 +223,18 @@ class MqttClient(QtCore.QObject):
             except socket.timeout:
                 self.connectError.emit(3)
 
-    @QtCore.pyqtSlot()
+    @pyqtSlot()
     def setSSL(self, broker_tls_file, broker_tls_insecure, broker_tls_version):
         self.ssl = True
         self.m_tls_insecure = broker_tls_insecure
         self.m_tls_version = broker_tls_version
         self.m_cert_file = broker_tls_file
 
-    @QtCore.pyqtSlot()
+    @pyqtSlot()
     def unsetSSL(self):
         self.ssl = False
 
-    @QtCore.pyqtSlot()
+    @pyqtSlot()
     def disconnectFromHost(self):
         self.m_client.loop_stop()
         self.m_client.disconnect()
@@ -175,11 +252,9 @@ class MqttClient(QtCore.QObject):
     #################################################################
     # callbacks
     def on_message(self, mqttc, obj, msg):
-        topic = msg.topic
         try:
-            mstr = msg.payload.decode("utf8")
-            retained = msg.retain
-            self.messageSignal.emit(topic, mstr, retained)
+            message = Message(msg.topic, msg.payload, msg.retain)
+            self.messageSignal.emit(message)
         except UnicodeDecodeError as e:
             logging.error(
                 "MQTT MESSAGE DECODE ERROR: %s (%s=%s)", e, msg.topic, msg.payload.__repr__()

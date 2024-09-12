@@ -1,7 +1,5 @@
 import os
 import re
-from copy import deepcopy
-from json import JSONDecodeError, loads
 
 from PyQt5.QtCore import QDir, Qt, QTimer, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QColor, QFont, QIcon, QSyntaxHighlighter, QTextCharFormat
@@ -17,7 +15,9 @@ from PyQt5.QtWidgets import (
 )
 
 from tdmgr.GUI.widgets import CheckableAction, GroupBoxH, GroupBoxV, HLayout, Toolbar, VLayout
-from tdmgr.util import TasmotaDevice
+from tdmgr.util import Message, TasmotaDevice
+
+RE_RULE = re.compile(r"^RULE\d", re.IGNORECASE)
 
 # TODO: triggers list
 
@@ -268,69 +268,42 @@ class RulesWidget(QWidget):
             .rstrip(" ")
         )
 
-    @pyqtSlot(str, str)
-    def parseMessage(self, topic, msg):
-        if self.device.matches(topic):
-            payload = None
-            if msg.startswith("{"):
-                try:
-                    payload = loads(msg)
-                except JSONDecodeError:
-                    # JSON parse exception means that most likely the rule contains an unescaped
-                    # JSON payload.  TDM will attempt parsing using a regex instead of json.loads()
-                    parsed_rule = re.match(
-                        r"{\"(?P<rule>Rule(\d))\":\"(?P<enabled>ON|OFF)\",\"Once\":\""
-                        r"(?P<Once>ON|OFF)\",\"StopOnError"
-                        r"\":\"(?P<StopOnError>ON|OFF)"
-                        r"\",\"Free\":\d+,\"Rules\":\"(?P<Rules>.*?)\"}$",
-                        msg,
-                        re.IGNORECASE,
-                    )
-                    # modify the resulting matchdict to follow the keys of original JSON payload
-                    payload = deepcopy(parsed_rule.groupdict())
-                    rule = payload.pop("rule")
-                    payload[rule] = payload.pop("enabled")
-                    self.display_rule(payload, rule)
-                else:
-                    if payload:
-                        keys = list(payload.keys())
-                        fk = keys[0]
+    @pyqtSlot(Message)
+    def parseMessage(self, msg: Message):
+        if self.device.matches(msg.topic):
+            payload = msg.dict()
+            if payload:
+                if msg.is_result and msg.first_key == "T1" or msg.endpoint == "RULETIMER":
+                    for i, rt in enumerate(payload.keys()):
+                        self.lwRTs.item(i).setText(f"RuleTimer{i + 1}: {payload[rt]}")
+                        self.rts[i] = payload[rt]
 
-                        if (
-                            self.device.reply == "RESULT"
-                            and fk == "T1"
-                            or self.device.reply == "RULETIMER"
-                        ):
-                            for i, rt in enumerate(payload.keys()):
-                                self.lwRTs.item(i).setText(f"RuleTimer{i + 1}: {payload[rt]}")
-                                self.rts[i] = payload[rt]
+                elif (
+                    msg.is_result
+                    and msg.first_key.startswith("Var")
+                    or msg.endpoint.startswith("VAR")
+                ):
+                    for k, v in payload.items():
+                        row = int(k.replace("Var", "")) - 1
+                        self.lwVars.item(row).setText(f"VAR{row + 1}: {v}")
+                        self.vars[row] = v
 
-                        elif (
-                            self.device.reply == "RESULT"
-                            and fk.startswith("Var")
-                            or self.device.reply.startswith("VAR")
-                        ):
-                            for k, v in payload.items():
-                                row = int(k.replace("Var", "")) - 1
-                                self.lwVars.item(row).setText(f"VAR{row + 1}: {v}")
-                                self.vars[row] = v
+                elif (
+                    msg.is_result
+                    and msg.first_key.startswith("Mem")
+                    or msg.endpoint.startswith("MEM")
+                ):
+                    for k, v in payload.items():
+                        row = int(k.replace("Mem", "")) - 1
+                        self.lwMems.item(row).setText(f"MEM{row + 1}: {v}")
+                        self.mems[row] = v
 
-                        elif (
-                            self.device.reply == "RESULT"
-                            and fk.startswith("Mem")
-                            or self.device.reply.startswith("MEM")
-                        ):
-                            for k, v in payload.items():
-                                row = int(k.replace("Mem", "")) - 1
-                                self.lwMems.item(row).setText(f"MEM{row + 1}: {v}")
-                                self.mems[row] = v
-
-                        elif (
-                            self.device.reply == "RESULT"
-                            and fk.startswith("Rule")
-                            or self.device.reply.startswith("RULE")
-                        ):
-                            self.display_rule(payload, fk)
+                elif (
+                    msg.is_result
+                    and msg.first_key.startswith("Rule")
+                    or msg.endpoint.startswith("RULE")
+                ):
+                    self.display_rule(payload, msg.first_key)
 
 
 class RuleHighLighter(QSyntaxHighlighter):

@@ -38,7 +38,7 @@ class PowerDialog(QDialog):
         )
         vl_cmd.addWidget(self.ci)
 
-        self.cpt = PulseTime("PulseTime", commands["PulseTime"], self.device.pulsetime())
+        self.cpt = PulseTime("PulseTime", commands["PulseTime"], self.device)
         vl_cmd.addWidget(self.cpt)
 
         vl_cmd.addStretch(1)

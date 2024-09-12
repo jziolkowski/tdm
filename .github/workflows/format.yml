@@ -21,6 +21,6 @@ jobs:
 
             -   uses: psf/black@stable
                 with:
-                    options: "--check --verbose -S -l 100"
+                    options: "--check -S -l 100"
 
             -   uses: py-actions/flake8@v2

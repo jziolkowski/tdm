@@ -1,19 +1,26 @@
+import json
 import logging
 import re
-from json import JSONDecodeError, loads
+from enum import Enum
+from functools import lru_cache
+from typing import Callable, Optional, Union
 
 from pkg_resources import parse_version
+from pydantic import BaseModel, ValidationError
 from PyQt5.QtCore import QObject, pyqtSignal
 
-prefixes = ["tele", "stat", "cmnd"]
-default_patterns = [
-    "%prefix%/%topic%/",  # = %prefix%/%topic% (Tasmota default)
-    "%topic%/%prefix%/",  # = %topic%/%prefix% (Tasmota with SetOption19 enabled for
-    # HomeAssistant AutoDiscovery)
-]
+from tdmgr.schemas.discovery import DiscoverySchema, TopicPrefixes
+from tdmgr.schemas.result import (
+    PulseTimeLegacyResultSchema,
+    PulseTimeResultSchema,
+    TemplateResultSchema,
+)
+from tdmgr.schemas.status import STATUS_SCHEMA_MAP
+from tdmgr.util.mqtt import DEFAULT_PATTERNS, MQTT_PATH_REGEX, Message
 
-custom_patterns = []
+# TODO: extract from __init__
 
+# TODO: extract to common
 resets = [
     "1: reset device settings to firmware defaults",
     "2: erase flash, reset device settings to firmware defaults",
@@ -35,43 +42,31 @@ template_adc = {
 }
 
 
+COMMAND_UNKNOWN = {"Command": "Unknown"}
+
+
+# TODO: extract to mqtt
 def initial_commands():
     commands = [
-        ["status", 0],
-        ["template", ""],
-        ["modules", ""],
-        ["gpio", ""],
-        ["gpios", "255"],
-        ["buttondebounce", ""],
-        ["switchdebounce", ""],
-        ["interlock", ""],
-        ["blinktime", ""],
-        ["blinkcount", ""],
-        ["mqttlog", ""],  # will be removed after MqttLog will be added to Status 3
+        "template",
+        "modules",
+        "gpio",
+        "buttondebounce",
+        "switchdebounce",
+        "interlock",
+        "blinktime",
+        "blinkcount",
+        "pulsetime",
     ]
-    for pt in range(8):
-        commands.append([f"pulsetime{pt + 1}", ""])
+
+    commands = [(command, "") for command in commands]
+    commands += [("status", "0"), ("gpios", "255")]
+
     for sht in range(4):
         commands.append([f"shutterrelay{sht + 1}", ""])
         commands.append([f"shutterposition{sht + 1}", ""])
 
     return commands
-
-
-def parse_topic(full_topic, topic):
-    """
-    :param full_topic: FullTopic to match against
-    :param topic: MQTT topic from which the reply arrived
-    :return: If match is found, returns dictionary including device Topic,
-        prefix (cmnd/tele/stat) and reply endpoint
-    """
-    full_topic = f"{full_topic}(?P<reply>.*)".replace("%topic%", "(?P<topic>.*?)").replace(
-        "%prefix%", "(?P<prefix>.*?)"
-    )
-    match = re.fullmatch(full_topic, topic)
-    if match:
-        return match.groupdict()
-    return {}
 
 
 def parse_payload(payload):
@@ -81,24 +76,19 @@ def parse_payload(payload):
     return {}
 
 
-def expand_fulltopic(fulltopic):
-    fulltopics = []
-    for prefix in prefixes:
-        topic = (
-            fulltopic.replace("%prefix%", prefix).replace("%topic%", "+") + "#"
-        )  # expand prefix and topic
-        topic = topic.replace("+/#", "#")  # simplify wildcards
-        fulltopics.append(topic)
-    return fulltopics
+class DiscoveryMode(int, Enum):
+    BOTH = 0
+    NATIVE = 1
+    LEGACY = 2
 
 
-class TasmotaEnvironment(object):
+class TasmotaEnvironment:
     def __init__(self):
         self.devices = []
-        self.lwts = []
+        self.lwts = dict()
         self.retained = set()
 
-    def find_device(self, topic):
+    def find_device(self, topic) -> 'TasmotaDevice':
         for d in self.devices:
             if d.matches(topic):
                 return d
@@ -107,7 +97,7 @@ class TasmotaEnvironment(object):
 class TasmotaDevice(QObject):
     update_telemetry = pyqtSignal()
 
-    def __init__(self, topic, fulltopic, devicename=""):
+    def __init__(self, topic: str, fulltopic: str = "%prefix%/%topic%/", devicename: str = ""):
         super(TasmotaDevice, self).__init__()
         self.p = {
             "LWT": "undefined",
@@ -115,11 +105,17 @@ class TasmotaDevice(QObject):
             "FullTopic": fulltopic,
             "DeviceName": devicename,
             "Template": {},
+            "Online": "Online",
+            "Offline": "Offline",
         }
+
+        # self.props = Properties(Topic=topic, FullTopic=fulltopic, DeviceName=devicename)
 
         self.debug = False
         self.env = None
         self.history = []
+
+        self.topic_prefixes = TopicPrefixes("cmnd", "stat", "tele")
 
         self.property_changed = None  # property changed callback pointer
 
@@ -131,8 +127,43 @@ class TasmotaDevice(QObject):
         self.gpios = {}  # supported GPIOs
         self.gpio = {}  # gpio config
 
-        self.reply = ""
-        self.prefix = ""
+        # self._status_processors = self._get_status_processors()
+        self._result_processors = self._get_result_processors()
+
+        self._pulsetime: Optional[Union[PulseTimeLegacyResultSchema, PulseTimeResultSchema]] = None
+
+        self.processor_map = {
+            r"PulseTime\d?": self._process_pulsetime,
+            r"NAME": self._process_template,
+            r"Module$": self._process_module,
+            r"Modules\d?": self._process_modules,
+            r"GPIO$": self._process_gpio,
+            r"GPIO\d?$": self._process_gpio,
+            r"GPIOs\d?": self._process_gpios,
+        }
+
+    @classmethod
+    def from_discovery(cls, obj: DiscoverySchema):
+        logging.debug(obj)
+        _ft = obj.ft.replace(obj.t, "%topic%").replace(obj.tp.tele, "%prefix%")
+        device = TasmotaDevice(obj.t, _ft, obj.dn)
+        device.topic_prefixes = obj.tp
+        device.p["Online"] = obj.onln
+        device.p["Offline"] = obj.ofln
+        device.p["Module"] = obj.md
+        return device
+
+    def _get_result_processors(self):
+        PROCESSOR_METHOD_PREFIX = '_process_response_'
+        method_names = [
+            method_name
+            for method_name in self.__class__.__dict__
+            if method_name.startswith(PROCESSOR_METHOD_PREFIX)
+        ]
+        return {
+            method_name.replace(PROCESSOR_METHOD_PREFIX, ''): getattr(self, method_name)
+            for method_name in method_names
+        }
 
     def build_topic(self, prefix):
         return (
@@ -143,157 +174,144 @@ class TasmotaDevice(QObject):
         )
 
     def cmnd_topic(self, command=""):
-        if command:
-            return f"{self.build_topic('cmnd')}/{command}"
-        return self.build_topic("cmnd")
+        return f"{self.build_topic(self.topic_prefixes.cmnd)}/{command}".rstrip("/")
 
     def stat_topic(self, command=""):
-        if command:
-            return f"{self.build_topic('stat')}/{command}"
-        return self.build_topic("stat")
+        return f"{self.build_topic(self.topic_prefixes.stat)}/{command}".rstrip("/")
 
     def tele_topic(self, endpoint=""):
-        if endpoint:
-            return f"{self.build_topic('tele')}/{endpoint}"
-        return self.build_topic("tele")
+        return f"{self.build_topic(self.topic_prefixes.tele)}/{endpoint}".rstrip("/")
 
     def is_default(self):
-        return self.p["FullTopic"] in ["%prefix%/%topic%/", "%topic%/%prefix%/"]
+        return self.p["FullTopic"] in DEFAULT_PATTERNS
+
+    @property
+    def subscribable_topics(self):
+        topics = []
+        for topic_prefix in (self.topic_prefixes.tele, self.topic_prefixes.stat):
+            _ft = self.p["FullTopic"].replace("%prefix%", topic_prefix).replace("%topic%", "+")
+            if _ft[-1] != "/":
+                _ft = f"{_ft}/"
+            _ft = f"{_ft}+"
+            _ft.replace("+/+", "#")
+        return topics
 
     def update_property(self, k, v):
-        old = self.p.get(k)  # safely get the old value
-        if self.property_changed and (
-            not old or old != v
-        ):  # If property_changed callback is set then check previous value presence and
-            self.property_changed(
-                self, k
-            )  # compare with new value. Trigger the callback if value has changed
-        self.p[k] = v  # store the new value
+        old = self.p.get(k)
+        if not old or old != v:
+            self.p[k] = v
+            if self.property_changed:
+                self.property_changed(self, k)
 
     def module(self):
         if mdl := self.p.get("Module"):
-            return self.modules.get(str(mdl), '')
+            return self.modules.get(str(mdl), mdl)
 
-        if self.p["LWT"] == "Online":
-            return "Fetching module name..."
+        if self.p["LWT"] == self.p["Online"]:
+            return "(unknown)"
 
-    def matches(self, topic):
-        if topic == self.p["Topic"]:
-            return True
-        parsed = parse_topic(self.p["FullTopic"], topic)
-        self.reply = parsed.get("reply")
-        self.prefix = parsed.get("prefix")
-        return parsed.get("topic") == self.p["Topic"]
+    @property
+    def fulltopic_regex(self) -> str:
+        _ft_pattern = (
+            self.p["FullTopic"]
+            .replace("%prefix%", f"(?P<prefix>{MQTT_PATH_REGEX})")
+            .replace("%topic%", self.p["Topic"])
+        )
+        return f'^{_ft_pattern}'
 
-    def parse_message(self, topic, msg):
-        parse_statuses = [f"STATUS{s}" for s in [1, 2, 3, 4, 5, 6, 7, 9]]
-        if self.prefix in ("stat", "tele"):
-            payload = None
+    def matches(self, topic: str) -> bool:
+        return re.match(self.fulltopic_regex, topic) is not None
 
-            if self.reply == "STATUS":
-                try:
-                    payload = loads(msg)
-                except JSONDecodeError as e:
-                    logging.critical("PARSER: Can't parse STATUS (%s): %s", e, msg)
+    def _process_module(self, msg: Message):
+        print(msg.payload)
 
-                if payload:
-                    payload = payload.get("Status", {})
-                    for k, v in payload.items():
-                        if k == "FriendlyName":
-                            for fnk, fnv in enumerate(v, start=1):
-                                self.update_property(f"FriendlyName{fnk}", fnv)
-                        else:
-                            self.update_property(k, v)
+    def _process_modules(self, msg: Message):
+        self.modules.update(**msg.dict()[msg.first_key])
 
-            elif self.reply in parse_statuses:
-                try:
-                    payload = loads(msg)
-                except JSONDecodeError as e:
-                    logging.critical("PARSER: Can't parse %s (%s): %s", self.reply, e, msg)
+    def _process_gpio(self, msg: Message):
+        self.gpio.update(**msg.dict())
 
-                if payload:
-                    payload = payload[list(payload.keys())[0]]
-                    for k, v in payload.items():
-                        self.update_property(k, v)
+    def _process_gpios(self, msg: Message):
+        self.gpios.update(**msg.dict()[msg.first_key])
 
-            elif self.reply in ("STATE", "STATUS11"):
-                try:
-                    payload = loads(msg)
-                except JSONDecodeError as e:
-                    logging.critical("PARSER: Can't parse %s (%s): %s", self.reply, e, msg)
+    def _process_pulsetime(self, msg: Message):
+        # PulseTime returns all timers since 6.6.0.15
+        if msg.first_key == "PulseTime1":
+            schema = PulseTimeLegacyResultSchema
+        else:
+            schema = PulseTimeResultSchema
+        self._pulsetime = schema.model_validate(msg.dict())
 
-                if payload:
-                    if self.reply == "STATUS11":
-                        payload = payload["StatusSTS"]
+    def _process_template(self, msg: Message):
+        _template = TemplateResultSchema.model_validate(msg.dict())
+        self.update_property("Template", _template.NAME)
 
-                    for k, v in payload.items():
-                        if isinstance(v, dict):
-                            for kk, vv in v.items():
-                                self.update_property(kk, vv)
-                        else:
-                            self.update_property(k, v)
+    def _process_logging(self, msg: Message):
+        pass
 
-            elif self.reply in ("SENSOR", "STATUS8", "STATUS10"):
-                try:
-                    payload = loads(msg)
-                except JSONDecodeError as e:
-                    logging.critical("PARSER: Can't parse %s (%s): %s", self.reply, e, msg)
+    @lru_cache
+    def get_result_processor(self, key) -> Callable:
+        for pattern, func in self.processor_map.items():
+            if re.match(pattern, key):
+                return func
 
-                if payload:
-                    if self.reply in ("STATUS8", "STATUS10"):
-                        payload = payload["StatusSNS"]
+    def _process_result(self, msg: Message):
+        # TODO: move this check as a Message property
+        if msg.dict() != COMMAND_UNKNOWN:
+            if func := self.get_result_processor(msg.first_key):
+                func(msg)
+            else:
+                for k, v in msg.dict().items():
+                    self.update_property(k, v)
 
-                    self.t = payload
-                    self.update_telemetry.emit()
+    def process_status(self, schema: BaseModel, payload: dict):
+        try:
+            processed = schema.model_validate(payload).model_dump(exclude_none=True)
+            first_key = next(iter(processed.keys()))
+            items = (
+                processed[first_key].items()
+                if schema.__name__ != 'StateSchema'
+                else processed.items()
+            )
 
-            elif msg.startswith("{"):
-                try:
-                    payload = loads(msg)
-                except JSONDecodeError as e:
-                    logging.critical("PARSER: Can't parse %s (%s): %s", self.reply, e, msg)
+            # TODO: needs to be reworked
+            for k, v in items:
+                if k == "Wifi":
+                    for wk, wv in v.items():
+                        self.update_property(wk, wv)
+                else:
+                    self.update_property(k, v)
 
-                if payload:
-                    keys = list(payload.keys())
-                    fk = keys[0]
+        except ValidationError as e:
+            logging.critical("MQTT: Cannot parse %s", e)
 
-                    if (
-                        self.reply == "RESULT"
-                        and fk.startswith("Modules")
-                        or self.reply == "MODULES"
-                    ):
-                        for k, v in payload.items():
-                            if isinstance(v, list):
-                                for mdl in v:
-                                    self.modules.update(parse_payload(mdl))
-                            elif isinstance(v, dict):
-                                self.modules.update(v)
-                            self.module_changed(self)
+    def process_sensor(self, payload: str):
+        sensor_data = json.loads(payload)
+        if "StatusSNS" in sensor_data:
+            sensor_data = sensor_data["StatusSNS"]
+        self.t = sensor_data
+        self.update_telemetry.emit()
 
-                    elif self.reply == "RESULT" and fk == "NAME" or self.reply == "TEMPLATE":
-                        self.p["Template"] = payload
-                        if self.module_changed:
-                            self.module_changed(self)
+    def process_message(self, msg: Message):
+        if self.debug:
+            logging.debug("MQTT: %s %s", msg.topic, msg.payload)
 
-                    elif self.reply == "RESULT" and fk.startswith("GPIOs") or self.reply == "GPIOS":
-                        for k, v in payload.items():
-                            if isinstance(v, list):
-                                for gp in v:
-                                    self.gpios.update(parse_payload(gp))
-                            elif isinstance(v, dict):
-                                self.gpios.update(v)
+        if msg.prefix in (self.topic_prefixes.stat, self.topic_prefixes.tele):
+            # /STATE or /STATUS<x> response
+            if status_parse_schema := STATUS_SCHEMA_MAP.get(msg.endpoint):
+                self.process_status(status_parse_schema, msg.dict())
 
-                    elif self.reply == "RESULT" and fk.startswith("GPIO") or self.reply == "GPIO":
-                        for gp, gp_val in payload.items():
-                            if not gp == "GPIO":
-                                if isinstance(gp_val, str):
-                                    gp_id = gp_val.split(" (")[0]
-                                    self.gpio[gp] = gp_id
-                                elif isinstance(gp_val, dict):
-                                    self.gpio[gp] = list(gp_val.keys())[0]
+            # /STATUS8, /STATUS10, /SENSOR are fully dynamic and parsed as-is
+            elif msg.endpoint in ('STATUS8', 'STATUS10', 'SENSOR'):
+                self.process_sensor(msg.payload)
 
-                    else:
-                        for k, v in payload.items():
-                            self.update_property(k, v)
+            # /LOGGING response
+            elif msg.endpoint == "LOGGING":
+                self._process_logging(msg)
+
+            # /RESULT or SetOption4
+            else:
+                self._process_result(msg)
 
     def power(self):
         power_dict = {k: v for k, v in self.p.items() if k.startswith("POWER")}
@@ -321,22 +339,6 @@ class TasmotaDevice(QObject):
     def shutter_positions(self) -> dict:
         x = {k: self.p[f"Shutter{k}"] for k in range(1, 5) if f"Shutter{k}" in self.p}
         return x
-
-    def pulsetime(self):
-        ptime = {}
-        for k, v in self.p.items():
-            if k.startswith("PulseTime"):
-                val = 0
-                if isinstance(v, dict):
-                    first_key = list(v.keys())[0]
-                    if first_key == "Set":
-                        val = v["Set"]
-                    else:
-                        val = first_key
-                elif isinstance(v, str):
-                    val = v.split(" ")[0]
-                ptime[k] = int(val)
-        return ptime
 
     def pwm(self):
         return {
@@ -379,11 +381,17 @@ class TasmotaDevice(QObject):
 
     @property
     def name(self):
-        return self.p.get("DeviceName") or self.p.get("FriendlyName1", self.p["Topic"])
+        if name := self.p.get("DeviceName"):
+            return name
+        if fnl := self.p.get("FriendlyName"):
+            return fnl[0]
+        if fn1 := self.p.get("FriendlyName1"):
+            return fn1
+        return self.p["Topic"]
 
     @property
     def is_online(self):
-        return self.p.get("LWT", "Offline") == 'Online'
+        return self.p.get("LWT", self.p["Offline"]) == self.p["Online"]
 
     @property
     def url(self):
@@ -400,4 +408,4 @@ class TasmotaDevice(QObject):
         return (version := self.version()) and version >= parse_version(target_version) or False
 
     def __repr__(self):
-        return f"<TasmotaDevice {self.name}: {self.p['Topic']}>"
+        return f"<TasmotaDevice {self.name}: {self.p['FullTopic']}>"

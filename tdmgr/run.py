@@ -12,7 +12,7 @@ from tdmgr.GUI import icons  # noqa: F401
 from tdmgr.GUI.dialogs.main import MainWindow
 
 try:
-    from tdmgr.__version__ import version
+    from tdmgr._version import version
 except ImportError:
     version = ""
 
