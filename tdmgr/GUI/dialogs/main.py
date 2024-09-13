@@ -560,7 +560,7 @@ class MainWindow(QMainWindow):
         if self.device:
             tele_widget = TelemetryWidget(self.device)
             self.addDockWidget(Qt.RightDockWidgetArea, tele_widget)
-            self.mqtt_publish(self.device.cmnd_topic("STATUS"), "10")
+            self.mqtt_publish(self.device.cmnd_topic("STATUS"), "8")
             self.tele_docks.append(tele_widget)
             self.resizeDocks(
                 self.tele_docks, [100 // len(self.tele_docks) for _ in self.tele_docks], Qt.Vertical

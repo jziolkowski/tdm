@@ -1,1 +1,18 @@
-{"StatusMEM":{"ProgramSize":498,"Free":504,"Heap":18,"ProgramFlashSize":1024,"FlashSize":1024,"FlashChipId":"1440E0","FlashMode":3,"Features":["00000809","0FDAE794","240383A0","23B617CE","00003BC0"]}}
+{
+  "StatusMEM": {
+    "ProgramSize": 498,
+    "Free": 504,
+    "Heap": 18,
+    "ProgramFlashSize": 1024,
+    "FlashSize": 1024,
+    "FlashChipId": "1440E0",
+    "FlashMode": 3,
+    "Features": [
+      "00000809",
+      "0FDAE794",
+      "240383A0",
+      "23B617CE",
+      "00003BC0"
+    ]
+  }
+}

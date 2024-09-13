@@ -1,1 +1,19 @@
-{"StatusLOG":{"SerialLog":2,"WebLog":2,"SysLog":0,"LogHost":"192.168.0.130","LogPort":514,"SSId":["xxx","xxx-2"],"TelePeriod":300,"SetOption":["54000009","55818000","00000001"]}}
+{
+  "StatusLOG": {
+    "SerialLog": 2,
+    "WebLog": 2,
+    "SysLog": 0,
+    "LogHost": "192.168.0.130",
+    "LogPort": 514,
+    "SSId": [
+      "xxx",
+      "xxx-2"
+    ],
+    "TelePeriod": 300,
+    "SetOption": [
+      "54000009",
+      "55818000",
+      "00000001"
+    ]
+  }
+}

@@ -1,1 +1,12 @@
-{"StatusMQT":{"MqttHost":"192.168.1.130","MqttPort":1883,"MqttClientMask":"DVES_%06X","MqttClient":"DVES_E74F61","MqttUser":"DVES_USER","MqttType":1,"MAX_PACKET_SIZE":1000,"KEEPALIVE":15}}
+{
+  "StatusMQT": {
+    "MqttHost": "192.168.1.130",
+    "MqttPort": 1883,
+    "MqttClientMask": "DVES_%06X",
+    "MqttClient": "DVES_E74F61",
+    "MqttUser": "DVES_USER",
+    "MqttType": 1,
+    "MAX_PACKET_SIZE": 1000,
+    "KEEPALIVE": 15
+  }
+}
