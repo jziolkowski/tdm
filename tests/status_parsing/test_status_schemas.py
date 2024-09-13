@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from tdmgr.schemas.status import STATUS_SCHEMA_MAP
 
-PATH = os.path.join(os.getcwd(), 'jsonfiles')
+PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'jsonfiles')
 
 
 def get_status_jsonfiles():
