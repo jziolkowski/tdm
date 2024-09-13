@@ -216,11 +216,7 @@ _channel_dict = {f"Channel{idx}": (Optional[int], None) for idx in list(map(str,
 StatusSTSSchema = create_model(
     'StatusSTSSchema',
     __base__=StateSTSBaseSchema,
-    **{
-        **_power_dict,
-        **_dimmer_dict,
-        **_channel_dict
-    },
+    **{**_power_dict, **_dimmer_dict, **_channel_dict},
 )
 
 
@@ -258,6 +254,7 @@ class Status7ResponseSchema(TDMBaseModel):
 
 class Status9ResponseSchema(TDMBaseModel):
     StatusPTH: StatusPTHSchema
+
 
 class Status10ResponseSchema(TDMBaseModel):
     StatusSNS: StatusSNSSchema
