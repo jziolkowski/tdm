@@ -1,4 +1,4 @@
-name: Code formatting
+name: PyTest
 
 on:
   workflow_dispatch:
