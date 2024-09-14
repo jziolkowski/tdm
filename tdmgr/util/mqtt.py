@@ -11,6 +11,8 @@ from typing import Match, Union
 import paho.mqtt.client as mqtt
 from PyQt5.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot
 
+log = logging.getLogger(__name__)
+
 MQTT_PATH_REGEX = "[^+#*>$/]+"  # all symbols accepted except forbidden by MQTT topic spec
 
 DEFAULT_PREFIXES = ["tele", "stat"]
@@ -66,7 +68,7 @@ class Message:
             try:
                 return json.loads(self.payload)
             except JSONDecodeError as e:
-                logging.critical("MQTT: Cannot parse %s: %s (%s)", self.endpoint, self.payload, e)
+                log.critical("Cannot parse %s: %s (%s)", self.endpoint, self.payload, e)
         return {}
 
     def match_fulltopic(self, pattern: str) -> Union[Match, None]:
@@ -242,7 +244,7 @@ class MqttClient(QObject):
     def subscribe(self, path):
         if self.state == MqttClient.Connected:
             self.m_client.subscribe(path)
-            logging.info("MQTT: Subscribed to %s", ", ".join([p[0] for p in path]))
+            log.info("Subscribed to %s", ", ".join([p[0] for p in path]))
 
     @pyqtSlot(str, str)
     def publish(self, topic, payload=None, qos=0, retain=False):
@@ -256,9 +258,7 @@ class MqttClient(QObject):
             message = Message(msg.topic, msg.payload, msg.retain)
             self.messageSignal.emit(message)
         except UnicodeDecodeError as e:
-            logging.error(
-                "MQTT MESSAGE DECODE ERROR: %s (%s=%s)", e, msg.topic, msg.payload.__repr__()
-            )
+            log.error("MESSAGE DECODE ERROR: %s (%s=%s)", e, msg.topic, msg.payload.__repr__())
 
     def on_connect(self, *args):
         rc = args[3]
