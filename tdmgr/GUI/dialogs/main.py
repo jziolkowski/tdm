@@ -1,7 +1,6 @@
 import csv
 import logging
 import re
-from logging.handlers import TimedRotatingFileHandler
 
 from PyQt5.QtCore import QDir, QFileInfo, QSettings, QSize, Qt, QTimer, QUrl, pyqtSlot
 from PyQt5.QtGui import QDesktopServices, QFont, QIcon
@@ -34,6 +33,8 @@ from tdmgr.util import MQTT_PATH_REGEX, TasmotaDevice, TasmotaEnvironment, initi
 from tdmgr.util.discovery import lwt_discovery_stage2
 from tdmgr.util.mqtt import DEFAULT_PATTERNS, Message, MqttClient, expand_fulltopic
 
+log = logging.getLogger(__name__)
+
 
 class MainWindow(QMainWindow):
     def __init__(
@@ -41,7 +42,6 @@ class MainWindow(QMainWindow):
         version: str,
         settings: QSettings,
         devices: QSettings,
-        log_path: str,
         debug: bool,
         *args,
         **kwargs,
@@ -68,17 +68,6 @@ class MainWindow(QMainWindow):
         self.settings = settings
         self.devices = devices
         self.setMinimumSize(QSize(1000, 600))
-
-        # configure logging
-        logging.basicConfig(
-            level="DEBUG" if debug else "INFO",
-            datefmt="%Y-%m-%d %H:%M:%S",
-            format="%(asctime)s [%(levelname)s] %(message)s",
-        )
-        logging.getLogger().addHandler(
-            TimedRotatingFileHandler(filename=log_path, when="d", interval=1)
-        )
-        logging.info("### TDM START ###")
 
         # load devices from the devices file, create TasmotaDevices and add the to the environment
         for mac in self.devices.childGroups():
@@ -129,6 +118,7 @@ class MainWindow(QMainWindow):
 
         self.tele_docks = []
         self.consoles = []
+        log.info(f"### TDM {self._version} START ###")
 
     def setup_main_layout(self):
         self.mdi = QMdiArea()
@@ -352,7 +342,7 @@ class MainWindow(QMainWindow):
         #         try:
         #             obj = DiscoverySchema.model_validate_json(msg.payload)
         #         except ValueError:
-        #             logging.error("Unable to parse Tasmota discovery message: %s", msg.payload)
+        #             log.error("Unable to parse Tasmota discovery message: %s", msg.payload)
         #
         #         if obj and not self.env.find_device(obj.t):
         #             device = TasmotaDevice.from_discovery(obj)
@@ -363,7 +353,7 @@ class MainWindow(QMainWindow):
         #
         #             self.env.devices.append(device)
         #             self.device_model.addDevice(device)
-        #             logging.info(
+        #             log.info(
         #                 "DISCOVERY(NATIVE): Discovered topic=%s with fulltopic=%s",
         #                 obj.t,
         #                 device.p["FullTopic"],
@@ -375,7 +365,7 @@ class MainWindow(QMainWindow):
 
         if device := self.env.find_device(msg.topic):
             if msg.is_lwt:
-                logging.debug("MQTT: LWT message for %s: %s", device.p["Topic"], msg.payload)
+                log.debug("MQTT: LWT message for %s: %s", device.p["Topic"], msg.payload)
                 device.update_property("LWT", msg.payload)
 
                 if msg.payload == device.p["Online"]:
@@ -396,7 +386,7 @@ class MainWindow(QMainWindow):
             # unknown device, start autodiscovery process
             if msg.is_lwt:
                 self.env.lwts[msg.topic] = msg.payload
-                logging.info("DISCOVERY(LEGACY): LWT from an unknown device %s", msg.topic)
+                log.info("DISCOVERY(LEGACY): LWT from an unknown device %s", msg.topic)
 
                 # STAGE 1
                 # load default and user-provided FullTopic patterns and for all the patterns,
@@ -418,7 +408,7 @@ class MainWindow(QMainWindow):
                                     "/LWT", "/FullTopic"
                                 )
                             )
-                            logging.debug(
+                            log.debug(
                                 "DISCOVERY(LEGACY): Asking an unknown device for FullTopic at %s",
                                 possible_topic_cmnd,
                             )
@@ -429,7 +419,7 @@ class MainWindow(QMainWindow):
                 if d := lwt_discovery_stage2(self.env, msg):
                     self.env.devices.append(d)
                     self.device_model.addDevice(d)
-                    logging.debug("DISCOVERY: Sending initial query to topic %s", d.p["Topic"])
+                    log.debug("DISCOVERY: Sending initial query to topic %s", d.p["Topic"])
                     self.initial_query(d, True)
                     tele_topic = d.tele_topic("LWT")
                     self.env.lwts.pop(tele_topic, None)
@@ -496,7 +486,7 @@ class MainWindow(QMainWindow):
                     topic = itm.text()
                     self.mqtt.publish(topic, retain=True)
                     self.env.retained.remove(topic)
-                    logging.info("MQTT: Cleared %s", topic)
+                    log.info("MQTT: Cleared %s", topic)
 
     def prefs(self):
         dlg = PrefsDialog(self.settings)
@@ -535,7 +525,7 @@ class MainWindow(QMainWindow):
 
     @staticmethod
     def open_log_location():
-        fi = QFileInfo(logging.getLogger().handlers[1].baseFilename)
+        fi = QFileInfo(log.getLogger().handlers[1].baseFilename)
         QDesktopServices.openUrl(QUrl.fromLocalFile(fi.absolutePath()))
 
     def auto_telemetry_period(self):
