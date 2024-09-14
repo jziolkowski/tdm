@@ -1,1 +1,12 @@
-{"StatusNET":{"Hostname":"sonoff_1-3937","IPAddress":"192.168.1.200","Gateway":"192.168.1.1","Subnetmask":"255.255.255.0","DNSServer":"192.168.1.130","Mac":"5C:CF:7F:E7:4F:61","Webserver":2,"WifiConfig":3}}
+{
+  "StatusNET": {
+    "Hostname": "sonoff_1-3937",
+    "IPAddress": "192.168.1.200",
+    "Gateway": "192.168.1.1",
+    "Subnetmask": "255.255.255.0",
+    "DNSServer": "192.168.1.130",
+    "Mac": "5C:CF:7F:E7:4F:61",
+    "Webserver": 2,
+    "WifiConfig": 3
+  }
+}

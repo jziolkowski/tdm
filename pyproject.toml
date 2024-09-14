@@ -19,8 +19,9 @@ classifiers = [
     "Development Status :: 4 - Beta",
 ]
 dependencies = [
-    "paho_mqtt>=1.4",
-    "PyQt5>=5.14.2,<6"
+    "paho_mqtt>=1.4,<2",
+    "PyQt5>=5.14.2,<6",
+    "pydantic==2.5.2"
 ]
 requires-python = ">=3.8"
 

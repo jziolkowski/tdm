@@ -1,3 +1,4 @@
+import logging
 import os
 
 import pytest
@@ -5,7 +6,7 @@ from pydantic import ValidationError
 
 from tdmgr.schemas.status import STATUS_SCHEMA_MAP
 
-PATH = os.path.join('status_parsing', 'jsonfiles')
+PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'jsonfiles')
 
 
 def get_status_jsonfiles():
@@ -18,14 +19,15 @@ def get_status_jsonfiles():
     return _files
 
 
-@pytest.mark.skip(reason="WIP")
 @pytest.mark.parametrize("jsonfile", get_status_jsonfiles())
-def test_status_parsing(jsonfile):
+def test_status_parsing(caplog, jsonfile):
     status_type = jsonfile.split(os.path.sep)[-1].split('.')[0]
     schema = STATUS_SCHEMA_MAP.get(status_type)
 
     with open(jsonfile, "r") as payload:
         try:
-            schema.model_validate_json(payload.read())
+            with caplog.at_level(logging.DEBUG):
+                schema.model_validate_json(payload.read())
+                assert "Schema has extra fields" not in caplog.text
         except ValidationError as e:
             pytest.fail(str(e))
