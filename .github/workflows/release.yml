@@ -1,0 +1,81 @@
+name: Master Branch GitHub release
+
+on:
+    push:
+        branches:
+            - master
+            - develop
+        paths-ignore:
+            - '.github/**'
+            - '**.md'
+
+jobs:
+    Binaries:
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    -   os: windows-2019
+                        arch: x86
+                        zipname: tdmgr_x86
+                    -   os: windows-2019
+                        arch: x64
+                        zipname: tdmgr_x64
+                    -   os: macos-13
+                        arch: x64
+                        zipname: tdmgr_x64
+
+        steps:
+            -   uses: actions/checkout@v3
+                with:
+                    fetch-depth: 0
+            -   name: Set up Python 3.8
+                uses: actions/setup-python@v4
+                with:
+                    python-version: '3.8'
+                    architecture: ${{ matrix.arch }}
+
+            -   name: Install PyInstaller
+                run: pip install -r requirements_build.txt
+
+            -   name: Build with PyInstaller
+                run: pyinstaller --noconfirm --clean tdmgr.spec
+
+            -   name: Upload binaries artifact to workflow
+                uses: actions/upload-artifact@v4
+                with:
+                    name: ${{ matrix.zipname }}
+                    path: dist/*
+
+    Draft-Release:
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v3
+
+            # Create a draft release
+            -   name: Create Draft Release
+                id: create_release
+                uses: actions/create-release@v1
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                with:
+                    tag_name: ${{ github.ref_name }}
+                    release_name: TDM ${{ github.ref_name }}
+                    draft: true
+                    prerelease: ${{ github.ref_name == 'refs/heads/develop'}}
+
+            -   name: Download artifacts from build
+                uses: actions/download-artifact@v2
+                with:
+                    path: dist
+
+            # Upload release assets: each file in `dist/` to the GitHub Release
+            -   name: Upload Release Assets
+                run: |
+                    for asset in dist/tdmgr/*; do
+                      echo "Uploading asset: $asset"
+                      gh release upload "${{ github.ref_name }}" "$asset" --clobber
+                    done
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
