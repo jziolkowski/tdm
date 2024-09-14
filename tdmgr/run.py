@@ -4,6 +4,7 @@ import logging
 import os
 import pathlib
 import sys
+from logging.handlers import TimedRotatingFileHandler
 
 from PyQt5.QtCore import QDir, QSettings
 from PyQt5.QtWidgets import QApplication
@@ -17,31 +18,33 @@ except ImportError:
     version = ""
 
 
-def get_settings(args):
+def configure_logging(args) -> None:
+    log_path = os.path.join(QDir.tempPath(), "tdm.log")
+
     if args.local:
-        return QSettings("tdm.cfg", QSettings.IniFormat)
+        log_path = "tdm.log"
+    elif args.log_location:
+        log_path = os.path.join(args.log_location, "tdm.log")
+
+    logging.basicConfig(
+        level="DEBUG" if args.debug else "INFO",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        format="%(asctime)s [%(levelname)s] [%(filename)s] %(message)s",
+    )
+    logging.getLogger(__name__).addHandler(
+        TimedRotatingFileHandler(filename=log_path, when="d", interval=1)
+    )
+
+
+def get_settings(args: argparse.Namespace, filename: str) -> QSettings:
+    if args.local:
+        return QSettings(f"{filename}.ini", QSettings.IniFormat)
     if args.config_location:
-        return QSettings(os.path.join(args.config_location, "tdm.cfg"), QSettings.IniFormat)
-    return QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "tdm")
+        return QSettings(os.path.join(args.config_location, f"{filename}.ini"), QSettings.IniFormat)
+    return QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", f"{filename}.ini")
 
 
-def get_devices(args):
-    if args.local:
-        return QSettings("devices.cfg", QSettings.IniFormat)
-    if args.config_location:
-        return QSettings(os.path.join(args.config_location, "devices.cfg"), QSettings.IniFormat)
-    return QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", "devices")
-
-
-def get_log_path(args):
-    if args.local:
-        return "tdm.log"
-    if args.log_location:
-        return os.path.join(args.log_location, "tdm.log")
-    return os.path.join(QDir.tempPath(), "tdm.log")
-
-
-def setup_parser():
+def setup_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog='Tasmota Device Manager')
     parser.add_argument('--debug', action='store_true', help='Enable debugging')
     parser.add_argument(
@@ -54,17 +57,18 @@ def setup_parser():
     return parser
 
 
-def start():
+def start() -> None:
     parser = setup_parser()
     args = parser.parse_args()
+    configure_logging(args)
 
     try:
         app = QApplication(sys.argv)
         app.lastWindowClosed.connect(app.quit)
         app.setStyle("Fusion")
 
-        settings, devices, log_path = get_settings(args), get_devices(args), get_log_path(args)
-        MW = MainWindow(version, settings, devices, log_path, args.debug)
+        settings, devices = get_settings(args, "tdm"), get_settings(args, "devices")
+        MW = MainWindow(version, settings, devices, args.debug)
         MW.show()
         sys.exit(app.exec_())
 

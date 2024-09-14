@@ -144,7 +144,6 @@ class TasmotaDevice(QObject):
 
     @classmethod
     def from_discovery(cls, obj: DiscoverySchema):
-        logging.debug(obj)
         _ft = obj.ft.replace(obj.t, "%topic%").replace(obj.tp.tele, "%prefix%")
         device = TasmotaDevice(obj.t, _ft, obj.dn)
         device.topic_prefixes = obj.tp
