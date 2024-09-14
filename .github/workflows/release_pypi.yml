@@ -1,0 +1,36 @@
+name: Master Branch PyPI release
+
+on:
+    push:
+        branches:
+            - master
+        paths-ignore:
+            - '.github/**'
+            - '**.md'
+
+jobs:
+    build_wheel_and_release:
+        permissions:
+            id-token: write
+
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v3
+                with:
+                    fetch-depth: 0
+
+            -   uses: actions/setup-python@v4
+                with:
+                    python-version: '3.8'
+
+            -   name: Install dependencies
+                run: |
+                    python -m pip install --upgrade pip
+                    pip install setuptools wheel build
+
+            -   name: Build package
+                run: python -m build --wheel --outdir dist/
+
+            -   name: Publish package to PyPI
+                uses: pypa/gh-action-pypi-publish@release/v1
+
