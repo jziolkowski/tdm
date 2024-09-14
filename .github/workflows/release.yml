@@ -1,6 +1,7 @@
-name: Master Branch GitHub release
+name: GitHub release
 
 on:
+    workflow_dispatch:
     push:
         branches:
             - master
@@ -17,15 +18,12 @@ jobs:
             matrix:
                 include:
                     -   os: windows-2019
-                        arch: x86
-                        zipname: tdmgr_x86
+                        arch: x86                       
                     -   os: windows-2019
-                        arch: x64
-                        zipname: tdmgr_x64
+                        arch: x64                       
                     -   os: macos-13
                         arch: x64
-                        zipname: tdmgr_x64
-
+                       
         steps:
             -   uses: actions/checkout@v3
                 with:
@@ -43,13 +41,14 @@ jobs:
                 run: pyinstaller --noconfirm --clean tdmgr.spec
 
             -   name: Upload binaries artifact to workflow
-                uses: actions/upload-artifact@v4
+                uses: actions/upload-artifact@v3
                 with:
-                    name: ${{ matrix.zipname }}
+                    name: tdmgr
                     path: dist/*
 
     Draft-Release:
         runs-on: ubuntu-latest
+        needs: Binaries
         steps:
             -   uses: actions/checkout@v3
 
@@ -66,7 +65,7 @@ jobs:
                     prerelease: ${{ github.ref_name == 'refs/heads/develop'}}
 
             -   name: Download artifacts from build
-                uses: actions/download-artifact@v2
+                uses: actions/download-artifact@v3
                 with:
                     path: dist
 
