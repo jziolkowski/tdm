@@ -1,3 +1,7 @@
+## [2024.9.2] - 2024-09-14
+## Fixed
+- missing pydantic in pyproject.toml
+
 ## [2024.9.1] - 2024-09-12
 ## Changed
 - semver -> calver, because following major/minor etc would not necessarily follow Tasmota features/breaking changes
