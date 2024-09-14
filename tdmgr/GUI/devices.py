@@ -1,5 +1,6 @@
 import os
 from json import dumps
+from typing import Optional
 
 from PyQt5.QtCore import QDir, QSortFilterProxyModel, Qt, QUrl, pyqtSignal
 from PyQt5.QtGui import QColor, QIcon
@@ -62,7 +63,7 @@ class DevicesListWidget(QWidget):
         self.mqtt = parent.mqtt
         self.env = parent.env
 
-        self.device: TasmotaDevice
+        self.device: Optional[TasmotaDevice] = None
         self.idx = None
 
         self.nam = QNetworkAccessManager()
