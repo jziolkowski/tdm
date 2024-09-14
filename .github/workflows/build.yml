@@ -38,10 +38,13 @@ jobs:
                 include:
                     -   os: windows-2019
                         arch: x86
+                        zipname: tdmgr_x86
                     -   os: windows-2019
                         arch: x64
-                    -   os: macos-latest
+                        zipname: tdmgr_x64
+                    -   os: macos-13
                         arch: x64
+                        zipname: tdmgr_x64
         steps:
             -   uses: actions/checkout@v3
                 with:
@@ -60,5 +63,5 @@ jobs:
             -   name: Upload binaries artifact to workflow
                 uses: actions/upload-artifact@v4
                 with:
-                    name: tdmgr
+                    name: ${{ matrix.zipname }}
                     path: dist/*
