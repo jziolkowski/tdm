@@ -26,7 +26,6 @@ def configure_logging(args) -> None:
     elif args.log_location:
         log_path = os.path.join(args.log_location, "tdm.log")
 
-
     logging.basicConfig(
         level="DEBUG" if args.debug else "INFO",
         datefmt="%Y-%m-%d %H:%M:%S",

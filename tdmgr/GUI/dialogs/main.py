@@ -374,15 +374,15 @@ class MainWindow(QMainWindow):
         if device := self.env.find_device(msg):
             if msg.is_lwt:
                 log.debug("MQTT: LWT message for %s: %s", device.p["Topic"], msg.payload)
-                device.update_property("LWT", msg.payload)
+                device.online = msg.payload
 
-                if msg.payload == device.p["Online"]:
+                if device.online:
                     # known device came online, query initial state
                     self.initial_query(device, True)
 
             else:
                 # forward the message for processing
-                device.update_property("LWT", device.p["Online"])
+                device.online = True
                 device.process_message(msg)
 
         # TODO: ditto

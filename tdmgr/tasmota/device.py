@@ -270,12 +270,12 @@ class TasmotaDevice(QObject):
     def shutters(self) -> dict:
         return {
             k: self.p[f"ShutterRelay{k}"]
-            for k in range(1, 5)
+            for k in range(1, 9)
             if f"ShutterRelay{k}" in self.p and self.p[f"ShutterRelay{k}"] != 0
         }
 
     def shutter_positions(self) -> dict:
-        x = {k: self.p[f"Shutter{k}"] for k in range(1, 5) if f"Shutter{k}" in self.p}
+        x = {k: self.p[f"Shutter{k}"] for k in range(1, 9) if f"Shutter{k}" in self.p}
         return x
 
     def pwm(self):
@@ -335,8 +335,15 @@ class TasmotaDevice(QObject):
         return self.p["Topic"]
 
     @property
-    def is_online(self):
+    def online(self):
         return self.p.get("LWT", self.p["Offline"]) == self.p["Online"]
+
+    @online.setter
+    def online(self, val: Union[bool, dict]):
+        if isinstance(val, bool):
+            self.update_property("LWT", self.p["Online"])
+        else:
+            self.update_property("LWT", val)
 
     @property
     def url(self) -> Optional[str]:

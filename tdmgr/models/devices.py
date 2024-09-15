@@ -128,7 +128,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 return val
 
             if role == DeviceRoles.LWTRole:
-                return d.is_online
+                return d.online
 
             if role == DeviceRoles.RestartReasonRole:
                 return d.p.get("RestartReason")
