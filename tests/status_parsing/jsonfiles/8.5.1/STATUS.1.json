@@ -1,0 +1,33 @@
+{
+  "Status": {
+    "ButtonRetain": 0,
+    "ButtonTopic": "0",
+    "DeviceName": "Kuchnia \u015awiat\u0142o",
+    "FriendlyName": [
+      "Kuchnia \u015awiat\u0142o",
+      "Sonoff2"
+    ],
+    "LedMask": "FFFF",
+    "LedState": 0,
+    "Module": 0,
+    "Power": 0,
+    "PowerOnState": 3,
+    "PowerRetain": 0,
+    "SaveData": 1,
+    "SaveState": 1,
+    "SensorRetain": 0,
+    "SwitchMode": [
+      5,
+      5,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "SwitchRetain": 0,
+    "SwitchTopic": "",
+    "Topic": "ds102_kuchnia"
+  }
+}

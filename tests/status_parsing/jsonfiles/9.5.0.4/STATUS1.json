@@ -1,0 +1,17 @@
+{
+  "StatusPRM": {
+    "BCResetTime": "2021-07-30T15:31:28",
+    "Baudrate": 115200,
+    "BootCount": 17,
+    "CfgHolder": 4617,
+    "GroupTopic": "tasmotas",
+    "OtaUrl": "http://otaserver/ota/tasmota/tasmota.bin.gz",
+    "RestartReason": "Power On",
+    "SaveAddress": "F5000",
+    "SaveCount": 4439,
+    "SerialConfig": "8N1",
+    "Sleep": 50,
+    "StartupUTC": "2023-10-30T08:26:27",
+    "Uptime": "321T06:15:00"
+  }
+}

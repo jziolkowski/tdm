@@ -1,0 +1,23 @@
+{
+  "StatusLOG": {
+    "LogHost": "",
+    "LogPort": 514,
+    "MqttLog": 0,
+    "Resolution": "558180C0",
+    "SSId": [
+      "NznCoDk3McKgMzgy",
+      ""
+    ],
+    "SerialLog": 2,
+    "SetOption": [
+      "00008009",
+      "2805C8000100060000005A00000000000000",
+      "02008001",
+      "00006000",
+      "00000000"
+    ],
+    "SysLog": 0,
+    "TelePeriod": 300,
+    "WebLog": 2
+  }
+}

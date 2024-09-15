@@ -1,0 +1,15 @@
+{
+  "StatusPTH": {
+    "CurrentHigh": 0,
+    "CurrentLow": 0,
+    "PowerDelta": [
+      0,
+      0,
+      0
+    ],
+    "PowerHigh": 0,
+    "PowerLow": 0,
+    "VoltageHigh": 0,
+    "VoltageLow": 0
+  }
+}

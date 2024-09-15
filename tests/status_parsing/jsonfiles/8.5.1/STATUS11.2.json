@@ -1,0 +1,36 @@
+{
+  "StatusSTS": {
+    "Channel": [
+      40,
+      100,
+      0
+    ],
+    "Color": "66FF00",
+    "Dimmer": 100,
+    "Fade": "ON",
+    "HSBColor": "96,100,100",
+    "Heap": 27,
+    "LedTable": "ON",
+    "LoadAvg": 19,
+    "MqttCount": 77,
+    "POWER": "OFF",
+    "Scheme": 4,
+    "Sleep": 50,
+    "SleepMode": "Dynamic",
+    "Speed": 3,
+    "Time": "2024-09-15T13:51:45",
+    "Uptime": "81T14:18:09",
+    "UptimeSec": 7049889,
+    "Vcc": 3.538,
+    "Wifi": {
+      "AP": 1,
+      "BSSId": "0A:55:31:5F:EB:B5",
+      "Channel": 6,
+      "Downtime": "0T00:12:08",
+      "LinkCount": 68,
+      "RSSI": 54,
+      "SSId": "NznCoDk3McKgMzgy",
+      "Signal": -73
+    }
+  }
+}

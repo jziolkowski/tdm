@@ -1,19 +1,19 @@
 {
+  "Heap": 26,
+  "LoadAvg": 19,
+  "MqttCount": 12,
+  "Sleep": 50,
+  "SleepMode": "Dynamic",
   "Time": "2024-01-11T11:42:21",
   "Uptime": "44T15:13:31",
   "UptimeSec": 3856411,
-  "Heap": 26,
-  "SleepMode": "Dynamic",
-  "Sleep": 50,
-  "LoadAvg": 19,
-  "MqttCount": 12,
   "Wifi": {
     "AP": 1,
-    "SSId": "asdqwe",
     "BSSId": "AA:BB:CC:DD:EE:FF",
     "Channel": 6,
-    "RSSI": 66,
+    "Downtime": "0T02:15:08",
     "LinkCount": 19,
-    "Downtime": "0T02:15:08"
+    "RSSI": 66,
+    "SSId": "asdqwe"
   }
 }

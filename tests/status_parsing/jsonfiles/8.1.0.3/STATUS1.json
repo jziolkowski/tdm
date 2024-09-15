@@ -1,0 +1,16 @@
+{
+  "StatusPRM": {
+    "Baudrate": 115200,
+    "BootCount": 1793,
+    "CfgHolder": 4617,
+    "GroupTopic": "swiatlo",
+    "OtaUrl": "http://ota.tasmota.com/tasmota/release-8.5.1/tasmota-lite.bin",
+    "RestartReason": "Software/System restart",
+    "SaveAddress": "FB000",
+    "SaveCount": 16456,
+    "SerialConfig": "8N1",
+    "Sleep": 50,
+    "StartupUTC": "2024-08-28T23:18:44",
+    "Uptime": "17T12:56:51"
+  }
+}

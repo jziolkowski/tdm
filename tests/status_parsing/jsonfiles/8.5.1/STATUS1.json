@@ -1,0 +1,17 @@
+{
+  "StatusPRM": {
+    "BCResetTime": "2020-06-18T22:07:13",
+    "Baudrate": 115200,
+    "BootCount": 47,
+    "CfgHolder": 4617,
+    "GroupTopic": "tasmotas",
+    "OtaUrl": "http://ota.tasmota.com/tasmota/release-8.5.1/tasmota-lite.bin",
+    "RestartReason": "Software/System restart",
+    "SaveAddress": "F9000",
+    "SaveCount": 8010,
+    "SerialConfig": "8N1",
+    "Sleep": 50,
+    "StartupUTC": "2024-01-03T23:47:29",
+    "Uptime": "255T12:38:28"
+  }
+}

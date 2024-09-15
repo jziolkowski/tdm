@@ -1,12 +1,12 @@
 {
   "StatusFWR": {
-    "Version": "12.2.0.2(tasmota)",
-    "BuildDateTime": "2022-11-03T16:54:39",
     "Boot": 31,
+    "BuildDateTime": "2022-11-03T16:54:39",
+    "CR": "369/699",
     "Core": "2_7_4_9",
-    "SDK": "2.2.2-dev(38a443e)",
     "CpuFrequency": 80,
     "Hardware": "ESP8266EX",
-    "CR": "369/699"
+    "SDK": "2.2.2-dev(38a443e)",
+    "Version": "12.2.0.2(tasmota)"
   }
 }

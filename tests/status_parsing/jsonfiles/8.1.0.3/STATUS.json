@@ -1,0 +1,33 @@
+{
+  "Status": {
+    "ButtonRetain": 0,
+    "ButtonTopic": "",
+    "FriendlyName": [
+      "Ch\u0139\u201aopcy \u0139\u0161wiat\u0139\u201ao",
+      "Sonoff2",
+      "Sonoff3"
+    ],
+    "LedMask": "0000",
+    "LedState": 1,
+    "Module": 0,
+    "Power": 1,
+    "PowerOnState": 3,
+    "PowerRetain": 0,
+    "SaveData": 1,
+    "SaveState": 1,
+    "SensorRetain": 0,
+    "SwitchMode": [
+      5,
+      5,
+      5,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "SwitchRetain": 0,
+    "SwitchTopic": "0",
+    "Topic": "ds102_chlopcy"
+  }
+}

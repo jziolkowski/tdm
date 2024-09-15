@@ -1,0 +1,15 @@
+{
+  "StatusNET": {
+    "DNSServer1": "10.2.30.254",
+    "DNSServer2": "0.0.0.0",
+    "Gateway": "10.2.30.254",
+    "HTTP_API": 1,
+    "Hostname": "wyjscie-swiatlo-2927",
+    "IPAddress": "10.2.30.60",
+    "Mac": "EC:FA:BC:4B:8B:6F",
+    "Subnetmask": "255.255.255.0",
+    "Webserver": 2,
+    "WifiConfig": 4,
+    "WifiPower": 17.0
+  }
+}

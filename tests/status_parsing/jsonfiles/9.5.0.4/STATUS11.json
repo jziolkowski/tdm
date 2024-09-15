@@ -1,0 +1,23 @@
+{
+  "StatusSTS": {
+    "Heap": 24,
+    "LoadAvg": 22,
+    "MqttCount": 117,
+    "Sleep": 50,
+    "SleepMode": "Dynamic",
+    "Time": "2024-09-15T16:41:27",
+    "Uptime": "321T06:15:00",
+    "UptimeSec": 27756900,
+    "Wifi": {
+      "AP": 1,
+      "BSSId": "74:83:C2:2A:F1:AC",
+      "Channel": 1,
+      "Downtime": "0T00:14:26",
+      "LinkCount": 106,
+      "Mode": "11n",
+      "RSSI": 76,
+      "SSId": "indebuurt_IoT",
+      "Signal": -62
+    }
+  }
+}
