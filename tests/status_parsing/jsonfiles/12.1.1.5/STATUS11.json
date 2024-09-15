@@ -1,0 +1,26 @@
+{
+  "StatusSTS": {
+    "Heap": 23,
+    "LoadAvg": 19,
+    "MqttCount": 3,
+    "POWER1": "OFF",
+    "POWER2": "ON",
+    "POWER3": "OFF",
+    "Sleep": 50,
+    "SleepMode": "Dynamic",
+    "Time": "2024-09-13T19:01:15",
+    "Uptime": "51T01:54:34",
+    "UptimeSec": 4413274,
+    "Wifi": {
+      "AP": 1,
+      "BSSId": "28:D1:27:DB:35:26",
+      "Channel": 1,
+      "Downtime": "0T00:00:08",
+      "LinkCount": 2,
+      "Mode": "11n",
+      "RSSI": 52,
+      "SSId": "WifiNet1",
+      "Signal": -74
+    }
+  }
+}

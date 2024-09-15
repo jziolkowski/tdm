@@ -1,0 +1,15 @@
+{
+  "StatusNET": {
+    "DNSServer1": "192.168.1.142",
+    "DNSServer2": "0.0.0.0",
+    "Gateway": "192.168.1.142",
+    "HTTP_API": 1,
+    "Hostname": "tasmota-outlet5-4287",
+    "IPAddress": "192.168.1.213",
+    "Mac": "C8:C9:A3:14:D0:BF",
+    "Subnetmask": "255.255.255.0",
+    "Webserver": 2,
+    "WifiConfig": 4,
+    "WifiPower": 17.0
+  }
+}

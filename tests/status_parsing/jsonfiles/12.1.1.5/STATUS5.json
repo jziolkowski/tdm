@@ -1,0 +1,15 @@
+{
+  "StatusNET": {
+    "DNSServer1": "192.168.1.142",
+    "DNSServer2": "0.0.0.0",
+    "Gateway": "192.168.1.142",
+    "HTTP_API": 1,
+    "Hostname": "porch-1076",
+    "IPAddress": "192.168.1.187",
+    "Mac": "2C:F4:32:3F:44:34",
+    "Subnetmask": "255.255.255.0",
+    "Webserver": 2,
+    "WifiConfig": 2,
+    "WifiPower": 17.0
+  }
+}

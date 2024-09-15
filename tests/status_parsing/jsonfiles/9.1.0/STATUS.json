@@ -1,0 +1,32 @@
+{
+  "Status": {
+    "ButtonRetain": 0,
+    "ButtonTopic": "0",
+    "DeviceName": "RedRoomBulb1",
+    "FriendlyName": [
+      "RedRoomBulb1"
+    ],
+    "LedMask": "FFFF",
+    "LedState": 1,
+    "Module": 0,
+    "Power": 1,
+    "PowerOnState": 3,
+    "PowerRetain": 1,
+    "SaveData": 1,
+    "SaveState": 1,
+    "SensorRetain": 0,
+    "SwitchMode": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "SwitchRetain": 0,
+    "SwitchTopic": "0",
+    "Topic": "redroombulb1"
+  }
+}

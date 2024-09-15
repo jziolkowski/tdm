@@ -1,0 +1,13 @@
+{
+  "StatusMQT": {
+    "KEEPALIVE": 30,
+    "MAX_PACKET_SIZE": 1200,
+    "MqttClient": "DVES_14D0BF",
+    "MqttClientMask": "DVES_%06X",
+    "MqttCount": 8,
+    "MqttHost": "192.168.1.230",
+    "MqttPort": 1883,
+    "MqttUser": "DVES_USER",
+    "SOCKET_TIMEOUT": 4
+  }
+}

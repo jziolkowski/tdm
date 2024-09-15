@@ -1,0 +1,13 @@
+{
+  "StatusNET": {
+    "DNSServer": "10.2.30.254",
+    "Gateway": "10.2.30.254",
+    "Hostname": "h801_lazienka-7004",
+    "IPAddress": "10.2.30.31",
+    "Mac": "80:7D:3A:33:BB:5C",
+    "Subnetmask": "255.255.255.0",
+    "Webserver": 2,
+    "WifiConfig": 4,
+    "WifiPower": 17.0
+  }
+}

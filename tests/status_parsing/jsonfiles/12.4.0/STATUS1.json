@@ -1,0 +1,17 @@
+{
+  "StatusPRM": {
+    "BCResetTime": "2023-12-28T19:08:44",
+    "Baudrate": 4800,
+    "BootCount": 13,
+    "CfgHolder": 4617,
+    "GroupTopic": "tasmotas",
+    "OtaUrl": "http://ota.tasmota.com/tasmota/release/tasmota-4M.bin.gz",
+    "RestartReason": "Power On",
+    "SaveAddress": "FB000",
+    "SaveCount": 559,
+    "SerialConfig": "8E1",
+    "Sleep": 50,
+    "StartupUTC": "2024-05-20T08:44:34",
+    "Uptime": "116T07:42:22"
+  }
+}

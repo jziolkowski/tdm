@@ -1,0 +1,37 @@
+{
+  "Status": {
+    "ButtonRetain": 0,
+    "ButtonTopic": "0",
+    "DeviceName": "PorchTasmota",
+    "FriendlyName": [
+      "PorchTasmota",
+      "Tasmota2",
+      "Tasmota3"
+    ],
+    "InfoRetain": 0,
+    "LedMask": "FFFF",
+    "LedState": 1,
+    "Module": 0,
+    "Power": 2,
+    "PowerOnState": 3,
+    "PowerRetain": 1,
+    "SaveData": 1,
+    "SaveState": 1,
+    "SensorRetain": 0,
+    "StateRetain": 0,
+    "StatusRetain": 0,
+    "SwitchMode": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "SwitchRetain": 0,
+    "SwitchTopic": "0",
+    "Topic": "porch"
+  }
+}
