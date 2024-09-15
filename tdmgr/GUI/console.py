@@ -18,8 +18,9 @@ from PyQt5.QtWidgets import (
 )
 
 from tdmgr.GUI.widgets import GroupBoxV, HLayout, VLayout, console_font
-from tdmgr.util import Message, TasmotaDevice
-from tdmgr.util.commands import commands
+from tdmgr.mqtt import Message
+from tdmgr.tasmota.commands import commands
+from tdmgr.tasmota.device import TasmotaDevice
 
 
 class ConsoleWidget(QDockWidget):

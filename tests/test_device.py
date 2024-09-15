@@ -1,6 +1,7 @@
 import pytest
 
-from tdmgr.util import Message, TasmotaDevice
+from tdmgr.mqtt import Message
+from tdmgr.tasmota.device import TasmotaDevice
 from tests.conftest import get_payload
 
 

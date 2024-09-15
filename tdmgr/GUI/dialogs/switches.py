@@ -2,8 +2,8 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QTabWidget, QWidget
 
 from tdmgr.GUI.widgets import Command, CommandMultiSelect, HTMLLabel, VLayout, docs_url
-from tdmgr.util.commands import commands
-from tdmgr.util.setoptions import setoptions
+from tdmgr.tasmota.commands import commands
+from tdmgr.tasmota.setoptions import setoptions
 
 
 class SwitchesDialog(QDialog):

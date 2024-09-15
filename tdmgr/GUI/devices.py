@@ -44,7 +44,9 @@ from tdmgr.GUI.widgets import (
     base_view,
     default_views,
 )
-from tdmgr.util import TasmotaDevice, initial_commands, resets
+from tdmgr.mqtt import initial_commands
+from tdmgr.tasmota.commands import resets
+from tdmgr.tasmota.device import TasmotaDevice
 
 
 class DevicesListWidget(QWidget):

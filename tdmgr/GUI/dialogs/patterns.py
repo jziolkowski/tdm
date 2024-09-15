@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QDialog, QInputDialog, QLabel, QListWidget, QMessageBox, QPushButton
 
 from tdmgr.GUI.widgets import HLayout, VLayout
-from tdmgr.util import DEFAULT_PATTERNS
+from tdmgr.mqtt import DEFAULT_PATTERNS
 
 
 class PatternsDialog(QDialog):

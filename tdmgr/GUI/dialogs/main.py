@@ -29,9 +29,17 @@ from tdmgr.GUI.rules import RulesWidget
 from tdmgr.GUI.telemetry import TelemetryWidget
 from tdmgr.GUI.widgets import Toolbar
 from tdmgr.models.devices import TasmotaDevicesModel
-from tdmgr.util import MQTT_PATH_REGEX, TasmotaDevice, TasmotaEnvironment, initial_commands
-from tdmgr.util.discovery import lwt_discovery_stage2
-from tdmgr.util.mqtt import DEFAULT_PATTERNS, Message, MqttClient, expand_fulltopic
+from tdmgr.mqtt import (
+    DEFAULT_PATTERNS,
+    MQTT_PATH_REGEX,
+    Message,
+    MqttClient,
+    expand_fulltopic,
+    initial_commands,
+)
+from tdmgr.tasmota.device import TasmotaDevice
+from tdmgr.tasmota.discovery import lwt_discovery_stage2
+from tdmgr.tasmota.environment import TasmotaEnvironment
 
 log = logging.getLogger(__name__)
 
@@ -366,15 +374,15 @@ class MainWindow(QMainWindow):
         if device := self.env.find_device(msg):
             if msg.is_lwt:
                 log.debug("MQTT: LWT message for %s: %s", device.p["Topic"], msg.payload)
-                device.update_property("LWT", msg.payload)
+                device.online = msg.payload
 
-                if msg.payload == device.p["Online"]:
+                if device.online:
                     # known device came online, query initial state
                     self.initial_query(device, True)
 
             else:
                 # forward the message for processing
-                device.update_property("LWT", device.p["Online"])
+                device.online = True
                 device.process_message(msg)
 
         # TODO: ditto

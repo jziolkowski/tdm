@@ -14,7 +14,8 @@ from PyQt5.QtWidgets import (
 )
 
 from tdmgr.GUI.widgets import GroupBoxH, GroupBoxV, HLayout, VLayout
-from tdmgr.util import Message, TasmotaDevice
+from tdmgr.mqtt import Message
+from tdmgr.tasmota.device import TasmotaDevice
 
 
 class TimersDialog(QDialog):

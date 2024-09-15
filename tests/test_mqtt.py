@@ -1,6 +1,6 @@
 import pytest
 
-from tdmgr.util.mqtt import expand_fulltopic
+from tdmgr.mqtt import expand_fulltopic
 
 
 @pytest.mark.parametrize(

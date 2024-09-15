@@ -15,7 +15,8 @@ from PyQt5.QtWidgets import (
 )
 
 from tdmgr.GUI.widgets import CheckableAction, GroupBoxH, GroupBoxV, HLayout, Toolbar, VLayout
-from tdmgr.util import Message, TasmotaDevice
+from tdmgr.mqtt import Message
+from tdmgr.tasmota.device import TasmotaDevice
 
 RE_RULE = re.compile(r"^RULE\d", re.IGNORECASE)
 

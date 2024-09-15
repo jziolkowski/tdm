@@ -1,3 +1,13 @@
+resets = [
+    "1: reset device settings to firmware defaults",
+    "2: erase flash, reset device settings to firmware defaults",
+    "3: erase flash SDK parameters",
+    "4: reset device settings to firmware defaults, keep Wi-Fi credentials",
+    "5: erase flash, reset parameters to firmware defaults, keep Wi-Fi settings",
+    "6: erase flash, reset parameters to firmware defaults, keep Wi-Fi and MQTT settings",
+    "99: reset device bootcount to zero",
+]
+
 commands = {
     "BlinkCount": {
         "description": "Number of relay toggles (blinks)",

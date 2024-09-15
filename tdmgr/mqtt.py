@@ -24,6 +24,29 @@ DEFAULT_PATTERNS = [
 ]
 
 
+def initial_commands():
+    commands = [
+        "template",
+        "modules",
+        "gpio",
+        "buttondebounce",
+        "switchdebounce",
+        "interlock",
+        "blinktime",
+        "blinkcount",
+        "pulsetime",
+    ]
+
+    commands = [(command, "") for command in commands]
+    commands += [("status", "0"), ("gpios", "255")]
+
+    for sht in range(8):
+        commands.append([f"shutterrelay{sht + 1}", ""])
+        commands.append([f"shutterposition{sht + 1}", ""])
+
+    return commands
+
+
 def expand_fulltopic(fulltopic):
     if fulltopic[-1] != '/':
         fulltopic = f"{fulltopic}/"

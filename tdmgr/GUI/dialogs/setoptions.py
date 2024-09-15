@@ -2,7 +2,7 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QLabel
 
 from tdmgr.GUI.widgets import DictComboBox, GroupBoxV, VLayout
-from tdmgr.util.setoptions import setoptions
+from tdmgr.tasmota.setoptions import setoptions
 
 
 class SetOptionsDialog(QDialog):

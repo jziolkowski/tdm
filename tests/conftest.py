@@ -2,7 +2,8 @@ import os
 
 import pytest
 
-from tdmgr.util import Message, TasmotaDevice
+from tdmgr.mqtt import Message
+from tdmgr.tasmota.device import TasmotaDevice
 
 
 def get_payload(version: str, filename: str) -> bytes:
