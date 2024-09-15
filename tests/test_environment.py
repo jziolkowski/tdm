@@ -1,6 +1,6 @@
 import pytest
 
-from tdmgr.util import TasmotaDevice, TasmotaEnvironment
+from tdmgr.util import Message, TasmotaDevice, TasmotaEnvironment
 
 
 @pytest.mark.parametrize(
@@ -19,6 +19,7 @@ def test_find_device(full_topic, test_topic, expected):
     dev = TasmotaDevice(topic='device', fulltopic=full_topic)
     env.devices.append(dev)
 
-    device = env.find_device(test_topic)
+    msg = Message(test_topic)
+    device = env.find_device(msg)
 
     assert (device == dev) is expected

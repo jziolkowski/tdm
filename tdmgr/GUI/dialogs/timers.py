@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
 )
 
 from tdmgr.GUI.widgets import GroupBoxH, GroupBoxV, HLayout, VLayout
-from tdmgr.util import Message
+from tdmgr.util import Message, TasmotaDevice
 
 
 class TimersDialog(QDialog):
@@ -22,7 +22,7 @@ class TimersDialog(QDialog):
 
     def __init__(self, device, *args, **kwargs):
         super(TimersDialog, self).__init__(*args, **kwargs)
-        self.device = device
+        self.device: TasmotaDevice = device
         self.timers = {}
         self.armKey = "Arm"
         self.setWindowTitle(f"Timers [{self.device.name}]")
@@ -257,7 +257,7 @@ class TimersDialog(QDialog):
             "Days":"0000000","Repeat":0,
             "Action":0}, ....
         """
-        if self.device.matches(msg.topic):
+        if self.device.message_topic_matches_fulltopic(msg):
             if msg.is_result or msg.endpoint == "TIMERS":
                 payload = msg.dict()
                 all = list(payload)
