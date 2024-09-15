@@ -1,0 +1,13 @@
+{
+  "StatusNET": {
+    "DNSServer": "10.2.30.254",
+    "Gateway": "10.2.30.254",
+    "Hostname": "ds102_kuchnia-8070",
+    "IPAddress": "10.2.30.20",
+    "Mac": "A4:CF:12:A3:5F:86",
+    "Subnetmask": "255.255.255.0",
+    "Webserver": 2,
+    "WifiConfig": 4,
+    "WifiPower": 17.0
+  }
+}

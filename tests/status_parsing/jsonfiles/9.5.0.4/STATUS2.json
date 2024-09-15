@@ -1,0 +1,12 @@
+{
+  "StatusFWR": {
+    "Boot": 31,
+    "BuildDateTime": "2021-07-30T16:05:47",
+    "CR": "358/699",
+    "Core": "2_7_4_9",
+    "CpuFrequency": 80,
+    "Hardware": "ESP8266EX",
+    "SDK": "2.2.2-dev(38a443e)",
+    "Version": "9.5.0.4(tzigbee)"
+  }
+}

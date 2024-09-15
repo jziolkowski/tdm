@@ -1,19 +1,23 @@
 {
   "Status": {
-    "Module": 6,
+    "ButtonRetain": 0,
+    "ButtonTopic": "0",
     "DeviceName": "Tasmota",
     "FriendlyName": [
       "Tasmota"
     ],
-    "Topic": "tasmota_1A704F",
-    "ButtonTopic": "0",
+    "InfoRetain": 0,
+    "LedMask": "FFFF",
+    "LedState": 1,
+    "Module": 6,
     "Power": 1,
     "PowerOnState": 3,
-    "LedState": 1,
-    "LedMask": "FFFF",
+    "PowerRetain": 0,
     "SaveData": 1,
     "SaveState": 1,
-    "SwitchTopic": "0",
+    "SensorRetain": 0,
+    "StateRetain": 0,
+    "StatusRetain": 0,
     "SwitchMode": [
       0,
       0,
@@ -24,12 +28,8 @@
       0,
       0
     ],
-    "ButtonRetain": 0,
     "SwitchRetain": 0,
-    "SensorRetain": 0,
-    "PowerRetain": 0,
-    "InfoRetain": 0,
-    "StateRetain": 0,
-    "StatusRetain": 0
+    "SwitchTopic": "0",
+    "Topic": "tasmota_1A704F"
   }
 }

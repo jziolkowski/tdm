@@ -1,0 +1,25 @@
+{
+  "StatusMEM": {
+    "Drivers": "1,2,7,9,10,12,23,24,38",
+    "Features": [
+      "00000809",
+      "0F100580",
+      "04400001",
+      "00000002",
+      "00000000",
+      "00000001",
+      "00000080",
+      "00000000",
+      "00000000"
+    ],
+    "FlashChipId": "1640E0",
+    "FlashFrequency": 40,
+    "FlashMode": 3,
+    "FlashSize": 4096,
+    "Free": 476,
+    "Heap": 25,
+    "ProgramFlashSize": 1024,
+    "ProgramSize": 527,
+    "Sensors": "2"
+  }
+}

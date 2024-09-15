@@ -1,0 +1,13 @@
+{
+  "StatusNET": {
+    "DNSServer": "192.168.1.142",
+    "Gateway": "192.168.1.142",
+    "Hostname": "RedRoomBulb1",
+    "IPAddress": "192.168.1.154",
+    "Mac": "4C:EB:D6:02:41:E0",
+    "Subnetmask": "255.255.255.0",
+    "Webserver": 2,
+    "WifiConfig": 4,
+    "WifiPower": 17.0
+  }
+}

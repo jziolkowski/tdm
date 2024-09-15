@@ -1,0 +1,13 @@
+{
+  "StatusNET": {
+    "DNSServer": "10.2.30.254",
+    "Gateway": "10.2.30.254",
+    "Hostname": "neo_okap-6502",
+    "IPAddress": "10.2.30.21",
+    "Mac": "CC:50:E3:C8:F9:66",
+    "Subnetmask": "255.255.255.0",
+    "Webserver": 2,
+    "WifiConfig": 4,
+    "WifiPower": 17.0
+  }
+}

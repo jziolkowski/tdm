@@ -1,0 +1,13 @@
+{
+  "StatusNET": {
+    "DNSServer": "10.2.30.254",
+    "Gateway": "10.2.30.254",
+    "Hostname": "ds102_chlopcy-4858",
+    "IPAddress": "10.2.30.40",
+    "Mac": "80:7D:3A:60:92:FA",
+    "Subnetmask": "255.255.255.0",
+    "Webserver": 2,
+    "WifiConfig": 2,
+    "WifiPower": 17.0
+  }
+}

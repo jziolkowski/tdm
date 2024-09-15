@@ -1,0 +1,12 @@
+{
+  "StatusMQT": {
+    "KEEPALIVE": 30,
+    "MAX_PACKET_SIZE": 1200,
+    "MqttClient": "DVES_A35F86",
+    "MqttClientMask": "DVES_%06X",
+    "MqttCount": 21,
+    "MqttHost": "mqtt.iot",
+    "MqttPort": 1883,
+    "MqttUser": "DVES_USER"
+  }
+}

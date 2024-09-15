@@ -1,0 +1,21 @@
+{
+  "StatusSNS": {
+    "ANALOG": {
+      "Temperature": 25.3
+    },
+    "ENERGY": {
+      "ApparentPower": 0,
+      "Current": 0.0,
+      "Factor": 0.0,
+      "Power": 0,
+      "ReactivePower": 0,
+      "Today": 0.0,
+      "Total": 141.051,
+      "TotalStartTime": "2023-12-28T19:08:44",
+      "Voltage": 0,
+      "Yesterday": 0.0
+    },
+    "TempUnit": "C",
+    "Time": "2024-09-13T17:26:56"
+  }
+}
