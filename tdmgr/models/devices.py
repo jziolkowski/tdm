@@ -4,7 +4,7 @@ from socket import inet_aton
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt
 
 from tdmgr.models.roles import DeviceRoles
-from tdmgr.util import TasmotaDevice
+from tdmgr.tasmota.device import TasmotaDevice
 
 
 class TasmotaDevicesModel(QAbstractTableModel):

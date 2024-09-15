@@ -1,6 +1,8 @@
 import pytest
 
-from tdmgr.util import Message, TasmotaDevice, TasmotaEnvironment
+from tdmgr.mqtt import Message
+from tdmgr.tasmota.device import TasmotaDevice
+from tdmgr.tasmota.environment import TasmotaEnvironment
 
 
 @pytest.mark.parametrize(

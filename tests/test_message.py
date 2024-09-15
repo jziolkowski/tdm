@@ -1,6 +1,6 @@
 import pytest
 
-from tdmgr.util import Message
+from tdmgr.mqtt import Message
 
 
 def test_message():

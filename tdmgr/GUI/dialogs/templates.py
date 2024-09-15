@@ -12,7 +12,16 @@ from PyQt5.QtWidgets import (
 )
 
 from tdmgr.GUI.widgets import DictComboBox, VLayout
-from tdmgr.util import template_adc
+
+template_adc = {
+    "0": "None",
+    "15": "User",
+    "1": "Analog",
+    "2": "Temperature",
+    "3": "Light",
+    "4": "Button",
+    "5": "Buttoni",
+}
 
 
 class TemplateDialog(QDialog):

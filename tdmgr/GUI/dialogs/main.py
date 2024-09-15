@@ -29,9 +29,17 @@ from tdmgr.GUI.rules import RulesWidget
 from tdmgr.GUI.telemetry import TelemetryWidget
 from tdmgr.GUI.widgets import Toolbar
 from tdmgr.models.devices import TasmotaDevicesModel
-from tdmgr.util import MQTT_PATH_REGEX, TasmotaDevice, TasmotaEnvironment, initial_commands
-from tdmgr.util.discovery import lwt_discovery_stage2
-from tdmgr.util.mqtt import DEFAULT_PATTERNS, Message, MqttClient, expand_fulltopic
+from tdmgr.mqtt import (
+    DEFAULT_PATTERNS,
+    MQTT_PATH_REGEX,
+    Message,
+    MqttClient,
+    expand_fulltopic,
+    initial_commands,
+)
+from tdmgr.tasmota.device import TasmotaDevice
+from tdmgr.tasmota.discovery import lwt_discovery_stage2
+from tdmgr.tasmota.environment import TasmotaEnvironment
 
 log = logging.getLogger(__name__)
 
