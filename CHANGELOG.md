@@ -1,3 +1,10 @@
+## [development]
+## Changed
+- ethernet-enabled devices now show eth ip address when wifi is disabled (#266)
+
+## Fixed
+- clicking main menu buttons doesn't crash anymore (#235)
+
 ## [2024.9.2] - 2024-09-14
 ## Fixed
 - missing pydantic in pyproject.toml
@@ -8,12 +15,11 @@
 - TDM now stores tdm.cfg in locations suggested by the OS
 
 ## Added
-- support for MQTT wildcards in autodiscovery patterns
+- support for MQTT wildcards in autodiscovery patterns (#254)
 - misc UI changes
 
 ## Fixed
 - many bugs, crashes, small annoyances
-
 
 ## [0.2.6] - 2019-12-24
 ## Changed
