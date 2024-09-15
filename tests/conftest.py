@@ -1,12 +1,21 @@
+import os
+
 import pytest
 
 from tdmgr.util import Message, TasmotaDevice
 
 
+def get_payload(version: str, filename: str) -> bytes:
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'status_parsing', 'jsonfiles')
+    fname = os.path.join(path, version, filename)
+    with open(fname, 'rb') as f:
+        return f.read()
+
+
 @pytest.fixture
 def device(request):
     topic = "device"
-    if request.param:
+    if hasattr(request, "param"):
         topic = request.param
     yield TasmotaDevice(topic)
 

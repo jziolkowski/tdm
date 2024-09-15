@@ -270,7 +270,7 @@ class RulesWidget(QWidget):
 
     @pyqtSlot(Message)
     def parseMessage(self, msg: Message):
-        if self.device.matches(msg.topic):
+        if self.device.message_topic_matches_fulltopic(msg):
             payload = msg.dict()
             if payload:
                 if msg.is_result and msg.first_key == "T1" or msg.endpoint == "RULETIMER":

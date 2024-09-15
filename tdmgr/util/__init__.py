@@ -84,13 +84,13 @@ class DiscoveryMode(int, Enum):
 
 class TasmotaEnvironment:
     def __init__(self):
-        self.devices = []
+        self.devices: list[TasmotaDevice] = []
         self.lwts = dict()
         self.retained = set()
 
-    def find_device(self, topic) -> 'TasmotaDevice':
+    def find_device(self, msg: Message) -> 'TasmotaDevice':
         for d in self.devices:
-            if d.matches(topic):
+            if d.message_topic_matches_fulltopic(msg):
                 return d
 
 
@@ -142,6 +142,14 @@ class TasmotaDevice(QObject):
             r"GPIOs\d?": self._process_gpios,
         }
 
+    @property
+    def topic(self) -> str:
+        return self.p["Topic"]
+
+    @property
+    def fulltopic(self) -> str:
+        return self.p["FullTopic"]
+
     @classmethod
     def from_discovery(cls, obj: DiscoverySchema):
         _ft = obj.ft.replace(obj.t, "%topic%").replace(obj.tp.tele, "%prefix%")
@@ -184,6 +192,13 @@ class TasmotaDevice(QObject):
     def is_default(self):
         return self.p["FullTopic"] in DEFAULT_PATTERNS
 
+    def message_topic_matches_fulltopic(self, msg: Message) -> bool:
+        if _prefix := re.match(self.fulltopic_regex, msg.topic):
+            if not msg.prefix:
+                msg.prefix = _prefix.groupdict()["prefix"]
+            return True
+        return False
+
     @property
     def subscribable_topics(self):
         topics = []
@@ -217,9 +232,6 @@ class TasmotaDevice(QObject):
             .replace("%topic%", self.p["Topic"])
         )
         return f'^{_ft_pattern}'
-
-    def matches(self, topic: str) -> bool:
-        return re.match(self.fulltopic_regex, topic) is not None
 
     def _process_module(self, msg: Message):
         print(msg.payload)
@@ -351,6 +363,13 @@ class TasmotaDevice(QObject):
         if color:
             color.update({15: self.setoption(15), 17: self.setoption(17), 68: self.setoption(68)})
         return color
+
+    @property
+    def ip_address(self) -> str:
+        for ip in [self.p.get("IPAddress"), self.p.get("Ethernet", {}).get("IPAddress")]:
+            if ip != "0.0.0.0":
+                return ip
+        return "0.0.0.0"
 
     def setoption(self, o):
         if 0 <= o < 32:
