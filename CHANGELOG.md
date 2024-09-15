@@ -1,6 +1,11 @@
-## [development]
+## [2024.9.3]
+## Added
+- up to 8 shutters supported
+
 ## Changed
 - ethernet-enabled devices now show eth ip address when wifi is disabled (#266)
+- rows in device list are slimmer now
+- made shutter icons in device list smaller
 
 ## Fixed
 - clicking main menu buttons doesn't crash anymore (#235)
