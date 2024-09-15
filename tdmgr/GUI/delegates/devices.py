@@ -25,9 +25,7 @@ class RectSpacing:
 
 
 RECT_ADJUSTMENT = (2, 2, -1, -1)
-SHUTTER_RECT_SIZE = QSize(
-    RECT_SIZE.width() * 2 + RectSpacing.h * 2, RECT_SIZE.height()
-)
+SHUTTER_RECT_SIZE = QSize(RECT_SIZE.width() * 2 + RectSpacing.h * 2, RECT_SIZE.height())
 
 
 def get_pixmap_for_rssi(rssi: int) -> QPixmap:

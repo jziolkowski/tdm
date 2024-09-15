@@ -411,7 +411,9 @@ class DevicesListWidget(QWidget):
         idx = 1 + self.agShutters.actions().index(action)
         shutter = (idx + 1) // 2
         direction = self.device.p[f"Shutter{shutter}"]["Direction"]
-        action = "ShutterStop" if direction != 0 else "ShutterClose" if idx % 2 == 0 else "ShutterOpen"
+        action = (
+            "ShutterStop" if direction != 0 else "ShutterClose" if idx % 2 == 0 else "ShutterOpen"
+        )
         self.mqtt.publish(self.device.cmnd_topic(f"{action}{shutter}"))
 
     def set_color(self):
