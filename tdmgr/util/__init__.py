@@ -412,9 +412,9 @@ class TasmotaDevice(QObject):
         return self.p.get("LWT", self.p["Offline"]) == self.p["Online"]
 
     @property
-    def url(self):
-        if url := self.p.get("IPAddress", None):
-            return f"http://{url}"
+    def url(self) -> Optional[str]:
+        if self.ip_address != "0.0.0.0":
+            return f"http://{self.ip_address}"
 
     def version(self, short=True):
         if version := self.p.get("Version"):
