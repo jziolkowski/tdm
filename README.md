@@ -7,7 +7,8 @@ Easy to use GUI application to manage, configure and monitor devices flashed wit
 [![Discord](https://img.shields.io/discord/545967340794413078?logo=discord&style=for-the-badge)](https://discord.gg/eAhVDXM)
 [![https://www.buymeacoffee.com/eYmkLXO](https://img.shields.io/badge/Donate-Buy%20me%20a%20coffee-orange?style=for-the-badge)](https://www.buymeacoffee.com/eYmkLXO)
 
-![image](https://user-images.githubusercontent.com/11555742/66050573-bf764900-e52d-11e9-8356-e3dbf4ef6205.png)
+![image](https://github.com/user-attachments/assets/c25ee733-7395-4eb5-b715-5bfaf82059ef)
+
 
 #### Minimum fully-supported Tasmota firmware version: [6.6.0.17](https://github.com/arendst/Tasmota/blob/development/tasmota/CHANGELOG.md#66017-20191009)
 
