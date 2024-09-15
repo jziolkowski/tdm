@@ -21,20 +21,19 @@ While I'm not in any way abandoning this project, I don't have as much time as I
  - [autodiscovery](https://github.com/jziolkowski/tdm/wiki/Autodiscovery) of Tasmota devices (even if they use custom FullTopics)
  - module, GPIO and template configuration
  - rules editor with Var/Mem/Ruletimer monitor
- - easy to read detachable telemetry viewers (working in active and passive mode) 
+ - easy to read detachable telemetry viewers (working in active and passive mode)
  - relay, color and PWM control
  - user-friendly configuration of buttons, switches and relays, including their related SetOptions
  - timers editor
  - clear retained relay and LWT topics
- - detachable device consoles with command completion and intuitive history 
+ - detachable device consoles with command completion and intuitive history
  - selectable views to see the most vital device parameters at a glance
  - BSSID aliasing for larger deployments
  - support for current and legacy Timers payloads (thanks @GrahamM)
 
 # Planned functions
-  
+
  - PWM/NTP/Topics configuration dialogs and a few others
- - config export for OpenHAB and HomeAssistant
  - dynamic and manual grouping of devices: by group topic, module, firmware revision, and more
  - group actions: reset/restart/control power/upgrade
  - quick settings for common use cases
