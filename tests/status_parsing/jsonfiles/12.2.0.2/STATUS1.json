@@ -1,17 +1,17 @@
 {
   "StatusPRM": {
+    "BCResetTime": "2022-11-05T18:47:52",
     "Baudrate": 115200,
-    "SerialConfig": "8N1",
+    "BootCount": 12,
+    "CfgHolder": 4617,
     "GroupTopic": "tasmotas",
     "OtaUrl": "http://ota.tasmota.com/tasmota/release/tasmota.bin.gz",
     "RestartReason": "Power On",
-    "Uptime": "94T04:19:39",
-    "StartupUTC": "2023-10-09T15:15:19",
-    "Sleep": 50,
-    "CfgHolder": 4617,
-    "BootCount": 12,
-    "BCResetTime": "2022-11-05T18:47:52",
+    "SaveAddress": "FB000",
     "SaveCount": 896,
-    "SaveAddress": "FB000"
+    "SerialConfig": "8N1",
+    "Sleep": 50,
+    "StartupUTC": "2023-10-09T15:15:19",
+    "Uptime": "94T04:19:39"
   }
 }

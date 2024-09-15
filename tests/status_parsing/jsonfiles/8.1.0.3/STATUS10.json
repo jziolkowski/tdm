@@ -1,8 +1,8 @@
 {
   "StatusSNS": {
-    "Time": "2024-09-15T13:15:35",
     "Switch1": "ON",
     "Switch2": "ON",
-    "Switch3": "ON"
+    "Switch3": "ON",
+    "Time": "2024-09-15T13:15:35"
   }
 }

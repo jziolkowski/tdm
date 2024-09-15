@@ -1,0 +1,14 @@
+{
+  "StatusNET": {
+    "DNSServer1": "192.168.2.27",
+    "DNSServer2": "192.168.2.24",
+    "Gateway": "192.168.2.254",
+    "Hostname": "zigbee",
+    "IPAddress": "192.168.2.175",
+    "Mac": "5C:CF:7F:13:9F:D8",
+    "Subnetmask": "255.255.255.0",
+    "Webserver": 2,
+    "WifiConfig": 4,
+    "WifiPower": 17.0
+  }
+}

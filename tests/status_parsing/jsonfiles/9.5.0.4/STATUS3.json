@@ -1,0 +1,23 @@
+{
+  "StatusLOG": {
+    "LogHost": "loghost",
+    "LogPort": 514,
+    "MqttLog": 0,
+    "Resolution": "558180C0",
+    "SSId": [
+      "indebuurt_IoT",
+      "indebuurt"
+    ],
+    "SerialLog": 3,
+    "SetOption": [
+      "00008009",
+      "2805C8000100060000005A0A000000000000",
+      "00000080",
+      "00046002",
+      "00000000"
+    ],
+    "SysLog": 2,
+    "TelePeriod": 300,
+    "WebLog": 2
+  }
+}

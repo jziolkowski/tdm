@@ -1,27 +1,27 @@
 {
   "StatusNET": {
-    "Hostname": "tasmota-68FF94-8084",
-    "IPAddress": "0.0.0.0",
-    "Gateway": "192.168.7.1",
-    "Subnetmask": "255.255.255.0",
     "DNSServer1": "192.168.7.1",
     "DNSServer2": "0.0.0.0",
-    "Mac": "34:98:7A:68:FF:94",
-    "IP6Global": "",
-    "IP6Local": "",
     "Ethernet": {
-      "Hostname": "tasmota-68FF94-8084eth",
-      "IPAddress": "192.168.7.187",
-      "Gateway": "192.168.7.1",
-      "Subnetmask": "255.255.255.0",
       "DNSServer1": "192.168.7.1",
       "DNSServer2": "0.0.0.0",
-      "Mac": "34:98:7A:68:FF:97",
+      "Gateway": "192.168.7.1",
+      "Hostname": "tasmota-68FF94-8084eth",
       "IP6Global": "",
-      "IP6Local": "fe80::3698:7aff:fe68:ff97%en1"
+      "IP6Local": "fe80::3698:7aff:fe68:ff97%en1",
+      "IPAddress": "192.168.7.187",
+      "Mac": "34:98:7A:68:FF:97",
+      "Subnetmask": "255.255.255.0"
     },
-    "Webserver": 2,
+    "Gateway": "192.168.7.1",
     "HTTP_API": 1,
+    "Hostname": "tasmota-68FF94-8084",
+    "IP6Global": "",
+    "IP6Local": "",
+    "IPAddress": "0.0.0.0",
+    "Mac": "34:98:7A:68:FF:94",
+    "Subnetmask": "255.255.255.0",
+    "Webserver": 2,
     "WifiConfig": 0,
     "WifiPower": 17.0
   }

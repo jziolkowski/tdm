@@ -1,13 +1,13 @@
 {
+  "POWER1": "OFF",
   "Time": "2024-01-12T06:29:01",
   "Uptime": "2T05:25:48",
   "Vcc": 3.258,
-  "POWER1": "OFF",
   "Wifi": {
     "AP": 1,
-    "SSId": "xxx",
     "BSSId": "F0:9F:C2:03:CD:73",
     "Channel": 6,
-    "RSSI": 100
+    "RSSI": 100,
+    "SSId": "xxx"
   }
 }
