@@ -192,6 +192,7 @@ class StateSTSBaseSchema(StatusBaseModel):
     Berry: Optional[BerrySchema] = None
     Channel: Optional[List[int]] = None
     Color: Optional[str] = None
+    CT: Optional[int] = None
     Fade: Optional[str] = None
     HSBColor: Optional[str] = None
     Heap: Optional[int] = None
