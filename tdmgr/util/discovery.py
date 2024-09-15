@@ -18,7 +18,7 @@ def lwt_discovery_stage2(env: TasmotaEnvironment, message: Message):
         if match := message.match_fulltopic(full_topic):
             _match_topic = match.groupdict()["topic"]
 
-            if d := env.find_device(topic=_match_topic):
+            if d := env.find_device(message):
                 d.update_property("FullTopic", full_topic)
 
             else:
