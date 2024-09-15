@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (
 )
 
 from tdmgr.GUI.widgets import GroupBoxV, HLayout, VLayout, console_font
-from tdmgr.util import Message
+from tdmgr.util import Message, TasmotaDevice
 from tdmgr.util.commands import commands
 
 
@@ -29,7 +29,7 @@ class ConsoleWidget(QDockWidget):
         super().__init__()
         self.setAllowedAreas(Qt.BottomDockWidgetArea)
         self.setWindowTitle(f"Console [{device.name}]")
-        self.device = device
+        self.device: TasmotaDevice = device
 
         self.settings = settings
 
@@ -113,7 +113,7 @@ class ConsoleWidget(QDockWidget):
 
     @pyqtSlot(Message)
     def consoleAppend(self, msg: Message):
-        if self.device.matches(msg.topic):
+        if self.device.message_topic_matches_fulltopic(msg):
             self.console.appendPlainText(
                 f"[{msg.timestamp.strftime('%X')}] {msg.topic} {msg.payload}"
             )

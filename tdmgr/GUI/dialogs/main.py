@@ -363,7 +363,7 @@ class MainWindow(QMainWindow):
         #             lwt = self.env.lwts.pop(f"{obj.ft}/LWT", obj.ofln)
         #             device.update_property("LWT", lwt)
 
-        if device := self.env.find_device(msg.topic):
+        if device := self.env.find_device(msg):
             if msg.is_lwt:
                 log.debug("MQTT: LWT message for %s: %s", device.p["Topic"], msg.payload)
                 device.update_property("LWT", msg.payload)
@@ -373,9 +373,6 @@ class MainWindow(QMainWindow):
                     self.initial_query(device, True)
 
             else:
-                _prefix = re.match(device.fulltopic_regex, msg.topic)
-                if _prefix:
-                    msg.prefix = _prefix.groupdict()["prefix"]
                 # forward the message for processing
                 device.update_property("LWT", device.p["Online"])
                 device.process_message(msg)
