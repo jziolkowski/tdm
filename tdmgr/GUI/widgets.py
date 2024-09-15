@@ -209,7 +209,7 @@ class TableView(QTableView):
 
     def setupView(self, view):
         for i, c in enumerate(view):
-            if c in ("Device", "Module", "Topic", "FullTopic"):
+            if c in ("Device",):
                 self.horizontalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
             else:
                 self.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
