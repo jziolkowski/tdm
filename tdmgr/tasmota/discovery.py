@@ -1,6 +1,8 @@
 import logging
 
-from tdmgr.util import Message, TasmotaDevice, TasmotaEnvironment
+from tdmgr.mqtt import Message
+from tdmgr.tasmota.device import TasmotaDevice
+from tdmgr.tasmota.environment import TasmotaEnvironment
 
 
 def native_discovery():

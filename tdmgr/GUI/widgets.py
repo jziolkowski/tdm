@@ -24,7 +24,7 @@ from PyQt5.QtWidgets import (
 )
 
 from tdmgr.schemas.result import PulseTimeLegacyResultSchema
-from tdmgr.util import TasmotaDevice
+from tdmgr.tasmota.device import TasmotaDevice
 
 base_view = ["Device"]
 default_views = {

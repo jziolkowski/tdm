@@ -1,7 +1,6 @@
 import json
 import logging
 import re
-from enum import Enum
 from functools import lru_cache
 from typing import Callable, Optional, Union
 
@@ -9,6 +8,7 @@ from pkg_resources import parse_version
 from pydantic import BaseModel, ValidationError
 from PyQt5.QtCore import QObject, pyqtSignal
 
+from tdmgr.mqtt import DEFAULT_PATTERNS, MQTT_PATH_REGEX, Message
 from tdmgr.schemas.discovery import DiscoverySchema, TopicPrefixes
 from tdmgr.schemas.result import (
     PulseTimeLegacyResultSchema,
@@ -16,82 +16,9 @@ from tdmgr.schemas.result import (
     TemplateResultSchema,
 )
 from tdmgr.schemas.status import STATUS_SCHEMA_MAP
-from tdmgr.util.mqtt import DEFAULT_PATTERNS, MQTT_PATH_REGEX, Message
+from tdmgr.tasmota.common import COMMAND_UNKNOWN
 
-# TODO: extract from __init__
-
-# TODO: extract to common
-resets = [
-    "1: reset device settings to firmware defaults",
-    "2: erase flash, reset device settings to firmware defaults",
-    "3: erase flash SDK parameters",
-    "4: reset device settings to firmware defaults, keep Wi-Fi credentials",
-    "5: erase flash, reset parameters to firmware defaults, keep Wi-Fi settings",
-    "6: erase flash, reset parameters to firmware defaults, keep Wi-Fi and MQTT settings",
-    "99: reset device bootcount to zero",
-]
-
-template_adc = {
-    "0": "None",
-    "15": "User",
-    "1": "Analog",
-    "2": "Temperature",
-    "3": "Light",
-    "4": "Button",
-    "5": "Buttoni",
-}
-
-
-COMMAND_UNKNOWN = {"Command": "Unknown"}
-
-
-# TODO: extract to mqtt
-def initial_commands():
-    commands = [
-        "template",
-        "modules",
-        "gpio",
-        "buttondebounce",
-        "switchdebounce",
-        "interlock",
-        "blinktime",
-        "blinkcount",
-        "pulsetime",
-    ]
-
-    commands = [(command, "") for command in commands]
-    commands += [("status", "0"), ("gpios", "255")]
-
-    for sht in range(8):
-        commands.append([f"shutterrelay{sht + 1}", ""])
-        commands.append([f"shutterposition{sht + 1}", ""])
-
-    return commands
-
-
-def parse_payload(payload):
-    match = re.match(r"(\d+) \((.*)\)", payload)
-    if match:
-        return dict([match.groups()])
-    return {}
-
-
-class DiscoveryMode(int, Enum):
-    BOTH = 0
-    NATIVE = 1
-    LEGACY = 2
-
-
-class TasmotaEnvironment:
-    def __init__(self):
-        self.devices: list[TasmotaDevice] = []
-        self.lwts = dict()
-        self.retained = set()
-
-    def find_device(self, msg: Message) -> 'TasmotaDevice':
-        for d in self.devices:
-            if d.message_topic_matches_fulltopic(msg):
-                return d
+log = logging.getLogger(__name__)
 
 
 class TasmotaDevice(QObject):
@@ -294,7 +221,7 @@ class TasmotaDevice(QObject):
                     self.update_property(k, v)
 
         except ValidationError as e:
-            logging.critical("MQTT: Cannot parse %s", e)
+            log.critical("MQTT: Cannot parse %s", e)
 
     def process_sensor(self, payload: str):
         sensor_data = json.loads(payload)
@@ -305,7 +232,7 @@ class TasmotaDevice(QObject):
 
     def process_message(self, msg: Message):
         if self.debug:
-            logging.debug("MQTT: %s %s", msg.topic, msg.payload)
+            log.debug("MQTT: %s %s", msg.topic, msg.payload)
 
         if msg.prefix in (self.topic_prefixes.stat, self.topic_prefixes.tele):
             # /STATE or /STATUS<x> response
@@ -408,8 +335,15 @@ class TasmotaDevice(QObject):
         return self.p["Topic"]
 
     @property
-    def is_online(self):
+    def online(self):
         return self.p.get("LWT", self.p["Offline"]) == self.p["Online"]
+
+    @online.setter
+    def online(self, val: Union[bool, dict]):
+        if isinstance(val, bool):
+            self.update_property("LWT", self.p["Online"])
+        else:
+            self.update_property("LWT", val)
 
     @property
     def url(self) -> Optional[str]:
