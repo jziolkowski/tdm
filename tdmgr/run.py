@@ -26,22 +26,24 @@ def configure_logging(args) -> None:
     elif args.log_location:
         log_path = os.path.join(args.log_location, "tdm.log")
 
+
     logging.basicConfig(
         level="DEBUG" if args.debug else "INFO",
         datefmt="%Y-%m-%d %H:%M:%S",
         format="%(asctime)s [%(levelname)s] [%(filename)s] %(message)s",
     )
-    logging.getLogger(__name__).addHandler(
+
+    logging.getLogger().addHandler(
         TimedRotatingFileHandler(filename=log_path, when="d", interval=1)
     )
 
 
 def get_settings(args: argparse.Namespace, filename: str) -> QSettings:
     if args.local:
-        return QSettings(f"{filename}.ini", QSettings.IniFormat)
+        return QSettings(filename, QSettings.IniFormat)
     if args.config_location:
-        return QSettings(os.path.join(args.config_location, f"{filename}.ini"), QSettings.IniFormat)
-    return QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", f"{filename}.ini")
+        return QSettings(os.path.join(args.config_location, filename), QSettings.IniFormat)
+    return QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", filename)
 
 
 def setup_parser() -> argparse.ArgumentParser:

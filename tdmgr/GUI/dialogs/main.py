@@ -530,7 +530,7 @@ class MainWindow(QMainWindow):
 
     @staticmethod
     def open_log_location():
-        fi = QFileInfo(log.getLogger().handlers[1].baseFilename)
+        fi = QFileInfo(logging.getLogger().handlers[1].baseFilename)
         QDesktopServices.openUrl(QUrl.fromLocalFile(fi.absolutePath()))
 
     def auto_telemetry_period(self):
