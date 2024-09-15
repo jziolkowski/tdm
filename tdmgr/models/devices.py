@@ -33,10 +33,6 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
     def notify_change(self, d, key):
         row = self.tasmota_env.devices.index(d)
-        # if key.startswith("POWER") and "Power" in self.columns:
-        #     power_idx = self.columns.index("Power")
-        #     idx = self.index(row, power_idx)
-        #     self.dataChanged.emit(idx, idx)
 
         if any(
             [

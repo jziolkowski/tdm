@@ -26,7 +26,7 @@ class RectSpacing:
 
 RECT_ADJUSTMENT = (2, 2, -1, -1)
 SHUTTER_RECT_SIZE = QSize(
-    RECT_SIZE.width() * 3 + RectSpacing.h * 2, RECT_SIZE.height() * 2 + RectSpacing.v
+    RECT_SIZE.width() * 2 + RectSpacing.h * 2, RECT_SIZE.height()
 )
 
 
@@ -73,7 +73,7 @@ class DeviceDelegate(QStyledItemDelegate):
                     return 6 + self.get_relays_rect_size(relay_data).height()
                 return 0
 
-            hint_height = max(42, get_relays_height(), 6 + SHUTTER_RECT_SIZE.height())
+            hint_height = max(28, get_relays_height())
             return QSize(QStyledItemDelegate().sizeHint(option, index).width(), hint_height)
         return QStyledItemDelegate().sizeHint(option, index)
 
@@ -218,17 +218,13 @@ class DeviceDelegate(QStyledItemDelegate):
     def draw_rssi_pixmap(self, index, option, p):
         p.save()
         px = self.rssi_offline
-        rssi = 'offln'
         if index.data(DeviceRoles.LWTRole):
             rssi = index.data(DeviceRoles.RSSIRole)
             px = get_pixmap_for_rssi(rssi)
 
-        px_y = option.rect.y() + (option.rect.height() - 38) // 2
+        px_y = option.rect.y() + (option.rect.height() - 24) // 2
         px_rect = QRect(option.rect.x() + 2, px_y, 24, 24)
         p.drawPixmap(px_rect, px.scaled(24, 24))
-        rssi_rect = QRect(option.rect.x() + 2, px_rect.y() + px_rect.height() + 2, 24, 12)
-        p.setFont(self.font_8pt)
-        p.drawText(rssi_rect, Qt.AlignCenter, str(rssi))
         p.restore()
 
     def draw_relay_state(self, p: QPainter, target_rect: QRect, relay_data: dict):
@@ -259,32 +255,26 @@ class DeviceDelegate(QStyledItemDelegate):
             title_rect = QRect(rect)
             title_rect.setHeight(RECT_SIZE.height())
 
-            state_rect = QRect(rect)
-            state_rect.moveTop(title_rect.bottom() + 1)
-            state_rect.setBottom(rect.bottom())
-            state_rect.adjust(*RECT_ADJUSTMENT)
-
-            p.drawText(title_rect, Qt.AlignCenter, f'Shutter {shutter}')
-
             direction = shutter_state['Direction']
-            position = (
-                'CLOSED'
-                if shutter_state['Position'] == 0
-                else 'OPEN' if shutter_state['Position'] == 100 else shutter_state['Position']
-            )
-
             arrow_direction = {-1: ARROW_DN, 1: ARROW_UP}
+
+            position = (
+                'CLS'
+                if shutter_state['Position'] == 0
+                else 'OPN' if shutter_state['Position'] == 100 else shutter_state['Position']
+            )
 
             if direction != 0:
                 p.save()
                 p.setPen(self.hltext_pen)
-                p.fillRect(state_rect, GREEN)
-                p.drawText(state_rect, Qt.AlignCenter, f"{arrow_direction[direction]}  {position}")
+                p.fillRect(title_rect, GREEN)
+                p.drawText(title_rect, Qt.AlignCenter, f"{arrow_direction[direction]}  {position}")
                 p.restore()
             else:
-                p.drawText(state_rect, Qt.AlignCenter, f"{position}")
+                p.drawText(title_rect, Qt.AlignCenter, f'SHT{shutter} {position}')
             for r in [title_rect, rect]:
                 p.drawRect(r)
+
             shutter_col += 1
 
     def draw_rssi_rect(self, p: QPainter, rect, index):

@@ -62,7 +62,7 @@ def initial_commands():
     commands = [(command, "") for command in commands]
     commands += [("status", "0"), ("gpios", "255")]
 
-    for sht in range(4):
+    for sht in range(8):
         commands.append([f"shutterrelay{sht + 1}", ""])
         commands.append([f"shutterposition{sht + 1}", ""])
 
@@ -343,12 +343,12 @@ class TasmotaDevice(QObject):
     def shutters(self) -> dict:
         return {
             k: self.p[f"ShutterRelay{k}"]
-            for k in range(1, 5)
+            for k in range(1, 9)
             if f"ShutterRelay{k}" in self.p and self.p[f"ShutterRelay{k}"] != 0
         }
 
     def shutter_positions(self) -> dict:
-        x = {k: self.p[f"Shutter{k}"] for k in range(1, 5) if f"Shutter{k}" in self.p}
+        x = {k: self.p[f"Shutter{k}"] for k in range(1, 9) if f"Shutter{k}" in self.p}
         return x
 
     def pwm(self):
