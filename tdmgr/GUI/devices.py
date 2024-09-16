@@ -192,6 +192,8 @@ class DevicesListWidget(QWidget):
             act = QAction(QIcon(px), f'Relay {a} TOGGLE')
             if a <= 8:
                 act.setShortcut(f"F{a}")
+            else:
+                act.setShortcut(f"Shift+F{a}")
             self.agRelays.addAction(act)
 
         self.agRelays.triggered.connect(self.toggle_power)
