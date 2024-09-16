@@ -2,13 +2,14 @@ changelog:
     exclude:
         labels:
             - dependencies
+            - testing
     categories:
-        -   title: "## Added"
+        -   title: Added
             labels:
                 - enhancement
-        -   title: "## Changed"
+        -   title: Changed
             labels:
                 - change
-        -   title: "## Fixed"
+        -   title: Fixed
             labels:
                 - bug
