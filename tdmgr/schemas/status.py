@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, create_model, model_validator
+from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 
 log = logging.getLogger(__name__)
 
@@ -232,6 +232,26 @@ StatusSTSSchema = create_model(
 )
 
 
+class ShutterSchema(StatusBaseModel):
+    Relay1: int
+    Relay2: int
+    Open: int
+    Close: int
+    Perc50: int = Field(alias="50perc")
+    Delay: int
+    Opt: str
+    Calib: List[int]
+    Mode: str
+    TiltConfig: List[int]
+
+
+StatusSHTSchema = create_model(
+    'StatusSHTSchema',
+    __base__=StatusBaseModel,
+    **{f"SHT{idx}": (Optional[ShutterSchema], None) for idx in range(8)},
+)
+
+
 class StatusResponseSchema(StatusBaseModel):
     Status: StatusSchema
 
@@ -280,6 +300,10 @@ class Status12ResponseSchema(StatusBaseModel):
     StatusSTK: StatusSTKSchema
 
 
+class Status13ResponseSchema(StatusBaseModel):
+    StatusSHT: StatusSHTSchema
+
+
 class Status0ResponseSchema(StatusResponseSchema):
     # StatusSTS: Optional[Json]
     StatusFWR: StatusFWRSchema
@@ -306,6 +330,7 @@ STATUS_SCHEMA_MAP: [str, StatusBaseModel] = {
     'STATUS10': Status10ResponseSchema,
     'STATUS11': Status11ResponseSchema,
     'STATUS12': Status12ResponseSchema,
+    'STATUS13': Status13ResponseSchema,
 }
 
 StatusSchemaType = STATUS_SCHEMA_MAP.values()
