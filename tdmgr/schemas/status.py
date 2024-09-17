@@ -242,7 +242,7 @@ class ShutterSchema(StatusBaseModel):
     Opt: str
     Calib: List[int]
     Mode: str
-    TiltConfig: List[int]
+    TiltConfig: Optional[List[int]] = None
 
 
 StatusSHTSchema = create_model(
