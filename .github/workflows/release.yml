@@ -47,6 +47,16 @@ jobs:
             -   name: Build with PyInstaller
                 run: pyinstaller --noconfirm --clean tdmgr.spec
 
+            - name: Create .dmg
+              if: matrix.os == 'macos-13'
+              shell: bash
+              run: |
+                  brew install create-dmg
+                  newfile=$(basename dist/*.app .app).dmg
+                  create-dmg $newfile dist
+                  rm dist/*.app
+                  mv /Users/runner/work/tdm/tdm/*.dmg dist
+
             -   name: Upload binaries artifact to workflow
                 uses: actions/upload-artifact@v3
                 with:
