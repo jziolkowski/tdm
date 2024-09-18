@@ -267,7 +267,7 @@ class Toolbar(QToolBar):
             action.setShortcut(shortcut)
 
 
-class ChannelSlider(QSlider):
+class Slider(QSlider):
     def __init__(self):
         super().__init__()
         self.setOrientation(Qt.Horizontal)
@@ -326,7 +326,7 @@ class SliderAction(QWidgetAction):
 
         w = QWidget()
         hl = HLayout(5)
-        self.slider = ChannelSlider()
+        self.slider = Slider()
         self.slider.setStyleSheet(slider_stylesheet)
         self.slider.setObjectName(label)
         self.value = QLabel("0")

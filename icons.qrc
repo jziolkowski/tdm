@@ -22,6 +22,7 @@
     <file alias="save.png">.\assets\save.png</file>
     <file alias="setoptions.png">.\assets\setoptions.png</file>
     <file alias="settings.png">.\assets\settings.png</file>
+    <file alias="shutter.png">.\assets\shutter.png</file>
     <file alias="signal0.png">.\assets\signal0.png</file>
     <file alias="signal1.png">.\assets\signal1.png</file>
     <file alias="signal2.png">.\assets\signal2.png</file>

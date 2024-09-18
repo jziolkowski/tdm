@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from tdmgr.GUI.common import ARROW_DN, ARROW_UP, make_relay_pixmap
+from tdmgr.GUI.common import make_relay_pixmap
 from tdmgr.GUI.delegates.devices import DeviceDelegate
 from tdmgr.GUI.dialogs import (
     ButtonsDialog,
@@ -35,6 +35,7 @@ from tdmgr.GUI.dialogs import (
     TemplateDialog,
     TimersDialog,
 )
+from tdmgr.GUI.dialogs.shutter_control import ShutterControlDialog
 from tdmgr.GUI.widgets import (
     SliderAction,
     SpinBox,
@@ -44,7 +45,7 @@ from tdmgr.GUI.widgets import (
     base_view,
     default_views,
 )
-from tdmgr.mqtt import initial_commands
+from tdmgr.mqtt import MqttClient, initial_commands
 from tdmgr.tasmota.commands import resets
 from tdmgr.tasmota.common import MAX_RELAYS, CTRange, TasmotaColor, map_value
 from tdmgr.tasmota.device import TasmotaDevice
@@ -63,7 +64,7 @@ class DevicesListWidget(QWidget):
         self.setWindowState(Qt.WindowMaximized)
         vl = VLayout(margin=0, spacing=0)
 
-        self.mqtt = parent.mqtt
+        self.mqtt: MqttClient = parent.mqtt
         self.env = parent.env
 
         self.device: Optional[TasmotaDevice] = None
@@ -200,17 +201,11 @@ class DevicesListWidget(QWidget):
         self.agRelays.triggered.connect(self.toggle_power)
         self.tb_relays.addActions(self.agRelays.actions())
 
-        self.agShutters = QActionGroup(self)
-        self.agShutters.setVisible(False)
-        self.agShutters.setExclusive(False)
-        for shutter_idx in range(1, 9):
-            for idx, arrow in enumerate([ARROW_UP, ARROW_DN]):
-                px = make_relay_pixmap(arrow)
-                self.agShutters.addAction(
-                    QAction(QIcon(px), f"Shutter {shutter_idx} {'UP' if idx == 0 else 'DOWN'}")
-                )
-        self.agShutters.triggered.connect(self.move_shutter)
-        self.tb_relays.addActions(self.agShutters.actions())
+        self.actShutters = self.tb_relays.addAction(
+            QIcon(":/shutter.png"), "Shutters", self.shutterControl
+        )
+        self.actShutters.setEnabled(False)
+        self.tb_relays.addAction(self.actShutters)
 
         self.tb_relays.addSeparator()
         self.actColor = self.tb_relays.addAction(QIcon(":/color.png"), "Color", self.set_color)
@@ -359,17 +354,14 @@ class DevicesListWidget(QWidget):
 
         self.agAllPower.setEnabled(False)
         self.agRelays.setVisible(False)
-        self.agShutters.setVisible(False)
         if relays := self.device.power():
             self.agAllPower.setEnabled(True)
             relay_keys = [r.idx for r in relays]
             for i, a in enumerate(self.agRelays.actions()):
                 a.setVisible(i + 1 in relay_keys)
 
-        if shutters := self.device.shutters():
-            for s in range(len(shutters)):
-                self.agShutters.actions()[2 * s].setVisible(True)
-                self.agShutters.actions()[2 * s + 1].setVisible(True)
+        if self.device.shutters():
+            self.actShutters.setEnabled(True)
 
         self.actColor.setEnabled(False)
         self.actChannels.setEnabled(False)
@@ -636,6 +628,12 @@ class DevicesListWidget(QWidget):
                     backlog.append("status")
                     backlog.append("status 3")
                     self.mqtt.publish(self.device.cmnd_topic("backlog"), "; ".join(backlog))
+
+    def shutterControl(self):
+        shutters = ShutterControlDialog(self.device)
+        shutters.sendCommand.connect(self.mqtt.publish)
+        self.mqtt.publish(self.device.cmnd_topic("shutterposition"))
+        shutters.exec_()
 
     def get_dump(self):
         self.backup += self.dl.readAll()

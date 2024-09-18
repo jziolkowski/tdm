@@ -1,8 +1,9 @@
 import json
 import logging
 import re
+from collections import defaultdict
 from functools import lru_cache
-from typing import Callable, List, Optional, Union
+from typing import Callable, DefaultDict, List, Optional, Union
 
 from pkg_resources import parse_version
 from pydantic import BaseModel, ValidationError
@@ -13,6 +14,7 @@ from tdmgr.schemas.discovery import DiscoverySchema, TopicPrefixes
 from tdmgr.schemas.result import (
     PulseTimeLegacyResultSchema,
     PulseTimeResultSchema,
+    ShutterResultSchema,
     TemplateResultSchema,
 )
 from tdmgr.schemas.status import STATUS_SCHEMA_MAP
@@ -58,6 +60,7 @@ class TasmotaDevice(QObject):
 
         self.processor_map = {
             r"PulseTime\d?": self._process_pulsetime,
+            r"Shutter\d?": self._process_shutter,
             r"NAME": self._process_template,
             r"Module$": self._process_module,
             r"Modules\d?": self._process_modules,
@@ -65,6 +68,8 @@ class TasmotaDevice(QObject):
             r"GPIO\d?$": self._process_gpio,
             r"GPIOs\d?": self._process_gpios,
         }
+
+        self.subscribers: DefaultDict[BaseModel, List[Callable]] = defaultdict(list)
 
     @property
     def topic(self) -> str:
@@ -145,6 +150,29 @@ class TasmotaDevice(QObject):
         )
         return f'^{_ft_pattern}'
 
+    def register(self, schema: BaseModel, method: Callable):
+        if method not in self.subscribers[schema]:
+            log.debug("Registered %s for %s schema", method.__name__, schema.__name__)
+            self.subscribers[schema].append(method)
+        log.debug(
+            "Subscribers: %s",
+            {
+                key.__name__: list(map(lambda v: v.__name__, vals))
+                for key, vals in self.subscribers.items()
+            },
+        )
+
+    def unregister(self, method: Callable):
+        for mlist in self.subscribers.values():
+            if method in mlist:
+                log.debug("Unregistered %s", method.__name__)
+                mlist.remove(method)
+
+    # TODO: add to all responses, not just STATUSx
+    def notify_subscribers(self, schema: BaseModel, payload: BaseModel):
+        for method in self.subscribers[schema]:
+            method(payload)
+
     def _process_module(self, msg: Message):
         print(msg.payload)
 
@@ -164,6 +192,14 @@ class TasmotaDevice(QObject):
         else:
             schema = PulseTimeResultSchema
         self._pulsetime = schema.model_validate(msg.dict())
+
+    def _process_shutter(self, msg: Message):
+        validated = ShutterResultSchema.model_validate(msg.dict())
+        self.notify_subscribers(ShutterResultSchema, validated)
+
+        # TODO: that should be a method
+        for k, v in msg.dict().items():
+            self.update_property(k, v)
 
     def _process_template(self, msg: Message):
         _template = TemplateResultSchema.model_validate(msg.dict())
@@ -189,7 +225,11 @@ class TasmotaDevice(QObject):
 
     def process_status(self, schema: BaseModel, payload: dict):
         try:
-            processed = schema.model_validate(payload).model_dump(exclude_none=True)
+            validated = schema.model_validate(payload)
+            self.notify_subscribers(schema, validated)
+
+            processed = validated.model_dump(exclude_none=True)
+
             first_key = next(iter(processed.keys()))
             items = (
                 processed[first_key].items()
