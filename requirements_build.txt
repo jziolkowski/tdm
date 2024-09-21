@@ -1,4 +1,4 @@
 -r requirements.txt
 pyinstaller>=4
 setuptools>=64
-setuptools-scm>=8
+setuptools-scm[toml]>=8
