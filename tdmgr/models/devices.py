@@ -125,6 +125,9 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 if col_name == "RSSI":
                     return int(d.p.get("RSSI", 0))
 
+                if col_name == "IPAddress":
+                    return d.ip_address
+
                 return val
 
             if role == DeviceRoles.LWTRole:
