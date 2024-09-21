@@ -1,0 +1,40 @@
+<RCC>
+  <qresource>
+    <file alias="auto_telemetry.png">.\assets\auto_telemetry.png</file>
+    <file alias="buttons.png">.\assets\buttons.png</file>
+    <file alias="clear.png">.\assets\clear.png</file>
+    <file alias="color.png">.\assets\color.png</file>
+    <file alias="color_frame.png">.\assets\color_frame.png</file>
+    <file alias="connect.png">.\assets\connect.png</file>
+    <file alias="console.png">.\assets\console.png</file>
+    <file alias="copy.png">.\assets\copy.png</file>
+    <file alias="disconnect.png">.\assets\disconnect.png</file>
+    <file alias="download.png">.\assets\download.png</file>
+    <file alias="ip.png">.\assets\ip.png</file>
+    <file alias="logo.png">.\assets\logo.png</file>
+    <file alias="once.png">.\assets\once.png</file>
+    <file alias="open.png">.\assets\open.png</file>
+    <file alias="padlock.png">.\assets\padlock.png</file>
+    <file alias="power.png">.\assets\power.png</file>
+    <file alias="refresh.png">.\assets\refresh.png</file>
+    <file alias="restart.png">.\assets\restart.png</file>
+    <file alias="rules.png">.\assets\rules.png</file>
+    <file alias="save.png">.\assets\save.png</file>
+    <file alias="setoptions.png">.\assets\setoptions.png</file>
+    <file alias="settings.png">.\assets\settings.png</file>
+    <file alias="signal0.png">.\assets\signal0.png</file>
+    <file alias="signal1.png">.\assets\signal1.png</file>
+    <file alias="signal2.png">.\assets\signal2.png</file>
+    <file alias="signal3.png">.\assets\signal3.png</file>
+    <file alias="signal4.png">.\assets\signal4.png</file>
+    <file alias="sliders.png">.\assets\sliders.png</file>
+    <file alias="stop.png">.\assets\stop.png</file>
+    <file alias="switches.png">.\assets\switches.png</file>
+    <file alias="telemetry.png">.\assets\telemetry.png</file>
+    <file alias="time.png">.\assets\time.png</file>
+    <file alias="timers.png">.\assets\timers.png</file>
+    <file alias="upload.png">.\assets\upload.png</file>
+    <file alias="web.png">.\assets\web.png</file>
+    <file alias="wifi.png">.\assets\wifi.png</file>
+  </qresource>
+</RCC>

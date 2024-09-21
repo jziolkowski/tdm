@@ -2,7 +2,7 @@ import json
 import logging
 import re
 from functools import lru_cache
-from typing import Callable, Optional, Union
+from typing import Callable, List, Optional, Union
 
 from pkg_resources import parse_version
 from pydantic import BaseModel, ValidationError
@@ -16,7 +16,7 @@ from tdmgr.schemas.result import (
     TemplateResultSchema,
 )
 from tdmgr.schemas.status import STATUS_SCHEMA_MAP
-from tdmgr.tasmota.common import COMMAND_UNKNOWN
+from tdmgr.tasmota.common import COMMAND_UNKNOWN, MAX_SHUTTERS, Color, DeviceProps, Relay, Shutter
 
 log = logging.getLogger(__name__)
 
@@ -26,17 +26,17 @@ class TasmotaDevice(QObject):
 
     def __init__(self, topic: str, fulltopic: str = "%prefix%/%topic%/", devicename: str = ""):
         super(TasmotaDevice, self).__init__()
-        self.p = {
-            "LWT": "undefined",
-            "Topic": topic,
-            "FullTopic": fulltopic,
-            "DeviceName": devicename,
-            "Template": {},
-            "Online": "Online",
-            "Offline": "Offline",
-        }
-
-        # self.props = Properties(Topic=topic, FullTopic=fulltopic, DeviceName=devicename)
+        self.p = DeviceProps(
+            **{
+                "LWT": "undefined",
+                "Topic": topic,
+                "FullTopic": fulltopic,
+                "DeviceName": devicename,
+                "Template": {},
+                "Online": "Online",
+                "Offline": "Offline",
+            }
+        )
 
         self.debug = False
         self.env = None
@@ -53,9 +53,6 @@ class TasmotaDevice(QObject):
 
         self.gpios = {}  # supported GPIOs
         self.gpio = {}  # gpio config
-
-        # self._status_processors = self._get_status_processors()
-        self._result_processors = self._get_result_processors()
 
         self._pulsetime: Optional[Union[PulseTimeLegacyResultSchema, PulseTimeResultSchema]] = None
 
@@ -86,18 +83,6 @@ class TasmotaDevice(QObject):
         device.p["Offline"] = obj.ofln
         device.p["Module"] = obj.md
         return device
-
-    def _get_result_processors(self):
-        PROCESSOR_METHOD_PREFIX = '_process_response_'
-        method_names = [
-            method_name
-            for method_name in self.__class__.__dict__
-            if method_name.startswith(PROCESSOR_METHOD_PREFIX)
-        ]
-        return {
-            method_name.replace(PROCESSOR_METHOD_PREFIX, ''): getattr(self, method_name)
-            for method_name in method_names
-        }
 
     def build_topic(self, prefix):
         return (
@@ -251,45 +236,81 @@ class TasmotaDevice(QObject):
             else:
                 self._process_result(msg)
 
-    def power(self):
-        power_dict = {k: v for k, v in self.p.items() if k.startswith("POWER")}
-        relay_count = len(power_dict.keys())
-        if relay_count == 1:
-            return {1: power_dict.get('POWER1', power_dict.get('POWER', 'OFF'))}
-        if relay_count > 1:
-            relays = dict(
-                sorted({int(k.replace('POWER', '')): v for k, v in power_dict.items()}.items())
+    def is_friendlyname(self, fname: str) -> bool:
+        RE_DEFAULT_FNAME = r"(Tasmota|Sonoff|Power)\d?"
+        return fname and re.match(RE_DEFAULT_FNAME, fname) is None
+
+    def get_friendlyname(self, idx: int, idx_as_default: bool = True) -> str:
+        name = ""
+        if (fnames := self.p.get("FriendlyName")) and len(fnames) >= idx:
+            fname_idx = idx - 1
+            name = (
+                fnames[fname_idx]
+                if self.is_friendlyname(fnames[fname_idx])
+                else f"{idx}" if idx_as_default else ""
             )
-            for shutter, shutter_relay in self.shutters().items():
-                if shutter_relay != 0:
-                    for s in range(shutter_relay, shutter_relay + 2):
-                        relays.pop(s, None)
+        return name
+
+    def power(self) -> Optional[List[Relay]]:
+        def is_locked(idx: int) -> bool:
+            if self.p.get('PowerOnState') == 4:
+                return True
+            powerlock = self.p.get('PowerLock', 32 * "0")
+            return powerlock[idx - 1] == "1" if idx <= len(powerlock) else False
+
+        relay_list = list(self.p.matching_items("POWER"))
+        relay_count = len(relay_list)
+
+        if (single_relay_state := self.p.get('POWER1', self.p.get('POWER'))) and not self.p.get(
+            "POWER2"
+        ):
+            return [Relay(1, self.get_friendlyname(1, False), single_relay_state, is_locked(1))]
+
+        relays: List[Relay] = []
+        if relay_count > 1:
+            _relays = dict(relay_list)
+
+            for shutter in self.shutters():
+                for s in range(shutter.relay, shutter.relay + 2):
+                    _relays.pop(s, None)
+
+            for idx, state in _relays.items():
+                relays.append(Relay(idx, self.get_friendlyname(idx), state, is_locked(idx)))
+
             return relays
-        return {}
+        return []
 
-    def shutters(self) -> dict:
-        return {
-            k: self.p[f"ShutterRelay{k}"]
-            for k in range(1, 9)
-            if f"ShutterRelay{k}" in self.p and self.p[f"ShutterRelay{k}"] != 0
-        }
+    def shutters(self) -> Optional[List[Shutter]]:
+        shutters = []
+        for k in range(1, MAX_SHUTTERS + 1):
+            if (shutter_relay := self.p.get(f"ShutterRelay{k}")) and shutter_relay != 0:
+                shutter = self.p.get(f"Shutter{k}")
+                name = self.get_friendlyname(k)
+                shutters.append(
+                    Shutter(
+                        k,
+                        shutter_relay,
+                        name,
+                        shutter["Position"],
+                        shutter["Direction"],
+                        shutter["Target"],
+                    )
+                )
 
-    def shutter_positions(self) -> dict:
-        x = {k: self.p[f"Shutter{k}"] for k in range(1, 9) if f"Shutter{k}" in self.p}
-        return x
-
-    def pwm(self):
-        return {
-            k: v
-            for k, v in self.p.items()
-            if k.startswith("PWM") or (k != "Channel" and k.startswith("Channel"))
-        }
+        return shutters
 
     def color(self):
-        color = {k: self.p[k] for k in ["Color", "Dimmer", "HSBColor"] if k in self.p.keys()}
-        if color:
-            color.update({15: self.setoption(15), 17: self.setoption(17), 68: self.setoption(68)})
-        return color
+        if color := self.p.get("Color", ""):
+            return Color(
+                color,
+                self.p.get("CT", 0),
+                [val for _, val in self.p.matching_items("Dimmer", idx_only=False)],
+                self.p.get("HSBColor", ""),
+                [val for _, val in self.p.matching_items("Channel")],
+                [val for _, val in self.p.matching_items("PWM")],
+                *(self.setoption(so) for so in (15, 17, 68)),
+            )
+        return None
 
     @property
     def ip_address(self) -> str:

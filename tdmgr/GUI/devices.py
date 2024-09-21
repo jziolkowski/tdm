@@ -3,7 +3,7 @@ from json import dumps
 from typing import Optional
 
 from PyQt5.QtCore import QDir, QSortFilterProxyModel, Qt, QUrl, pyqtSignal
-from PyQt5.QtGui import QColor, QIcon
+from PyQt5.QtGui import QIcon
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from PyQt5.QtWidgets import (
     QAction,
@@ -46,6 +46,7 @@ from tdmgr.GUI.widgets import (
 )
 from tdmgr.mqtt import initial_commands
 from tdmgr.tasmota.commands import resets
+from tdmgr.tasmota.common import MAX_RELAYS, CTRange, TasmotaColor, map_value
 from tdmgr.tasmota.device import TasmotaDevice
 
 
@@ -188,7 +189,7 @@ class DevicesListWidget(QWidget):
         self.agRelays.setExclusive(False)
 
         for a in range(1, 33):
-            px = make_relay_pixmap(a)
+            px = make_relay_pixmap(a, False)
             act = QAction(QIcon(px), f'Relay {a} TOGGLE')
             if a <= 8:
                 act.setShortcut(f"F{a}")
@@ -298,9 +299,7 @@ class DevicesListWidget(QWidget):
                 self.mqtt.publish(cmd, payload, 1)
 
     def remove_power_items(self):
-        keys = self.device.power().keys()
-        self.device.p.pop("POWER", None)
-        for k in keys:
+        for k in [""] + list(range(1, MAX_RELAYS + 1)):
             self.device.p.pop(f"POWER{k}", None)
 
     def ctx_menu_delete_device(self):
@@ -363,39 +362,47 @@ class DevicesListWidget(QWidget):
         self.agShutters.setVisible(False)
         if relays := self.device.power():
             self.agAllPower.setEnabled(True)
-
+            relay_keys = [r.idx for r in relays]
             for i, a in enumerate(self.agRelays.actions()):
-                a.setVisible(i + 1 in relays.keys())
+                a.setVisible(i + 1 in relay_keys)
 
         if shutters := self.device.shutters():
-            for s in range(len(shutters.keys())):
+            for s in range(len(shutters)):
                 self.agShutters.actions()[2 * s].setVisible(True)
                 self.agShutters.actions()[2 * s + 1].setVisible(True)
 
         self.actColor.setEnabled(False)
         self.actChannels.setEnabled(False)
         if color := self.device.color():
-            self.actColor.setEnabled(not color[68])
+            self.actColor.setEnabled(bool(color.hsbcolor and color.SO68 == 1))
             self.actChannels.setEnabled(True)
 
             self.actChannels.menu().clear()
 
-            max_val = 100
-            if color[15] == 0:
-                max_val = 1023
+            max_val = 1023 if color.SO15 == 0 else 100
 
-            for k, v in self.device.pwm().items():
-                channel = SliderAction(self, k)
-                channel.slider.setMaximum(max_val)
-                channel.slider.setValue(int(v))
-                self.mChannels.addAction(channel)
-                channel.slider.valueChanged.connect(self.set_channel)
+            if color.SO68 == 1:
+                for idx, value in enumerate(color.channels, start=1):
+                    channel = SliderAction(self, f"Channel{idx}")
+                    channel.slider.setMaximum(max_val)
+                    channel.slider.setValue(value)
+                    self.mChannels.addAction(channel)
+                    channel.slider.valueChanged.connect(self.set_channel)
 
-            if dimmer := self.device.color().get("Dimmer"):
-                saDimmer = SliderAction(self, "Dimmer")
-                saDimmer.slider.setValue(int(dimmer))
-                self.mChannels.addAction(saDimmer)
-                saDimmer.slider.valueChanged.connect(self.set_channel)
+            if color.ct:
+                ct = SliderAction(self, "CT")
+                ct.slider.setRange(*CTRange)
+                ct.slider.setObjectName("CT")
+                ct.slider.setValue(map_value(color.ct, CTRange, 100))
+                self.mChannels.addAction(ct)
+                ct.slider.valueChanged.connect(self.set_channel)
+
+            if dimmer := color.dimmers:
+                for idx, value in enumerate(dimmer, start=1):
+                    saDimmer = SliderAction(self, f"Dimmer{idx}")
+                    saDimmer.slider.setValue(value)
+                    self.mChannels.addAction(saDimmer)
+                    saDimmer.slider.valueChanged.connect(self.set_channel)
 
     def toggle_power(self, action):
         if self.device:
@@ -408,7 +415,7 @@ class DevicesListWidget(QWidget):
             if self.device.version_above('6.6.0.9'):
                 self.mqtt.publish(self.device.cmnd_topic('POWER0'), idx ^ 1)
             else:
-                for r in sorted(self.device.power().keys()):
+                for r in [r.idx for r in self.device.power()]:
                     self.mqtt.publish(self.device.cmnd_topic(r), idx ^ 1)
 
     def move_shutter(self, action):
@@ -422,13 +429,14 @@ class DevicesListWidget(QWidget):
 
     def set_color(self):
         if self.device:
-            if color := self.device.color().get("Color"):
+            if color := self.device.color():
+                current = TasmotaColor.fromTasmotaHSB(color.hsbcolor)
+
                 dlg = QColorDialog()
-                new_color = dlg.getColor(QColor(f"#{color}"))
-                if new_color.isValid():
-                    new_color = new_color.name()
-                    if new_color != color:
-                        self.mqtt.publish(self.device.cmnd_topic("color"), new_color)
+                new = TasmotaColor(dlg.getColor(current))
+                if new.isValid():
+                    if new != current:
+                        self.mqtt.publish(self.device.cmnd_topic("HSBColor"), new.getTasmotaHSB())
 
     def set_channel(self, value=0):
         cmd = self.sender().objectName()

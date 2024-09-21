@@ -287,6 +287,39 @@ class DictComboBox(QComboBox):
             self.addItem(v, k)
 
 
+slider_stylesheet = """
+QSlider#CT::groove:horizontal {
+    border: 1px solid #999999;
+    height: 8px;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #eeffff, stop:1 #ff8811);
+    margin: 2px 0;
+}
+
+QSlider::groove:horizontal {
+    border: 1px solid #999999;
+    height: 8px;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 black, stop:1 white);
+    margin: 2px 0;
+}
+
+QSlider::handle:horizontal {
+    background: white;
+    border: 1px solid #5c5c5c;
+    width: 8px;
+    margin: -2px 0;
+    border-radius: 3px;
+}
+
+QSlider::add-page:horizontal {
+    background: none;
+}
+
+QSlider::sub-page:horizontal {
+    background: none;
+}
+"""
+
+
 class SliderAction(QWidgetAction):
     def __init__(self, parent, label="", *args, **kwargs):
         super(SliderAction, self).__init__(parent, *args, **kwargs)
@@ -294,6 +327,7 @@ class SliderAction(QWidgetAction):
         w = QWidget()
         hl = HLayout(5)
         self.slider = ChannelSlider()
+        self.slider.setStyleSheet(slider_stylesheet)
         self.slider.setObjectName(label)
         self.value = QLabel("0")
         hl.addElements(QLabel(label), self.slider, self.value)

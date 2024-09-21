@@ -37,7 +37,10 @@ class TasmotaDevicesModel(QAbstractTableModel):
         if any(
             [
                 key.startswith("POWER"),
-                key in ("RSSI", "LWT", "COLOR"),
+                key.startswith("FriendlyName"),
+                key in ("RSSI", "LWT", "Color", "HSBColor"),
+                key.startswith("Channel"),
+                key.startswith("Dimmer"),
                 key.startswith("ShutterRelay"),
                 key.startswith("Shutter"),
             ]
@@ -147,9 +150,6 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
             if role == DeviceRoles.ShuttersRole:
                 return d.shutters()
-
-            if role == DeviceRoles.ShutterPositionsRole:
-                return d.shutter_positions()
 
             if role == DeviceRoles.ColorRole:
                 return d.color()
