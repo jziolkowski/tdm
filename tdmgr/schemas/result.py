@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, create_model
 
 
 class TemplateResultSchema(BaseModel):
@@ -33,3 +33,17 @@ class PulseTimeSchema(BaseModel):
 
 class PulseTimeResultSchema(BaseModel):
     PulseTime: PulseTimeSchema
+
+
+class ShutterSchema(BaseModel):
+    Position: int
+    Direction: int
+    Target: int
+    Tilt: int
+
+
+ShutterResultSchema = create_model(
+    'ShutterResultSchema',
+    __base__=BaseModel,
+    **{f"Shutter{idx}": (Optional[ShutterSchema], None) for idx in range(1, 9)},
+)
