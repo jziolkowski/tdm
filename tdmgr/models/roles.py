@@ -10,7 +10,6 @@ class DeviceRoles(int, Enum):
     FirmwareRole = auto()
     PowerRole = auto()
     ShuttersRole = auto()
-    ShutterPositionsRole = auto()
     ColorRole = auto()
     ModuleRole = auto()
     HardwareRole = auto()

@@ -3,6 +3,8 @@ from typing import List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, create_model, model_validator
 
+from tdmgr.tasmota.common import MAX_PWM, MAX_RELAYS
+
 log = logging.getLogger(__name__)
 
 
@@ -211,22 +213,18 @@ class StateSTSBaseSchema(StatusBaseModel):
     Wifi: WifiSchema
 
 
-class StateBaseSchema(StateSTSBaseSchema):
-    Dimmer: Optional[int] = None
-
+_power_dict = {
+    f"POWER{idx}": (Optional[str], None) for idx in list(map(str, range(1, MAX_RELAYS + 1))) + [""]
+}
+_dimmer_dict = {
+    f"Dimmer{idx}": (Optional[int], None) for idx in list(map(str, range(1, MAX_PWM + 1))) + [""]
+}
+_channel_dict = {
+    f"Channel{idx}": (Optional[int], None) for idx in list(map(str, range(1, MAX_PWM + 1)))
+}
 
 StateSchema = create_model(
     'StateSchema',
-    __base__=StateBaseSchema,
-    **{f"POWER{idx}": (Optional[str], None) for idx in list(map(str, range(1, 33))) + [""]},
-)
-
-_power_dict = {f"POWER{idx}": (Optional[str], None) for idx in list(map(str, range(1, 33))) + [""]}
-_dimmer_dict = {f"Dimmer{idx}": (Optional[int], None) for idx in list(map(str, range(1, 6))) + [""]}
-_channel_dict = {f"Channel{idx}": (Optional[int], None) for idx in list(map(str, range(1, 6)))}
-
-StatusSTSSchema = create_model(
-    'StatusSTSSchema',
     __base__=StateSTSBaseSchema,
     **{**_power_dict, **_dimmer_dict, **_channel_dict},
 )
@@ -293,7 +291,7 @@ class Status10ResponseSchema(StatusBaseModel):
 
 
 class Status11ResponseSchema(StatusBaseModel):
-    StatusSTS: StatusSTSSchema
+    StatusSTS: StateSchema
 
 
 class Status12ResponseSchema(StatusBaseModel):
@@ -305,7 +303,7 @@ class Status13ResponseSchema(StatusBaseModel):
 
 
 class Status0ResponseSchema(StatusResponseSchema):
-    # StatusSTS: Optional[Json]
+    StatusSTS: StateSchema
     StatusFWR: StatusFWRSchema
     StatusLOG: StatusLOGSchema
     StatusMEM: StatusMEMSchema

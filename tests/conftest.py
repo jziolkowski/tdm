@@ -22,5 +22,10 @@ def device(request):
 
 
 @pytest.fixture
+def device_power(request):
+    yield {f"POWER{idx}": state for idx, state in enumerate(request.param, start=1)}
+
+
+@pytest.fixture
 def state_message(request, device):
     yield Message(f"tele/{device.p['Topic']}/STATE", request.param, prefix="stat")
