@@ -78,7 +78,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref == 'refs/heads/develop' && 'pre' || '' }}${{ env.VERSION_TAG }}
+          tag_name: ${{ env.VERSION_TAG }}
           name: TDM ${{ env.VERSION_TAG }}
           draft: true
           prerelease: ${{ github.ref_name == 'refs/heads/develop'}}
