@@ -62,19 +62,16 @@ def test_power_single(device, fname, expected):
     res = device.power()
     assert res
     assert len(res) == 1
-    assert res[0] == Relay(1, expected, "ON")
+    assert res[0] == Relay(1, expected, "ON", 0)
 
 
 @pytest.mark.parametrize("device_power", (["ON", "OFF"],), indirect=True)
 @pytest.mark.parametrize(
     "fname, expected",
     [
-        ("", ""),
-        ("", ""),
-        ("", "Tasmota1"),
-        ("", ""),
-        ("a", ""),
-        ("a", ""),
+        (("", ""), ("1", "2")),
+        (("Tasmota1", "Sonoff2"), ("1", "2")),
+        (("Tasmota1", "testtest"), ("1", "testtest")),
     ],
 )
 def test_power_multiple(device, device_power, fname, expected):
@@ -83,5 +80,5 @@ def test_power_multiple(device, device_power, fname, expected):
     res = device.power()
     assert res
     assert len(res) == 2
-    assert res[0] == Relay(1, expected[0], "ON")
-    assert res[1] == Relay(2, expected[1], "OFF")
+    assert res[0] == Relay(1, expected[0], "ON", 0)
+    assert res[1] == Relay(2, expected[1], "OFF", 0)
