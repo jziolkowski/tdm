@@ -30,6 +30,17 @@ homepage = "https://github.com/jziolkowski/tdm"
 issue-tracker = "https://github.com/jziolkowski/tdm/issues"
 documentation = "https://github.com/jziolkowski/tdm/wiki"
 
+[tool.black]
+line-length = 100
+target-version = ["py38"]
+skip-string-normalization = true
+
+[tool.isort]
+profile = "black"
+line_length = 100
+py_version = 38
+use_parentheses = true
+
 [tool.setuptools_scm]
 write_to = "tdmgr/_version.py"
 local_scheme = "no-local-version"
