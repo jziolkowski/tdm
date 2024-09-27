@@ -135,7 +135,7 @@ class RulesWidget(QWidget):
         # RuleTimers
         self.lwRTs = QListWidget()
         self.lwRTs.setAlternatingRowColors(True)
-        self.lwRTs.addItems([f"RuleTimer{1}: <unknown>" for i in range(1, 9)])
+        self.lwRTs.addItems([f"RuleTimer{i}: <unknown>" for i in range(1, 9)])
         self.lwRTs.clicked.connect(self.select_rt)
         self.lwRTs.doubleClicked.connect(self.set_rt)
 
@@ -262,12 +262,9 @@ class RulesWidget(QWidget):
         self.actStopOnError.setChecked(payload["StopOnError"] == "ON")
 
     def unfold_rule(self, rules: str):
-        return (
-            rules.replace(" on ", "\non ")
-            .replace(" do ", " do\n\t")
-            .replace(" endon", "\nendon ")
-            .rstrip(" ")
-        )
+        for pat, repl in [(r' on ', '\non '), (r' do ', ' do\n\t'), (r' endon', '\nendon ')]:
+            rules = re.sub(pat, repl, rules, flags=re.IGNORECASE)
+        return rules.rstrip(" ")
 
     @pyqtSlot(Message)
     def parseMessage(self, msg: Message):
