@@ -158,7 +158,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 return d.module()
 
             if role == DeviceRoles.HardwareRole:
-                return getattr(d.p, 'Hardware', 'ESP8266')
+                return getattr(d.p, "Hardware", "ESP8266")
 
             if role == Qt.TextAlignmentRole:
                 # Left-aligned columns

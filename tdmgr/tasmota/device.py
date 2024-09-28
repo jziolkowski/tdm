@@ -148,7 +148,7 @@ class TasmotaDevice(QObject):
             .replace("%prefix%", f"(?P<prefix>{MQTT_PATH_REGEX})")
             .replace("%topic%", self.p["Topic"])
         )
-        return f'^{_ft_pattern}'
+        return f"^{_ft_pattern}"
 
     def register(self, schema: BaseModel, method: Callable):
         if method not in self.subscribers[schema]:
@@ -233,7 +233,7 @@ class TasmotaDevice(QObject):
             first_key = next(iter(processed.keys()))
             items = (
                 processed[first_key].items()
-                if schema.__name__ != 'StateSchema'
+                if schema.__name__ != "StateSchema"
                 else processed.items()
             )
 
@@ -265,7 +265,7 @@ class TasmotaDevice(QObject):
                 self.process_status(status_parse_schema, msg.dict())
 
             # /STATUS8, /STATUS10, /SENSOR are fully dynamic and parsed as-is
-            elif msg.endpoint in ('STATUS8', 'STATUS10', 'SENSOR'):
+            elif msg.endpoint in ("STATUS8", "STATUS10", "SENSOR"):
                 self.process_sensor(msg.payload)
 
             # /LOGGING response
@@ -287,21 +287,23 @@ class TasmotaDevice(QObject):
             name = (
                 fnames[fname_idx]
                 if self.is_friendlyname(fnames[fname_idx])
-                else f"{idx}" if idx_as_default else ""
+                else f"{idx}"
+                if idx_as_default
+                else ""
             )
         return name
 
     def power(self) -> Optional[List[Relay]]:
         def is_locked(idx: int) -> bool:
-            if self.p.get('PowerOnState') == 4:
+            if self.p.get("PowerOnState") == 4:
                 return True
-            powerlock = self.p.get('PowerLock', 32 * "0")
+            powerlock = self.p.get("PowerLock", 32 * "0")
             return powerlock[idx - 1] == "1" if idx <= len(powerlock) else False
 
         relay_list = list(self.p.matching_items("POWER"))
         relay_count = len(relay_list)
 
-        if (single_relay_state := self.p.get('POWER1', self.p.get('POWER'))) and not self.p.get(
+        if (single_relay_state := self.p.get("POWER1", self.p.get("POWER"))) and not self.p.get(
             "POWER2"
         ):
             return [Relay(1, self.get_friendlyname(1, False), single_relay_state, is_locked(1))]
@@ -413,7 +415,7 @@ class TasmotaDevice(QObject):
 
     def version(self, short=True):
         if version := self.p.get("Version"):
-            if short and '(' in version:
+            if short and "(" in version:
                 return parse_version(version[0 : version.index("(")])
             return version
 

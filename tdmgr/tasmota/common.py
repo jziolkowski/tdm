@@ -27,7 +27,7 @@ class DeviceProps(dict):
         )
         for k in sorted(self.keys()):
             if match := pattern.match(k):
-                if idx := match.groupdict()['idx']:
+                if idx := match.groupdict()["idx"]:
                     yield int(idx), self[k]
                 else:
                     yield None, self[k]
@@ -36,7 +36,6 @@ class DeviceProps(dict):
 def map_value(
     value: int, from_range: Union[int, ValueRange], to_range: Union[int, ValueRange]
 ) -> int:
-
     if isinstance(from_range, int):
         from_range = ValueRange(0, from_range)
 
