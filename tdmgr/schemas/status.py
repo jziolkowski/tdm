@@ -151,8 +151,8 @@ class StatusPTHSchema(StatusBaseModel):
 
 class StatusSTKSchema(StatusBaseModel):
     CallChain: List[str]
-    DEPC: str
-    EPC: List[str]
+    DEPC: Optional[str] = None
+    EPC: Union[str, List[str]]
     EXCVADDR: str
     Exception: int
     Reason: str
@@ -210,6 +210,7 @@ class StateSTSBaseSchema(StatusBaseModel):
     UptimeSec: Optional[int] = None
     Vcc: Optional[float] = None
     White: Optional[int] = None
+    Width: Optional[int] = None
     Wifi: WifiSchema
 
 

@@ -1,13 +1,7 @@
 {
   "StatusSHT": {
     "SHT0": {
-      "Relay1": 1,
-      "Relay2": 2,
-      "Open": 100,
-      "Close": 100,
       "50perc": 50,
-      "Delay": 0,
-      "Opt": "0001",
       "Calib": [
         300,
         500,
@@ -15,7 +9,13 @@
         900,
         1000
       ],
+      "Close": 100,
+      "Delay": 0,
       "Mode": "1",
+      "Open": 100,
+      "Opt": "0001",
+      "Relay1": 1,
+      "Relay2": 2,
       "TiltConfig": [
         0,
         0,
@@ -25,13 +25,7 @@
       ]
     },
     "SHT1": {
-      "Relay1": 3,
-      "Relay2": 4,
-      "Open": 100,
-      "Close": 100,
       "50perc": 50,
-      "Delay": 0,
-      "Opt": "0001",
       "Calib": [
         300,
         500,
@@ -39,7 +33,13 @@
         900,
         1000
       ],
+      "Close": 100,
+      "Delay": 0,
       "Mode": "1",
+      "Open": 100,
+      "Opt": "0001",
+      "Relay1": 3,
+      "Relay2": 4,
       "TiltConfig": [
         0,
         0,
@@ -49,13 +49,7 @@
       ]
     },
     "SHT2": {
-      "Relay1": 5,
-      "Relay2": 6,
-      "Open": 100,
-      "Close": 100,
       "50perc": 50,
-      "Delay": 0,
-      "Opt": "0001",
       "Calib": [
         300,
         500,
@@ -63,7 +57,13 @@
         900,
         1000
       ],
+      "Close": 100,
+      "Delay": 0,
       "Mode": "1",
+      "Open": 100,
+      "Opt": "0001",
+      "Relay1": 5,
+      "Relay2": 6,
       "TiltConfig": [
         0,
         0,
@@ -73,13 +73,7 @@
       ]
     },
     "SHT3": {
-      "Relay1": 7,
-      "Relay2": 8,
-      "Open": 100,
-      "Close": 100,
       "50perc": 50,
-      "Delay": 0,
-      "Opt": "0001",
       "Calib": [
         300,
         500,
@@ -87,7 +81,13 @@
         900,
         1000
       ],
+      "Close": 100,
+      "Delay": 0,
       "Mode": "1",
+      "Open": 100,
+      "Opt": "0001",
+      "Relay1": 7,
+      "Relay2": 8,
       "TiltConfig": [
         0,
         0,
@@ -97,13 +97,7 @@
       ]
     },
     "SHT4": {
-      "Relay1": 9,
-      "Relay2": 10,
-      "Open": 100,
-      "Close": 100,
       "50perc": 50,
-      "Delay": 0,
-      "Opt": "0001",
       "Calib": [
         300,
         500,
@@ -111,7 +105,13 @@
         900,
         1000
       ],
+      "Close": 100,
+      "Delay": 0,
       "Mode": "1",
+      "Open": 100,
+      "Opt": "0001",
+      "Relay1": 9,
+      "Relay2": 10,
       "TiltConfig": [
         0,
         0,
@@ -121,13 +121,7 @@
       ]
     },
     "SHT5": {
-      "Relay1": 11,
-      "Relay2": 12,
-      "Open": 100,
-      "Close": 100,
       "50perc": 50,
-      "Delay": 0,
-      "Opt": "0001",
       "Calib": [
         300,
         500,
@@ -135,7 +129,13 @@
         900,
         1000
       ],
+      "Close": 100,
+      "Delay": 0,
       "Mode": "1",
+      "Open": 100,
+      "Opt": "0001",
+      "Relay1": 11,
+      "Relay2": 12,
       "TiltConfig": [
         0,
         0,
@@ -145,13 +145,7 @@
       ]
     },
     "SHT6": {
-      "Relay1": 13,
-      "Relay2": 14,
-      "Open": 100,
-      "Close": 100,
       "50perc": 50,
-      "Delay": 0,
-      "Opt": "0001",
       "Calib": [
         300,
         500,
@@ -159,7 +153,13 @@
         900,
         1000
       ],
+      "Close": 100,
+      "Delay": 0,
       "Mode": "1",
+      "Open": 100,
+      "Opt": "0001",
+      "Relay1": 13,
+      "Relay2": 14,
       "TiltConfig": [
         0,
         0,
@@ -169,13 +169,7 @@
       ]
     },
     "SHT7": {
-      "Relay1": 15,
-      "Relay2": 16,
-      "Open": 100,
-      "Close": 100,
       "50perc": 50,
-      "Delay": 0,
-      "Opt": "0001",
       "Calib": [
         300,
         500,
@@ -183,7 +177,13 @@
         900,
         1000
       ],
+      "Close": 100,
+      "Delay": 0,
       "Mode": "1",
+      "Open": 100,
+      "Opt": "0001",
+      "Relay1": 15,
+      "Relay2": 16,
       "TiltConfig": [
         0,
         0,

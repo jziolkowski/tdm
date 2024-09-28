@@ -1,0 +1,27 @@
+{
+  "StatusSTS": {
+    "Berry": {
+      "HeapUsed": 3,
+      "Objects": 30
+    },
+    "Heap": 184,
+    "LoadAvg": 19,
+    "MqttCount": 1,
+    "Sleep": 50,
+    "SleepMode": "Dynamic",
+    "Time": "2024-09-28T14:33:05",
+    "Uptime": "0T20:37:07",
+    "UptimeSec": 74227,
+    "Wifi": {
+      "AP": 1,
+      "BSSId": "18:E8:29:CA:17:C1",
+      "Channel": 11,
+      "Downtime": "0T00:00:03",
+      "LinkCount": 1,
+      "Mode": "HT40",
+      "RSSI": 98,
+      "SSId": "indebuurt_IoT",
+      "Signal": -51
+    }
+  }
+}

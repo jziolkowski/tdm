@@ -9,6 +9,8 @@ on:
     paths-ignore:
       - '.github/**'
       - '**.md'
+      - 'tests/**'
+      - 'assets/**'
 
 jobs:
   Binaries:

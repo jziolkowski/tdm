@@ -1,0 +1,28 @@
+{
+  "StatusNET": {
+    "DNSServer1": "192.168.2.27",
+    "DNSServer2": "192.168.2.24",
+    "Ethernet": {
+      "DNSServer1": "192.168.2.27",
+      "DNSServer2": "192.168.2.24",
+      "Gateway": "0.0.0.0",
+      "Hostname": "",
+      "IP6Global": "",
+      "IP6Local": "",
+      "IPAddress": "0.0.0.0",
+      "Mac": "00:00:00:00:00:00",
+      "Subnetmask": "0.0.0.0"
+    },
+    "Gateway": "192.168.2.254",
+    "HTTP_API": 1,
+    "Hostname": "athomem6",
+    "IP6Global": "fd84:7996:2cbf:1349:e6b0:63ff:fe02:97c4",
+    "IP6Local": "fe80::e6b0:63ff:fe02:97c4%st1",
+    "IPAddress": "192.168.2.218",
+    "Mac": "E4:B0:63:02:97:C4",
+    "Subnetmask": "255.255.255.0",
+    "Webserver": 2,
+    "WifiConfig": 4,
+    "WifiPower": 19.0
+  }
+}
