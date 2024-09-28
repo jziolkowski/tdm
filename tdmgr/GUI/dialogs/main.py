@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QStatusBar,
 )
+from paho.mqtt import MQTTException
 
 from tdmgr.GUI.console import ConsoleWidget
 from tdmgr.GUI.devices import DevicesListWidget
@@ -120,9 +121,6 @@ class MainWindow(QMainWindow):
         self.auto_timer.timeout.connect(self.auto_telemetry)
 
         self.load_window_state()
-
-        if self.settings.value("connect_on_startup", False, bool):
-            self.actToggleConnect.trigger()
 
         self.tele_docks = []
         self.consoles = []
@@ -252,7 +250,15 @@ class MainWindow(QMainWindow):
             self.mqtt.setAuth(self.broker_username, self.broker_password)
 
         if self.mqtt.state == self.mqtt.Disconnected:
-            self.mqtt.connectToHost()
+            try:
+                self.mqtt.connectToHost()
+            except ConnectionError as e:
+                self.statusBar().showMessage(e.strerror)
+                log.error("MQTT: %s", e.strerror)
+
+            except MQTTException as e:
+                self.statusBar().showMessage(e)
+                log.error("MQTT: %s", e)
 
     def mqtt_disconnect(self):
         self.mqtt.disconnectFromHost()

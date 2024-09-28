@@ -17,6 +17,16 @@ try:
 except ImportError:
     version = ""
 
+sys._excepthook = sys.excepthook
+
+
+def exception_hook(exctype, value, tb):
+    logging.exception("%s %s", exctype, value)
+    sys.__excepthook__(exctype, value, tb)
+
+
+sys.excepthook = exception_hook
+
 
 def configure_logging(args) -> None:
     log_path = os.path.join(QDir.tempPath(), "tdm.log")
@@ -33,13 +43,15 @@ def configure_logging(args) -> None:
     )
 
     logging.getLogger().addHandler(
-        TimedRotatingFileHandler(filename=log_path, when="d", interval=1)
+        TimedRotatingFileHandler(filename=log_path, when="d", interval=1, encoding="utf-8")
     )
+
+    logging.info("Writing log to %s", log_path)
 
 
 def get_settings(args: argparse.Namespace, filename: str) -> QSettings:
     if args.local:
-        return QSettings(filename, QSettings.IniFormat)
+        return QSettings(f"{filename}.ini", QSettings.IniFormat)
     if args.config_location:
         return QSettings(os.path.join(args.config_location, filename), QSettings.IniFormat)
     return QSettings(QSettings.IniFormat, QSettings.UserScope, "tdm", filename)
@@ -71,6 +83,11 @@ def start() -> None:
         settings, devices = get_settings(args, "tdm"), get_settings(args, "devices")
         MW = MainWindow(version, settings, devices, args.debug)
         MW.show()
+        app.processEvents()
+
+        if settings.value("connect_on_startup", False, bool):
+            MW.mqtt_connect()
+
         sys.exit(app.exec_())
 
     except Exception as e:  # noqa: 722
