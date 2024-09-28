@@ -137,15 +137,15 @@ class StatusMQTSchema(StatusBaseModel):
 class StatusPTHSchema(StatusBaseModel):
     CurrentHigh: Union[int, List[int]]
     CurrentLow: Union[int, List[int]]
-    MaxEnergy: Optional[int] = None
-    MaxEnergyStart: Optional[int] = None
-    MaxPower: Optional[int] = None
-    MaxPowerHold: Optional[int] = None
-    MaxPowerWindow: Optional[int] = None
+    MaxEnergy: Optional[Union[int, List[int]]] = None
+    MaxEnergyStart: Optional[Union[int, List[int]]] = None
+    MaxPower: Optional[Union[int, List[int]]] = None
+    MaxPowerHold: Optional[Union[int, List[int]]] = None
+    MaxPowerWindow: Optional[Union[int, List[int]]] = None
     PowerDelta: Union[int, List[int]]
     PowerHigh: Union[int, List[int]]
     PowerLow: Union[int, List[int]]
-    VoltageHigh: Optional[int] = None
+    VoltageHigh: Optional[Union[int, List[int]]] = None
     VoltageLow: Union[int, List[int]]
 
 
