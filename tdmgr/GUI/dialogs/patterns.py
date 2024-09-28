@@ -81,7 +81,7 @@ class PatternsDialog(QDialog):
         )
         if ok:
             if errors := self.validate_pattern(pattern):
-                errors_str = '\n'.join(errors)
+                errors_str = "\n".join(errors)
                 QMessageBox.critical(
                     self, "Error", f"Problem(s) with pattern {pattern}:\n{errors_str}"
                 )

@@ -18,7 +18,7 @@ from tdmgr.tasmota.environment import TasmotaEnvironment
 )
 def test_find_device(full_topic, test_topic, expected):
     env = TasmotaEnvironment()
-    dev = TasmotaDevice(topic='device', fulltopic=full_topic)
+    dev = TasmotaDevice(topic="device", fulltopic=full_topic)
     env.devices.append(dev)
 
     msg = Message(test_topic)

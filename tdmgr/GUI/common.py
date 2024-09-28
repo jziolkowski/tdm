@@ -14,8 +14,8 @@ RSSI_MEDIUM = QColor("#ec8826")
 RSSI_GOOD = QColor("#f1c40f")
 RSSI_FULL = QColor("#8bc34a")
 
-ARROW_UP = '▲'
-ARROW_DN = '▼'
+ARROW_UP = "▲"
+ARROW_DN = "▼"
 
 GAP = 2
 ICON_SIZE = QSize(24, 24)
@@ -50,6 +50,6 @@ def make_relay_pixmap(label, filled=True):
     if not filled:
         p.drawRect(px_rect.adjusted(0, 0, -1, -1))
 
-    p.drawText(px_rect, Qt.AlignCenter, f'{label}')
+    p.drawText(px_rect, Qt.AlignCenter, f"{label}")
     p.end()
     return px

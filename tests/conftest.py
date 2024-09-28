@@ -7,9 +7,9 @@ from tdmgr.tasmota.device import TasmotaDevice
 
 
 def get_payload(version: str, filename: str) -> bytes:
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'status_parsing', 'jsonfiles')
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "status_parsing", "jsonfiles")
     fname = os.path.join(path, version, filename)
-    with open(fname, 'rb') as f:
+    with open(fname, "rb") as f:
         return f.read()
 
 

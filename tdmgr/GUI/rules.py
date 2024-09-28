@@ -81,7 +81,7 @@ class RulesWidget(QWidget):
         tb.addSpacer()
 
         self.counter = QLabel("Remaining: 511")
-        self.counter.setHidden(self.device.version_above('8.2.0.6'))
+        self.counter.setHidden(self.device.version_above("8.2.0.6"))
         tb.addWidget(self.counter)
 
         vl.addWidget(tb)
@@ -262,7 +262,7 @@ class RulesWidget(QWidget):
         self.actStopOnError.setChecked(payload["StopOnError"] == "ON")
 
     def unfold_rule(self, rules: str):
-        for pat, repl in [(r' on ', '\non '), (r' do ', ' do\n\t'), (r' endon', '\nendon ')]:
+        for pat, repl in [(r" on ", "\non "), (r" do ", " do\n\t"), (r" endon", "\nendon ")]:
             rules = re.sub(pat, repl, rules, flags=re.IGNORECASE)
         return rules.rstrip(" ")
 

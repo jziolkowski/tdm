@@ -46,15 +46,15 @@ def get_settings(args: argparse.Namespace, filename: str) -> QSettings:
 
 
 def setup_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog='Tasmota Device Manager')
-    parser.add_argument('--debug', action='store_true', help='Enable debugging')
+    parser = argparse.ArgumentParser(prog="Tasmota Device Manager")
+    parser.add_argument("--debug", action="store_true", help="Enable debugging")
     parser.add_argument(
-        '--local',
-        action='store_true',
-        help='Store configuration and logs in the directory where TDM was started',
+        "--local",
+        action="store_true",
+        help="Store configuration and logs in the directory where TDM was started",
     )
-    parser.add_argument('--config-location', type=pathlib.Path)
-    parser.add_argument('--log-location', type=pathlib.Path)
+    parser.add_argument("--config-location", type=pathlib.Path)
+    parser.add_argument("--log-location", type=pathlib.Path)
     return parser
 
 

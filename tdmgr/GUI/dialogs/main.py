@@ -407,7 +407,7 @@ class MainWindow(QMainWindow):
                             # if the assumed topic is different from tele or stat, there is a chance
                             # that it's a valid topic. query the assumed device for its FullTopic.
                             # False positives won't reply.
-                            prf_start, prf_end = match.regs[match.re.groupindex['prefix']]
+                            prf_start, prf_end = match.regs[match.re.groupindex["prefix"]]
                             possible_topic_cmnd = (
                                 f"{msg.topic[:prf_start]}cmnd{msg.topic[prf_end:]}".replace(
                                     "/LWT", "/FullTopic"

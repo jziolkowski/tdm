@@ -191,7 +191,7 @@ class DevicesListWidget(QWidget):
 
         for a in range(1, 33):
             px = make_relay_pixmap(a, False)
-            act = QAction(QIcon(px), f'Relay {a} TOGGLE')
+            act = QAction(QIcon(px), f"Relay {a} TOGGLE")
             if a <= 8:
                 act.setShortcut(f"F{a}")
             else:
@@ -399,13 +399,13 @@ class DevicesListWidget(QWidget):
     def toggle_power(self, action):
         if self.device:
             idx = self.agRelays.actions().index(action)
-            self.mqtt.publish(self.device.cmnd_topic(f'POWER{idx+1}'), "toggle")
+            self.mqtt.publish(self.device.cmnd_topic(f"POWER{idx+1}"), "toggle")
 
     def toggle_power_all(self, action):
         idx = self.agAllPower.actions().index(action)
         if self.device:
-            if self.device.version_above('6.6.0.9'):
-                self.mqtt.publish(self.device.cmnd_topic('POWER0'), idx ^ 1)
+            if self.device.version_above("6.6.0.9"):
+                self.mqtt.publish(self.device.cmnd_topic("POWER0"), idx ^ 1)
             else:
                 for r in [r.idx for r in self.device.power()]:
                     self.mqtt.publish(self.device.cmnd_topic(r), idx ^ 1)

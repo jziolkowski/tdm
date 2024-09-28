@@ -4,7 +4,6 @@ from tdmgr.tasmota.common import CTRange
 
 
 class TestDeviceProps:
-
     @staticmethod
     @pytest.mark.parametrize("device_power", (["ON", "OFF"],), indirect=True)
     @pytest.mark.parametrize(

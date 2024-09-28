@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from tdmgr.schemas.status import STATUS_SCHEMA_MAP
 
-PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'jsonfiles')
+PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "jsonfiles")
 
 
 def get_status_jsonfiles():
@@ -21,7 +21,7 @@ def get_status_jsonfiles():
 
 @pytest.mark.parametrize("jsonfile", get_status_jsonfiles())
 def test_status_parsing(caplog, jsonfile):
-    status_type = jsonfile.split(os.path.sep)[-1].split('.')[0]
+    status_type = jsonfile.split(os.path.sep)[-1].split(".")[0]
     schema = STATUS_SCHEMA_MAP.get(status_type)
 
     with open(jsonfile, "r") as payload:

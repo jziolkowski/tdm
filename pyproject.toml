@@ -30,20 +30,20 @@ homepage = "https://github.com/jziolkowski/tdm"
 issue-tracker = "https://github.com/jziolkowski/tdm/issues"
 documentation = "https://github.com/jziolkowski/tdm/wiki"
 
-[tool.black]
-line-length = 100
-target-version = ["py38"]
-skip-string-normalization = true
-
-[tool.isort]
-profile = "black"
-line_length = 100
-py_version = 38
-use_parentheses = true
-
 [tool.setuptools_scm]
 write_to = "tdmgr/_version.py"
 local_scheme = "no-local-version"
 
 [project.scripts]
 tdmgr = "tdmgr.run:start"
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.ruff.format]
+line-ending = "auto"
+quote-style = "double"
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]

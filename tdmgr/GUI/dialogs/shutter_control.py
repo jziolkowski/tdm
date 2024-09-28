@@ -116,5 +116,5 @@ class ShutterControlDialog(QDialog):
         for k, v in payload.dict().items():
             if (widget := self.widgets.get(k)) and v:
                 # TODO: verify with inverted state if direction map is correct
-                widget.update_title(DIRECTION_MAP[v['Direction']])
-                widget.slider.setValue(v['Position'])
+                widget.update_title(DIRECTION_MAP[v["Direction"]])
+                widget.slider.setValue(v["Position"])

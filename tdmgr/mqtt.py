@@ -48,7 +48,7 @@ def initial_commands():
 
 
 def expand_fulltopic(fulltopic):
-    if fulltopic[-1] != '/':
+    if fulltopic[-1] != "/":
         fulltopic = f"{fulltopic}/"
     fulltopics = []
     for prefix in DEFAULT_PREFIXES:
@@ -64,14 +64,14 @@ class Message:
     def __init__(self, topic: str, payload: bytes = b"", retained: bool = False, **kwargs):
         self.topic: str = topic
         self.prefix: str = kwargs.get("prefix", "")
-        self.payload: str = payload.decode('utf-8')
+        self.payload: str = payload.decode("utf-8")
         self.retained: bool = retained
         self.payload: Union[dict, str]
         self.timestamp: datetime = datetime.now()
 
     @property
     def endpoint(self) -> str:
-        return self.topic.split('/')[-1]
+        return self.topic.split("/")[-1]
 
     @property
     def is_lwt(self) -> bool:

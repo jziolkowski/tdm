@@ -224,7 +224,7 @@ _channel_dict = {
 }
 
 StateSchema = create_model(
-    'StateSchema',
+    "StateSchema",
     __base__=StateSTSBaseSchema,
     **{**_power_dict, **_dimmer_dict, **_channel_dict},
 )
@@ -244,7 +244,7 @@ class ShutterSchema(StatusBaseModel):
 
 
 StatusSHTSchema = create_model(
-    'StatusSHTSchema',
+    "StatusSHTSchema",
     __base__=StatusBaseModel,
     **{f"SHT{idx}": (Optional[ShutterSchema], None) for idx in range(8)},
 )
@@ -314,21 +314,21 @@ class Status0ResponseSchema(StatusResponseSchema):
 
 
 STATUS_SCHEMA_MAP: [str, StatusBaseModel] = {
-    'STATE': StateSchema,
-    'STATUS': StatusResponseSchema,
-    'STATUS0': Status0ResponseSchema,
-    'STATUS1': Status1ResponseSchema,
-    'STATUS2': Status2ResponseSchema,
-    'STATUS3': Status3ResponseSchema,
-    'STATUS4': Status4ResponseSchema,
-    'STATUS5': Status5ResponseSchema,
-    'STATUS6': Status6ResponseSchema,
-    'STATUS7': Status7ResponseSchema,
-    'STATUS9': Status9ResponseSchema,
-    'STATUS10': Status10ResponseSchema,
-    'STATUS11': Status11ResponseSchema,
-    'STATUS12': Status12ResponseSchema,
-    'STATUS13': Status13ResponseSchema,
+    "STATE": StateSchema,
+    "STATUS": StatusResponseSchema,
+    "STATUS0": Status0ResponseSchema,
+    "STATUS1": Status1ResponseSchema,
+    "STATUS2": Status2ResponseSchema,
+    "STATUS3": Status3ResponseSchema,
+    "STATUS4": Status4ResponseSchema,
+    "STATUS5": Status5ResponseSchema,
+    "STATUS6": Status6ResponseSchema,
+    "STATUS7": Status7ResponseSchema,
+    "STATUS9": Status9ResponseSchema,
+    "STATUS10": Status10ResponseSchema,
+    "STATUS11": Status11ResponseSchema,
+    "STATUS12": Status12ResponseSchema,
+    "STATUS13": Status13ResponseSchema,
 }
 
 StatusSchemaType = STATUS_SCHEMA_MAP.values()

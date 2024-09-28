@@ -43,7 +43,7 @@ class ShutterSchema(BaseModel):
 
 
 ShutterResultSchema = create_model(
-    'ShutterResultSchema',
+    "ShutterResultSchema",
     __base__=BaseModel,
     **{f"Shutter{idx}": (Optional[ShutterSchema], None) for idx in range(1, 9)},
 )
