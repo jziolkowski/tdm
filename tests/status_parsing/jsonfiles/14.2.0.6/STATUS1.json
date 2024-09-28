@@ -1,0 +1,16 @@
+{
+  "StatusPRM": {
+    "BCResetTime": "2024-09-26T16:17:46",
+    "Baudrate": 115200,
+    "BootCount": 36,
+    "CfgHolder": 4617,
+    "GroupTopic": "tasmotas",
+    "OtaUrl": "http://otaserver/ota/tasmota/tasmota32c3-theo.bin",
+    "RestartReason": "Software reset digital core",
+    "SaveCount": 81,
+    "SerialConfig": "8N1",
+    "Sleep": 50,
+    "StartupUTC": "2024-09-27T15:55:58",
+    "Uptime": "0T20:37:07"
+  }
+}
