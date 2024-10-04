@@ -15,6 +15,11 @@ class TasmotaEnvironment:
         self.devices: list[TasmotaDevice] = []
         self.lwts = dict()
         self.retained = set()
+        self.mqtt = None
+
+    def add_device(self, device: TasmotaDevice):
+        self.devices.append(device)
+        device.env = self
 
     def find_device(self, msg: Message) -> TasmotaDevice:
         for d in self.devices:

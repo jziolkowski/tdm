@@ -296,7 +296,12 @@ class DeviceDelegate(QStyledItemDelegate):
         return QStyledItemDelegate().sizeHint(option, index)
 
     def get_used_width(self, option, index) -> int:
-        return sum([self.get_devicename_width(option, index), self.get_alerts_width(option, index)])
+        return sum(
+            [
+                self.get_devicename_width(option, index),
+                self.get_alerts_width(option, index),
+            ]
+        )
 
     @staticmethod
     def get_devicename_width(option, index) -> int:
@@ -356,7 +361,10 @@ class DeviceDelegate(QStyledItemDelegate):
                 alerts_width = self.get_alerts_width(option, index)
 
                 exc_rect = QRect(
-                    self.get_devicename_width(option, index), y, alerts_width, RECT_SIZE.height()
+                    self.get_devicename_width(option, index),
+                    y,
+                    alerts_width,
+                    RECT_SIZE.height(),
                 )
 
                 if selected:

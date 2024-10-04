@@ -103,7 +103,12 @@ class TimersDialog(QDialog):
         hl_tmr_time.addElements(self.cbxTimerPM, self.teTimerTime, lbWnd, self.cbxTimerWnd)
 
         self.gbTimers.addElements(
-            self.cbTimer, hl_tmr_arm_rpt, hl_tmr_out_act, gbTimerMode, hl_tmr_time, hl_tmr_days
+            self.cbTimer,
+            hl_tmr_arm_rpt,
+            hl_tmr_out_act,
+            gbTimerMode,
+            hl_tmr_time,
+            hl_tmr_days,
         )
 
         btns = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Close)
@@ -159,7 +164,11 @@ class TimersDialog(QDialog):
 
     def describeTimer(self):
         if self.cbTimerArm.isChecked():
-            desc = {"days": "", "repeat": "", "timer": self.cbTimer.currentText().upper()}
+            desc = {
+                "days": "",
+                "repeat": "",
+                "timer": self.cbTimer.currentText().upper(),
+            }
             repeat = self.cbTimerRpt.isChecked()
             out = self.cbxTimerOut.currentText()
             act = self.cbxTimerAction.currentText()

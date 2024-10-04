@@ -146,7 +146,12 @@ class GroupBoxBase(QGroupBox):
 
 class GroupBoxV(GroupBoxBase):
     def __init__(
-        self, title: str, margin: Union[int, List[int]] = 3, spacing: int = 3, *args, **kwargs
+        self,
+        title: str,
+        margin: Union[int, List[int]] = 3,
+        spacing: int = 3,
+        *args,
+        **kwargs,
     ):
         super(GroupBoxV, self).__init__(title, *args, **kwargs)
 
@@ -156,7 +161,12 @@ class GroupBoxV(GroupBoxBase):
 
 class GroupBoxH(GroupBoxBase):
     def __init__(
-        self, title: str, margin: Union[int, List[int]] = 3, spacing: int = 3, *args, **kwargs
+        self,
+        title: str,
+        margin: Union[int, List[int]] = 3,
+        spacing: int = 3,
+        *args,
+        **kwargs,
     ):
         super(GroupBoxH, self).__init__(title, *args, **kwargs)
 
@@ -387,7 +397,8 @@ class Command(QWidget):
 
         elif meta["type"] == "value":
             self.input = SpinBox(
-                minimum=int(meta["parameters"]["min"]), maximum=int(meta["parameters"]["max"])
+                minimum=int(meta["parameters"]["min"]),
+                maximum=int(meta["parameters"]["max"]),
             )
             self.input.setMinimumWidth(75)
             if value:
@@ -538,7 +549,8 @@ class PulseTime(QWidget):
 
         for idx, value in enumerate(values, start=1):
             sb = SpinBox(
-                minimum=int(meta["parameters"]["min"]), maximum=int(meta["parameters"]["max"])
+                minimum=int(meta["parameters"]["min"]),
+                maximum=int(meta["parameters"]["max"]),
             )
             sb.setValue(value)
             hl_group = HLayout(0)

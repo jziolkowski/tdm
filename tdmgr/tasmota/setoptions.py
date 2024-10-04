@@ -27,7 +27,10 @@ setoptions = {
         "description": "Allow immediate action on single button press",
         "type": "select",
         "parameters": {
-            "0": {"description": "Single, multi-press and hold button actions", "default": "True"},
+            "0": {
+                "description": "Single, multi-press and hold button actions",
+                "default": "True",
+            },
             "1": {"description": "Only single press action for immediate response"},
         },
     },

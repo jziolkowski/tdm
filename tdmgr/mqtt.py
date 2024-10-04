@@ -40,10 +40,6 @@ def initial_commands():
     commands = [(command, "") for command in commands]
     commands += [("status", "0"), ("gpios", "255")]
 
-    for sht in range(8):
-        commands.append([f"shutterrelay{sht + 1}", ""])
-        commands.append([f"shutterposition{sht + 1}", ""])
-
     return commands
 
 

@@ -250,7 +250,9 @@ class DeviceConsoleHistory(QDialog):
         self.lwCommands = QListWidget()
 
         vl.addElements(
-            gbxDevice, self.lwCommands, QLabel("Double-click a command to use it, ESC to close.")
+            gbxDevice,
+            self.lwCommands,
+            QLabel("Double-click a command to use it, ESC to close."),
         )
         self.setLayout(vl)
 

@@ -176,7 +176,10 @@ class DevicesListWidget(QWidget):
         self.ctx_menu.addAction(QIcon(":/delete.png"), "Delete", self.ctx_menu_delete_device)
 
         self.agAllPower = QActionGroup(self)
-        for label, shortcut, fill in [("ON", "Ctrl+F1", True), ("OFF", "Ctrl+F2", False)]:
+        for label, shortcut, fill in [
+            ("ON", "Ctrl+F1", True),
+            ("OFF", "Ctrl+F2", False),
+        ]:
             px = make_relay_pixmap(label, filled=fill)
             act = self.agAllPower.addAction(QIcon(px), f"All relays {label}")
             act.setShortcut(shortcut)
@@ -278,7 +281,11 @@ class DevicesListWidget(QWidget):
     def ctx_menu_reset(self):
         if self.device:
             reset, ok = QInputDialog.getItem(
-                self, "Reset device and restart", "Select reset mode", resets, editable=False
+                self,
+                "Reset device and restart",
+                "Select reset mode",
+                resets,
+                editable=False,
             )
             if ok:
                 self.mqtt.publish(self.device.cmnd_topic("reset"), payload=reset.split(":")[0])
@@ -366,7 +373,7 @@ class DevicesListWidget(QWidget):
         self.actColor.setEnabled(False)
         self.actChannels.setEnabled(False)
         if color := self.device.color():
-            self.actColor.setEnabled(bool(color.hsbcolor and color.SO68 == 1))
+            self.actColor.setEnabled(bool(color.hsbcolor) and color.SO68 == 0)
             self.actChannels.setEnabled(True)
 
             self.actChannels.menu().clear()
