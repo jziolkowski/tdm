@@ -2,6 +2,7 @@ import csv
 import logging
 import re
 
+from paho.mqtt import MQTTException
 from PyQt5.QtCore import QDir, QFileInfo, QSettings, QSize, Qt, QTimer, QUrl, pyqtSlot
 from PyQt5.QtGui import QDesktopServices, QFont, QIcon
 from PyQt5.QtWidgets import (
@@ -15,7 +16,6 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QStatusBar,
 )
-from paho.mqtt import MQTTException
 
 from tdmgr.GUI.console import ConsoleWidget
 from tdmgr.GUI.devices import DevicesListWidget
@@ -63,9 +63,13 @@ class MainWindow(QMainWindow):
 
         self.menuBar().setNativeMenuBar(False)
 
+        self.mqtt = None
+        self.setup_mqtt()
+
         self.unknown = []
         self.custom_patterns = []
         self.env = TasmotaEnvironment()
+        self.env.mqtt = self.mqtt
         self.device = None
 
         self.topics = []
@@ -88,8 +92,7 @@ class MainWindow(QMainWindow):
             )
             device.debug = self.devices.value("debug", False, bool)
             device.p["Mac"] = mac.replace("-", ":")
-            device.env = self.env
-            self.env.devices.append(device)
+            self.env.add_device(device)
 
             # load device command history
             self.devices.beginGroup("history")
@@ -101,7 +104,6 @@ class MainWindow(QMainWindow):
 
         self.device_model = TasmotaDevicesModel(self.settings, self.devices, self.env)
 
-        self.setup_mqtt()
         self.setup_main_layout()
         self.add_devices_tab()
         self.build_mainmenu()
@@ -186,7 +188,9 @@ class MainWindow(QMainWindow):
 
     def build_toolbars(self):
         main_toolbar = Toolbar(
-            orientation=Qt.Horizontal, iconsize=24, label_position=Qt.ToolButtonTextBesideIcon
+            orientation=Qt.Horizontal,
+            iconsize=24,
+            label_position=Qt.ToolButtonTextBesideIcon,
         )
         main_toolbar.setObjectName("main_toolbar")
 
@@ -304,7 +308,8 @@ class MainWindow(QMainWindow):
             # the custom patterns
             for custom_pattern in self.custom_patterns:
                 custom_pattern_match = re.match(
-                    custom_pattern.replace("+", f"({MQTT_PATH_REGEX})"), d.p["FullTopic"]
+                    custom_pattern.replace("+", f"({MQTT_PATH_REGEX})"),
+                    d.p["FullTopic"],
                 )
                 if not d.is_default() and not custom_pattern_match:
                     # if pattern is not found then add the device topics to subscription list.
@@ -428,7 +433,7 @@ class MainWindow(QMainWindow):
             elif msg.endpoint in ("RESULT", "FULLTOPIC"):
                 # reply from an unknown device
                 if d := lwt_discovery_stage2(self.env, msg):
-                    self.env.devices.append(d)
+                    self.env.add_device(d)
                     self.device_model.addDevice(d)
                     log.debug("DISCOVERY: Sending initial query to topic %s", d.p["Topic"])
                     self.initial_query(d, True)
@@ -438,7 +443,10 @@ class MainWindow(QMainWindow):
 
     def export(self):
         fname, _ = QFileDialog.getSaveFileName(
-            self, "Export device list as...", directory=QDir.homePath(), filter="CSV files (*.csv)"
+            self,
+            "Export device list as...",
+            directory=QDir.homePath(),
+            filter="CSV files (*.csv)",
         )
         if fname:
             if not fname.endswith(".csv"):
@@ -564,7 +572,9 @@ class MainWindow(QMainWindow):
             self.mqtt_publish(self.device.cmnd_topic("STATUS"), "8")
             self.tele_docks.append(tele_widget)
             self.resizeDocks(
-                self.tele_docks, [100 // len(self.tele_docks) for _ in self.tele_docks], Qt.Vertical
+                self.tele_docks,
+                [100 // len(self.tele_docks) for _ in self.tele_docks],
+                Qt.Vertical,
             )
 
     @pyqtSlot()
@@ -577,7 +587,9 @@ class MainWindow(QMainWindow):
             console_widget.command.setFocus()
             self.consoles.append(console_widget)
             self.resizeDocks(
-                self.consoles, [100 // len(self.consoles) for _ in self.consoles], Qt.Horizontal
+                self.consoles,
+                [100 // len(self.consoles) for _ in self.consoles],
+                Qt.Horizontal,
             )
 
     @pyqtSlot()

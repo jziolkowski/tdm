@@ -163,7 +163,10 @@ class RulesWidget(QWidget):
     def save_to_file(self):
         new_fname = f"{self.device.name} {self.cbRule.currentText()}.txt"
         file, ok = QFileDialog.getSaveFileName(
-            self, "Save rule", os.path.join(QDir.homePath(), new_fname), "Text files | *.txt"
+            self,
+            "Save rule",
+            os.path.join(QDir.homePath(), new_fname),
+            "Text files | *.txt",
         )
         if ok:
             with open(file, "w") as f:
@@ -262,7 +265,11 @@ class RulesWidget(QWidget):
         self.actStopOnError.setChecked(payload["StopOnError"] == "ON")
 
     def unfold_rule(self, rules: str):
-        for pat, repl in [(r" on ", "\non "), (r" do ", " do\n\t"), (r" endon", "\nendon ")]:
+        for pat, repl in [
+            (r" on ", "\non "),
+            (r" do ", " do\n\t"),
+            (r" endon", "\nendon "),
+        ]:
             rules = re.sub(pat, repl, rules, flags=re.IGNORECASE)
         return rules.rstrip(" ")
 

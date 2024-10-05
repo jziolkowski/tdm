@@ -57,7 +57,10 @@ commands = {
             "0": {"description": "Keep relay(s) OFF after power up"},
             "1": {"description": "Turn relay(s) ON after power up"},
             "2": {"description": "Toggle relay(s) from last saved state"},
-            "3": {"description": "Switch relay(s) to their last saved state", "default": "True"},
+            "3": {
+                "description": "Switch relay(s) to their last saved state",
+                "default": "True",
+            },
             "4": {"description": "Turn relay(s) ON and disable further relay control"},
             "5": {"description": "Turn relay(s) ON after a PulseTime period"},
         },

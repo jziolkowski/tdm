@@ -17,7 +17,7 @@ from tdmgr.schemas.result import (
     ShutterResultSchema,
     TemplateResultSchema,
 )
-from tdmgr.schemas.status import STATUS_SCHEMA_MAP
+from tdmgr.schemas.status import STATUS_SCHEMA_MAP, Status13ResponseSchema
 from tdmgr.tasmota.common import COMMAND_UNKNOWN, MAX_SHUTTERS, Color, DeviceProps, Relay, Shutter
 
 log = logging.getLogger(__name__)
@@ -245,6 +245,17 @@ class TasmotaDevice(QObject):
                 else:
                     self.update_property(k, v)
 
+            if schema == Status13ResponseSchema:
+                if self.version_above("12.2.0.6"):  # Support for single-response for all shutters
+                    command = self.cmnd_topic("ShutterRelay")
+                    payload = []
+                else:
+                    command = self.cmnd_topic("Backlog")
+                    payload = [
+                        f"shutterrelay{sht + 1}" for sht in range(len(payload["StatusSHT"].keys()))
+                    ]
+                self.env.mqtt.publish(command, ";".join(payload))
+
         except ValidationError as e:
             log.critical("MQTT: Cannot parse %s", e)
 
@@ -356,7 +367,10 @@ class TasmotaDevice(QObject):
 
     @property
     def ip_address(self) -> str:
-        for ip in [self.p.get("IPAddress"), self.p.get("Ethernet", {}).get("IPAddress")]:
+        for ip in [
+            self.p.get("IPAddress"),
+            self.p.get("Ethernet", {}).get("IPAddress"),
+        ]:
             if ip != "0.0.0.0":
                 return ip
         return "0.0.0.0"
