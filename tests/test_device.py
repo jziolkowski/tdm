@@ -48,6 +48,22 @@ def test_ip_address(device, version, filename, expected):
     assert device.ip_address == expected
 
 
+@pytest.mark.parametrize("version", ("14.2.0.4",))
+@pytest.mark.parametrize(
+    "filename, expected",
+    [
+        ("STATUS5.json", "192.168.0.99"),
+        ("STATUS5.1.json", "192.168.7.1"),
+    ],
+)
+def test_gateway(device, version, filename, expected):
+    payload = get_payload(version, filename)
+    msg = Message("stat/topic/STATUS5", payload, prefix="stat")
+    device.process_message(msg)
+
+    assert device.gateway == expected
+
+
 @pytest.mark.parametrize(
     "fname, expected",
     [

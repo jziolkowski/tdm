@@ -365,15 +365,22 @@ class TasmotaDevice(QObject):
             )
         return None
 
+    def _get_addr_from_wifi_or_ethernet(self, address: str) -> str:
+        for _address in [
+            self.p.get(address),
+            self.p.get("Ethernet", {}).get(address),
+        ]:
+            if _address != "0.0.0.0":
+                return _address
+        return "0.0.0.0"
+
     @property
     def ip_address(self) -> str:
-        for ip in [
-            self.p.get("IPAddress"),
-            self.p.get("Ethernet", {}).get("IPAddress"),
-        ]:
-            if ip != "0.0.0.0":
-                return ip
-        return "0.0.0.0"
+        return self._get_addr_from_wifi_or_ethernet("IPAddress")
+
+    @property
+    def gateway(self) -> str:
+        return self._get_addr_from_wifi_or_ethernet("Gateway")
 
     def setoption(self, o):
         if 0 <= o < 32:
