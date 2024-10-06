@@ -13,3 +13,7 @@ class DeviceRoles(int, Enum):
     ColorRole = auto()
     ModuleRole = auto()
     HardwareRole = auto()
+
+    IPAddressRole = auto()
+    GatewayRole = auto()
+    IsEthernetRole = auto()

@@ -344,7 +344,7 @@ class DeviceDelegate(QStyledItemDelegate):
         col_name = self.get_column_name(index)
         if col_name == "Device":
             # draw signal strength icon
-            self.draw_rssi_pixmap(index, option, p)
+            self.draw_network_pixmap(index, option, p)
 
             device_rect = option.rect.adjusted(2 * GAP + ICON_SIZE.width(), 3, 0, 0)
             p.save()
@@ -392,12 +392,15 @@ class DeviceDelegate(QStyledItemDelegate):
         else:
             QStyledItemDelegate.paint(self, p, option, index)
 
-    def draw_rssi_pixmap(self, index, option, p):
+    def draw_network_pixmap(self, index, option, p):
         p.save()
         px = self.rssi_offline
         if index.data(DeviceRoles.LWTRole):
-            rssi = index.data(DeviceRoles.RSSIRole)
-            px = get_pixmap_for_rssi(rssi)
+            if index.data(DeviceRoles.IsEthernetRole):
+                px = QPixmap(":/ethernet.png")
+            else:
+                rssi = index.data(DeviceRoles.RSSIRole)
+                px = get_pixmap_for_rssi(rssi)
 
         px_y = option.rect.y() + (option.rect.height() - ICON_SIZE.height()) // 2
         px_rect = QRect(QPoint(option.rect.x() + GAP, px_y), ICON_SIZE)

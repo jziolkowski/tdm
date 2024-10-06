@@ -38,7 +38,7 @@ class TasmotaDevicesModel(QAbstractTableModel):
             [
                 key.startswith("POWER"),
                 key.startswith("FriendlyName"),
-                key in ("RSSI", "LWT", "Color", "HSBColor"),
+                key in ("RSSI", "LWT", "Color", "HSBColor", "IPAddress", "Gateway", "Ethernet"),
                 key.startswith("Channel"),
                 key.startswith("Dimmer"),
                 key.startswith("ShutterRelay"),
@@ -128,9 +128,6 @@ class TasmotaDevicesModel(QAbstractTableModel):
                 if col_name == "RSSI":
                     return int(d.p.get("RSSI", 0))
 
-                if col_name == "IPAddress":
-                    return d.ip_address
-
                 return val
 
             if role == DeviceRoles.LWTRole:
@@ -159,6 +156,18 @@ class TasmotaDevicesModel(QAbstractTableModel):
 
             if role == DeviceRoles.HardwareRole:
                 return getattr(d.p, "Hardware", "ESP8266")
+
+            if role == DeviceRoles.IsEthernetRole:
+                return (
+                    d.p.get("IPAddress") == "0.0.0.0"
+                    and d.p.get("Ethernet", {}).get("IPAddress") != "0.0.0.0"
+                )
+
+            if role == DeviceRoles.IPAddressRole:
+                return d.ip_address
+
+            if role == DeviceRoles.GatewayRole:
+                return d.gateway
 
             if role == Qt.TextAlignmentRole:
                 # Left-aligned columns

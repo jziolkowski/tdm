@@ -10,6 +10,7 @@
     <file alias="copy.png">.\assets\copy.png</file>
     <file alias="disconnect.png">.\assets\disconnect.png</file>
     <file alias="download.png">.\assets\download.png</file>
+    <file alias="ethernet.png">.\assets\ethernet.png</file>
     <file alias="ip.png">.\assets\ip.png</file>
     <file alias="logo.png">.\assets\logo.png</file>
     <file alias="once.png">.\assets\once.png</file>

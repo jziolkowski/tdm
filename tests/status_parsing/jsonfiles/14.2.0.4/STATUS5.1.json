@@ -13,7 +13,7 @@
       "Mac": "34:98:7A:68:FF:97",
       "Subnetmask": "255.255.255.0"
     },
-    "Gateway": "192.168.7.1",
+    "Gateway": "0.0.0.0",
     "HTTP_API": 1,
     "Hostname": "tasmota-68FF94-8084",
     "IP6Global": "",
