@@ -112,6 +112,7 @@ class MqttClient(QObject):
 
     MQTT_3_1 = mqtt.MQTTv31
     MQTT_3_1_1 = mqtt.MQTTv311
+    MQTT_5 = mqtt.MQTTv5
 
     connected = pyqtSignal()
     connecting = pyqtSignal()
@@ -143,9 +144,16 @@ class MqttClient(QObject):
 
         self.m_state = MqttClient.Disconnected
 
-        self.m_client = mqtt.Client(
-            clean_session=self.m_cleanSession, protocol=self.protocolVersion
-        )
+        if hasattr(mqtt, 'CallbackAPIVersion'):
+            self.m_protocolVersion = MqttClient.MQTT_5
+            self.m_client = mqtt.Client(
+                callback_api_version=mqtt.CallbackAPIVersion.VERSION2, protocol=self.protocolVersion
+            )
+        else:
+            self.m_protocolVersion = MqttClient.MQTT_3_1
+            self.m_client = mqtt.Client(
+                clean_session=self.m_cleanSession, protocol=self.protocolVersion
+            )
 
         self.m_client.on_connect = self.on_connect
         self.m_client.on_message = self.on_message
@@ -217,7 +225,7 @@ class MqttClient(QObject):
     def protocolVersion(self, protocolVersion):
         if self.m_protocolVersion == protocolVersion:
             return
-        if protocolVersion in (MqttClient.MQTT_3_1, MqttClient.MQTT_3_1_1):
+        if protocolVersion in (MqttClient.MQTT_3_1, MqttClient.MQTT_3_1_1, MqttClient.MQTT_5):
             self.m_protocolVersion = protocolVersion
             self.protocolVersionChanged.emit(protocolVersion)
 
