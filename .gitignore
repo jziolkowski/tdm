@@ -103,3 +103,4 @@ tdm.cfg
 devices.cfg
 tdm*.log
 __version__.py
+/tdmgr/_version.py

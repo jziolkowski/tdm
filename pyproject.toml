@@ -21,7 +21,8 @@ classifiers = [
 dependencies = [
     "paho_mqtt>=1.4,<2",
     "PyQt5>=5.14.2,<6",
-    "pydantic==2.5.2"
+    "pydantic>=2.5.2",
+    "packaging"
 ]
 requires-python = ">=3.8"
 

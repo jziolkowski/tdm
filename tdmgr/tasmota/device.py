@@ -4,7 +4,7 @@ import re
 from functools import lru_cache
 from typing import Callable, Optional, Union
 
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 from pydantic import BaseModel, ValidationError
 from PyQt5.QtCore import QObject, pyqtSignal
 
